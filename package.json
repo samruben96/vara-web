@@ -1,0 +1,48 @@
+{
+  "name": "vara",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Digital Safety Platform for Women",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:migrate": "pnpm --filter @vara/api db:migrate",
+    "db:migrate:dev": "pnpm --filter @vara/api db:migrate:dev",
+    "db:generate": "pnpm --filter @vara/api db:generate",
+    "db:studio": "pnpm --filter @vara/api db:studio",
+    "db:seed": "pnpm --filter @vara/api db:seed",
+    "db:push": "pnpm --filter @vara/api db:push",
+    "clean": "turbo clean && rm -rf node_modules",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^20.11.0",
+    "eslint": "^9.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.0",
+    "prettier-plugin-tailwindcss": "^0.5.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^7.0.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}

@@ -1,0 +1,303 @@
+// Vara - Digital Safety Platform for Women
+// Prisma Schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// ============================================================================
+// User & Profile
+// ============================================================================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  profile             UserProfile?
+  onboardingResponses OnboardingResponse[]
+  connectedAccounts   ConnectedAccount[]
+  protectedImages     ProtectedImage[]
+  alerts              Alert[]
+  protectionPlan      ProtectionPlan?
+  scanJobs            ScanJob[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id                  String    @id @default(uuid())
+  userId              String    @unique
+  displayName         String?
+  riskLevel           RiskLevel @default(LOW)
+  onboardingCompleted Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// ============================================================================
+// Onboarding
+// ============================================================================
+
+model OnboardingResponse {
+  id         String   @id @default(uuid())
+  userId     String
+  questionId String
+  response   Json
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@map("onboarding_responses")
+}
+
+// ============================================================================
+// Connected Social Accounts
+// ============================================================================
+
+model ConnectedAccount {
+  id              String    @id @default(uuid())
+  userId          String
+  platform        Platform
+  platformUserId  String
+  accessToken     String    // Encrypted in application layer
+  refreshToken    String?   // Encrypted in application layer
+  tokenExpiry     DateTime?
+  permissions     Json?
+  lastSynced      DateTime?
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("connected_accounts")
+}
+
+// ============================================================================
+// Protected Images
+// ============================================================================
+
+model ProtectedImage {
+  id          String                      @id @default(uuid())
+  userId      String
+  storageUrl  String
+  embedding   Unsupported("vector(512)")?
+  hash        String?                     // Perceptual hash for quick comparison
+  uploadedAt  DateTime                    @default(now())
+  lastScanned DateTime?
+  status      ImageStatus                 @default(ACTIVE)
+  archivedAt  DateTime?                   // Timestamp when image was archived
+
+  // Relations
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matches ImageMatch[]
+
+  @@index([userId, status])
+  @@index([userId, status, lastScanned])
+  @@map("protected_images")
+}
+
+model ImageMatch {
+  id               String           @id @default(uuid())
+  protectedImageId String
+  sourceUrl        String
+  platform         String?
+  similarity       Float
+  matchType        ImageMatchType
+  detectedAt       DateTime         @default(now())
+  status           ImageMatchStatus @default(NEW)
+
+  // Relations
+  protectedImage ProtectedImage @relation(fields: [protectedImageId], references: [id], onDelete: Cascade)
+
+  @@index([protectedImageId, status])
+  @@map("image_matches")
+}
+
+// ============================================================================
+// Alerts
+// ============================================================================
+
+model Alert {
+  id          String        @id @default(uuid())
+  userId      String
+  type        AlertType
+  severity    AlertSeverity
+  title       String
+  description String
+  metadata    Json?
+  status      AlertStatus   @default(NEW)
+  createdAt   DateTime      @default(now())
+  viewedAt    DateTime?
+  actionedAt  DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("alerts")
+}
+
+// ============================================================================
+// Protection Plan
+// ============================================================================
+
+model ProtectionPlan {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  generatedAt DateTime @default(now())
+  lastUpdated DateTime @default(now())
+
+  // Relations
+  user  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items ProtectionPlanItem[]
+
+  @@map("protection_plans")
+}
+
+model ProtectionPlanItem {
+  id          String                   @id @default(uuid())
+  planId      String
+  category    String
+  title       String
+  description String
+  priority    Int
+  status      ProtectionPlanItemStatus @default(PENDING)
+  dueDate     DateTime?
+  createdAt   DateTime                 @default(now())
+
+  // Relations
+  plan ProtectionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId, status])
+  @@map("protection_plan_items")
+}
+
+// ============================================================================
+// Scan Jobs
+// ============================================================================
+
+model ScanJob {
+  id           String        @id @default(uuid())
+  userId       String
+  type         ScanJobType
+  status       ScanJobStatus @default(PENDING)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  result       Json?
+  errorMessage String?
+  createdAt    DateTime      @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("scan_jobs")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Platform {
+  INSTAGRAM
+  TIKTOK
+  FACEBOOK
+  TWITTER
+  LINKEDIN
+  YOUTUBE
+  OTHER
+}
+
+enum AlertType {
+  IMAGE_MISUSE
+  FAKE_PROFILE
+  DATA_BREACH
+  SUSPICIOUS_FOLLOWER
+  BEHAVIORAL_CHANGE
+  DEEPFAKE_DETECTED
+  PROFILE_IMPERSONATION
+}
+
+enum AlertSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertStatus {
+  NEW
+  VIEWED
+  ACTIONED
+  DISMISSED
+}
+
+enum ImageMatchType {
+  EXACT
+  SIMILAR
+  MODIFIED
+  DEEPFAKE
+}
+
+enum ImageMatchStatus {
+  NEW
+  REVIEWED
+  ACTIONED
+  DISMISSED
+}
+
+enum ImageStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ScanJobType {
+  IMAGE_SCAN
+  PROFILE_SCAN
+  BREACH_CHECK
+  BEHAVIORAL_ANALYSIS
+  FULL_SCAN
+}
+
+enum ScanJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ProtectionPlanItemStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}

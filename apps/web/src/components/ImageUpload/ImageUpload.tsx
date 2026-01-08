@@ -1,0 +1,469 @@
+import { useState, useCallback, useRef } from 'react';
+import { Upload, X, Check, AlertCircle, Loader2, Image as ImageIcon } from 'lucide-react';
+import { cn } from '../../lib/cn';
+import { Button } from '../ui/Button';
+import {
+  useUploadImage,
+  validateImageFile,
+  ALLOWED_FILE_TYPES,
+  MAX_FILE_SIZE,
+  type UploadProgress,
+} from '../../hooks/useImages';
+
+interface FileWithPreview {
+  file: File;
+  preview: string;
+  id: string;
+}
+
+interface UploadStatus {
+  id: string;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  progress: number;
+  error?: string;
+}
+
+interface ImageUploadProps {
+  /** Callback when upload completes successfully */
+  onUploadComplete?: () => void;
+  /** Maximum number of files that can be selected at once */
+  maxFiles?: number;
+  /** Additional CSS classes */
+  className?: string;
+}
+
+/**
+ * Image upload component with drag-and-drop support
+ * Supports multiple file selection but uploads one at a time
+ */
+export function ImageUpload({
+  onUploadComplete,
+  maxFiles = 10,
+  className,
+}: ImageUploadProps) {
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [uploadStatuses, setUploadStatuses] = useState<Map<string, UploadStatus>>(
+    new Map()
+  );
+  const [isDragging, setIsDragging] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadMutation = useUploadImage();
+
+  const generateId = () => Math.random().toString(36).substring(2, 9);
+
+  const handleFiles = useCallback(
+    (newFiles: FileList | File[]) => {
+      const fileArray = Array.from(newFiles);
+      const errors: string[] = [];
+      const validFiles: FileWithPreview[] = [];
+
+      // Check total files limit
+      const totalFiles = files.length + fileArray.length;
+      if (totalFiles > maxFiles) {
+        errors.push(`You can only upload up to ${maxFiles} images at a time.`);
+        return;
+      }
+
+      fileArray.forEach((file) => {
+        const validationError = validateImageFile(file);
+        if (validationError) {
+          errors.push(`${file.name}: ${validationError.message}`);
+        } else {
+          const id = generateId();
+          validFiles.push({
+            file,
+            preview: URL.createObjectURL(file),
+            id,
+          });
+        }
+      });
+
+      setValidationErrors(errors);
+      if (validFiles.length > 0) {
+        setFiles((prev) => [...prev, ...validFiles]);
+      }
+    },
+    [files.length, maxFiles]
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const droppedFiles = e.dataTransfer.files;
+      if (droppedFiles.length > 0) {
+        handleFiles(droppedFiles);
+      }
+    },
+    [handleFiles]
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = e.target.files;
+      if (selectedFiles && selectedFiles.length > 0) {
+        handleFiles(selectedFiles);
+      }
+      // Reset input so same file can be selected again
+      e.target.value = '';
+    },
+    [handleFiles]
+  );
+
+  const removeFile = useCallback((id: string) => {
+    setFiles((prev) => {
+      const file = prev.find((f) => f.id === id);
+      if (file) {
+        URL.revokeObjectURL(file.preview);
+      }
+      return prev.filter((f) => f.id !== id);
+    });
+    setUploadStatuses((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const uploadFile = useCallback(
+    async (fileWithPreview: FileWithPreview) => {
+      const { file, id } = fileWithPreview;
+
+      setUploadStatuses((prev) => {
+        const next = new Map(prev);
+        next.set(id, { id, status: 'uploading', progress: 0 });
+        return next;
+      });
+
+      try {
+        await uploadMutation.mutateAsync({
+          file,
+          onProgress: (progress: UploadProgress) => {
+            setUploadStatuses((prev) => {
+              const next = new Map(prev);
+              next.set(id, { id, status: 'uploading', progress: progress.percentage });
+              return next;
+            });
+          },
+        });
+
+        setUploadStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(id, { id, status: 'success', progress: 100 });
+          return next;
+        });
+
+        // Remove successful upload after a delay
+        setTimeout(() => {
+          removeFile(id);
+        }, 2000);
+
+        onUploadComplete?.();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Upload failed';
+        setUploadStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(id, { id, status: 'error', progress: 0, error: errorMessage });
+          return next;
+        });
+      }
+    },
+    [uploadMutation, onUploadComplete, removeFile]
+  );
+
+  const uploadAll = useCallback(async () => {
+    const pendingFiles = files.filter((f) => {
+      const status = uploadStatuses.get(f.id);
+      return !status || status.status === 'error';
+    });
+
+    // Upload one at a time
+    for (const file of pendingFiles) {
+      await uploadFile(file);
+    }
+  }, [files, uploadStatuses, uploadFile]);
+
+  const hasFilesToUpload = files.some((f) => {
+    const status = uploadStatuses.get(f.id);
+    return !status || status.status === 'error';
+  });
+
+  const isUploading = Array.from(uploadStatuses.values()).some(
+    (s) => s.status === 'uploading'
+  );
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className={cn('space-y-4', className)}>
+      {/* Drop Zone */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={cn(
+          'relative cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all',
+          isDragging
+            ? 'border-primary-500 bg-primary-50'
+            : 'border-neutral-300 bg-neutral-50 hover:border-primary-400 hover:bg-primary-50/50',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2'
+        )}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
+        aria-label="Upload images. Click or drag and drop files here."
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ALLOWED_FILE_TYPES.join(',')}
+          multiple
+          onChange={handleFileSelect}
+          className="sr-only"
+          aria-hidden="true"
+        />
+
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className={cn(
+              'flex h-14 w-14 items-center justify-center rounded-full transition-colors',
+              isDragging ? 'bg-primary-100' : 'bg-neutral-100'
+            )}
+          >
+            <Upload
+              className={cn(
+                'h-6 w-6 transition-colors',
+                isDragging ? 'text-primary-600' : 'text-neutral-500'
+              )}
+            />
+          </div>
+
+          <div>
+            <p className="text-base font-medium text-neutral-900">
+              {isDragging ? 'Drop your images here' : 'Drag and drop images here'}
+            </p>
+            <p className="mt-1 text-sm text-neutral-500">
+              or{' '}
+              <span className="font-medium text-primary-600">browse files</span>
+            </p>
+          </div>
+
+          <p className="text-xs text-neutral-400">
+            JPEG, PNG, or WebP up to {formatFileSize(MAX_FILE_SIZE)}
+          </p>
+        </div>
+      </div>
+
+      {/* Validation Errors */}
+      {validationErrors.length > 0 && (
+        <div className="rounded-lg border border-alert-200 bg-alert-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-alert-500" />
+            <div className="flex-1">
+              <p className="font-medium text-alert-800">
+                Some files could not be added
+              </p>
+              <ul className="mt-1 space-y-1 text-sm text-alert-700">
+                {validationErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => setValidationErrors([])}
+              className="text-alert-500 hover:text-alert-700"
+              aria-label="Dismiss errors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* File Preview Grid */}
+      {files.length > 0 && (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {files.map((fileWithPreview) => {
+              const status = uploadStatuses.get(fileWithPreview.id);
+              return (
+                <FilePreviewCard
+                  key={fileWithPreview.id}
+                  file={fileWithPreview}
+                  status={status}
+                  onRemove={() => removeFile(fileWithPreview.id)}
+                  formatFileSize={formatFileSize}
+                />
+              );
+            })}
+          </div>
+
+          {/* Upload Button */}
+          {hasFilesToUpload && (
+            <div className="flex justify-end">
+              <Button
+                onClick={uploadAll}
+                disabled={isUploading}
+                isLoading={isUploading}
+              >
+                {isUploading ? 'Uploading...' : `Upload ${files.filter((f) => {
+                  const status = uploadStatuses.get(f.id);
+                  return !status || status.status === 'error';
+                }).length} Image${files.length > 1 ? 's' : ''}`}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface FilePreviewCardProps {
+  file: FileWithPreview;
+  status?: UploadStatus;
+  onRemove: () => void;
+  formatFileSize: (bytes: number) => string;
+}
+
+function FilePreviewCard({
+  file,
+  status,
+  onRemove,
+  formatFileSize,
+}: FilePreviewCardProps) {
+  const isUploading = status?.status === 'uploading';
+  const isSuccess = status?.status === 'success';
+  const isError = status?.status === 'error';
+
+  return (
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-lg border bg-white transition-all',
+        isSuccess && 'border-success-300 ring-2 ring-success-100',
+        isError && 'border-alert-300 ring-2 ring-alert-100',
+        !isSuccess && !isError && 'border-neutral-200'
+      )}
+    >
+      {/* Image Preview */}
+      <div className="relative aspect-square bg-neutral-100">
+        <img
+          src={file.preview}
+          alt={`Preview of ${file.file.name}`}
+          className="h-full w-full object-cover"
+        />
+
+        {/* Upload Overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+              <span className="text-sm font-medium text-neutral-700">
+                {status.progress}%
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Success Overlay */}
+        {isSuccess && (
+          <div className="absolute inset-0 flex items-center justify-center bg-success-500/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-500">
+              <Check className="h-6 w-6 text-white" />
+            </div>
+          </div>
+        )}
+
+        {/* Error Overlay */}
+        {isError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-alert-500/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-alert-500">
+              <AlertCircle className="h-6 w-6 text-white" />
+            </div>
+          </div>
+        )}
+
+        {/* Remove Button */}
+        {!isUploading && !isSuccess && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900/60 text-white transition-colors hover:bg-neutral-900/80"
+            aria-label={`Remove ${file.file.name}`}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* File Info */}
+      <div className="p-3">
+        <p className="truncate text-sm font-medium text-neutral-900">
+          {file.file.name}
+        </p>
+        <p className="text-xs text-neutral-500">
+          {formatFileSize(file.file.size)}
+        </p>
+        {isError && status?.error && (
+          <p className="mt-1 text-xs text-alert-600">{status.error}</p>
+        )}
+      </div>
+
+      {/* Progress Bar */}
+      {isUploading && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-neutral-100">
+          <div
+            className="h-full bg-primary-600 transition-all duration-300"
+            style={{ width: `${status.progress}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Empty state component for use in the gallery
+export function EmptyImagesState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
+        <ImageIcon className="h-8 w-8 text-primary-600" />
+      </div>
+      <h3 className="mt-4 text-lg font-medium text-neutral-900">
+        No protected images yet
+      </h3>
+      <p className="mt-2 max-w-sm text-neutral-600">
+        Upload your photos to start monitoring them across the web. We'll alert
+        you if we find any unauthorized use.
+      </p>
+    </div>
+  );
+}
