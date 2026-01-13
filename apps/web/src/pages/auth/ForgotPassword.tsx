@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import { forgotPasswordSchema, type ForgotPasswordInput } from '@vara/shared';
 import { Button, Input } from '../../components/ui';
@@ -32,6 +33,10 @@ export function ForgotPassword() {
         return;
       }
 
+      toast.success('Check your email for reset instructions', {
+        duration: 3000,
+        style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+      });
       setSuccess(true);
     } catch {
       setError('An unexpected error occurred. Please try again.');

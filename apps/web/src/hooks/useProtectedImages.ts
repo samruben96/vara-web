@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ProtectedImage, ApiResponse, PaginationMeta } from '@vara/shared';
+import type { ProtectedImage, ApiResponse } from '@vara/shared';
 import { api } from '../lib/api';
 
 // Query keys for caching
@@ -12,12 +12,6 @@ export const imageKeys = {
   detail: (id: string) => [...imageKeys.details(), id] as const,
 };
 
-// API response type with pagination
-interface ImagesListResponse {
-  images: ProtectedImage[];
-  pagination: PaginationMeta;
-}
-
 interface UseProtectedImagesOptions {
   page?: number;
   limit?: number;
@@ -27,11 +21,12 @@ interface UseProtectedImagesOptions {
 
 /**
  * Fetch paginated list of protected images
+ * API returns: { data: ProtectedImage[], meta: { pagination: {...} } }
  */
 export function useProtectedImages(options: UseProtectedImagesOptions = {}) {
   const { page = 1, limit = 10, status, enabled = true } = options;
 
-  return useQuery<ApiResponse<ImagesListResponse>>({
+  return useQuery<ApiResponse<ProtectedImage[]>>({
     queryKey: imageKeys.list({ page, limit, status }),
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -39,7 +34,7 @@ export function useProtectedImages(options: UseProtectedImagesOptions = {}) {
       params.set('limit', String(limit));
       if (status) params.set('status', status);
 
-      return api.get<ImagesListResponse>(`/api/v1/images?${params.toString()}`);
+      return api.get<ProtectedImage[]>(`/api/v1/images?${params.toString()}`);
     },
     enabled,
     staleTime: 60 * 1000, // 1 minute
@@ -68,10 +63,11 @@ export function useProtectedImageCount(enabled = true) {
     queryKey: [...imageKeys.all, 'active-count'] as const,
     queryFn: async () => {
       // Fetch active images to get count from pagination
-      const response = await api.get<ImagesListResponse>(
-        '/api/v1/images?status=ACTIVE&limit=1'
+      // API uses 'filter' param, defaults to 'all' which excludes archived
+      const response = await api.get<ProtectedImage[]>(
+        '/api/v1/images?limit=1'
       );
-      return response.data.pagination.total;
+      return response.meta?.pagination?.total ?? 0;
     },
     enabled,
     staleTime: 60 * 1000, // 1 minute

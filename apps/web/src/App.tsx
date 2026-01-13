@@ -5,9 +5,12 @@ import { useAuthSession } from './hooks/useAuthSession';
 import { MainLayout } from './layouts/MainLayout';
 import { AuthLayout } from './layouts/AuthLayout';
 import { Landing } from './pages/Landing';
+import { Privacy } from './pages/Privacy';
+import { Terms } from './pages/Terms';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
+import { ResetPassword } from './pages/auth/ResetPassword';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import {
   OnboardingLayout,
@@ -22,6 +25,7 @@ const ProtectedImages = lazy(() => import('./pages/ProtectedImages'));
 const Alerts = lazy(() => import('./pages/Alerts'));
 const ProtectionPlan = lazy(() => import('./pages/ProtectionPlan'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Help = lazy(() => import('./pages/Help'));
 
 // Loading fallback component with skeleton effect
 function PageLoadingFallback() {
@@ -61,6 +65,8 @@ export function App() {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Landing />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
 
       {/* Auth routes */}
       <Route element={<AuthLayout />}>
@@ -73,6 +79,7 @@ export function App() {
           element={<Signup />}
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Route>
 
       {/* Onboarding routes (protected) */}
@@ -124,6 +131,14 @@ export function App() {
             element={
               <Suspense fallback={<PageLoadingFallback />}>
                 <Settings />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/help"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <Help />
               </Suspense>
             }
           />

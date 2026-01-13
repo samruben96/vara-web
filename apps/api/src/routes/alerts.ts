@@ -89,6 +89,22 @@ export async function alertRoutes(app: FastifyInstance) {
     });
   });
 
+  // Clear all alerts
+  app.delete('/all', { preHandler: [requireAuth] }, async (request, reply) => {
+    const userId = request.user!.id;
+
+    const result = await prisma.alert.deleteMany({
+      where: { userId },
+    });
+
+    return reply.send({
+      data: {
+        deleted: result.count,
+        message: `Deleted ${result.count} alerts`,
+      },
+    });
+  });
+
   // Take action on alert
   app.post('/:id/action', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };

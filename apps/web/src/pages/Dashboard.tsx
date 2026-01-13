@@ -2,6 +2,8 @@ import { Shield, AlertTriangle, Image, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useDashboardStats, useDashboardAlerts } from '../hooks/useDashboardStats';
+import { useScans } from '../hooks/useScans';
+import { ProtectionStatusHero } from '../components/dashboard';
 import type { Alert, AlertSeverity } from '@vara/shared';
 
 // Helper to format relative time
@@ -101,10 +103,24 @@ function AlertSkeleton() {
   );
 }
 
-// Alert card component - mobile-optimized
-function AlertCard({ alert }: { alert: Alert }) {
+// Alert card component - mobile-optimized with keyboard accessibility
+function AlertCard({ alert, onClick }: { alert: Alert; onClick?: () => void }) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 transition-colors hover:bg-neutral-50 active:bg-neutral-100 cursor-pointer touch-manipulation">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      aria-label={`${alert.severity} alert: ${alert.title}`}
+      className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 transition-colors hover:bg-neutral-50 active:bg-neutral-100 cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+    >
       {/* Icon and badge row on mobile */}
       <div className="flex items-center justify-between sm:contents">
         <div
@@ -179,13 +195,17 @@ export function Dashboard() {
     error: alertsError,
   } = useDashboardAlerts(5);
 
-  // Determine change indicators for stats
-  const getAlertChange = (count: number): { text: string; type: 'positive' | 'negative' | 'neutral' } => {
-    if (count === 0) return { text: 'All clear', type: 'positive' };
-    if (count === 1) return { text: '1 new', type: 'negative' };
-    return { text: `${count} active`, type: 'negative' };
-  };
+  // Fetch last completed scan for the hero
+  const { data: scansData, isLoading: isScansLoading } = useScans({
+    status: 'COMPLETED',
+    limit: 1,
+    enabled: true,
+  });
 
+  // Get the most recent completed scan timestamp
+  const lastScanAt = scansData?.data?.scans?.[0]?.completedAt ?? null;
+
+  // Determine change indicators for activity stats
   const getScanChange = (count: number): { text: string; type: 'positive' | 'negative' | 'neutral' } => {
     if (count === 0) return { text: 'No scans', type: 'neutral' };
     return { text: 'Normal', type: 'neutral' };
@@ -197,40 +217,8 @@ export function Dashboard() {
     return { text: 'Needs attention', type: 'negative' };
   };
 
-  const alertChange = getAlertChange(stats.activeAlerts);
   const scanChange = getScanChange(stats.weeklyScans);
   const scoreChange = getScoreChange(stats.protectionScore);
-
-  const statCards = [
-    {
-      label: 'Protection Score',
-      value: `${stats.protectionScore}%`,
-      change: scoreChange.text,
-      changeType: scoreChange.type,
-      icon: Shield,
-    },
-    {
-      label: 'Active Alerts',
-      value: String(stats.activeAlerts),
-      change: alertChange.text,
-      changeType: alertChange.type,
-      icon: AlertTriangle,
-    },
-    {
-      label: 'Protected Images',
-      value: String(stats.protectedImages),
-      change: stats.protectedImages > 0 ? 'Protected' : 'None yet',
-      changeType: stats.protectedImages > 0 ? 'positive' : 'neutral' as const,
-      icon: Image,
-    },
-    {
-      label: 'Scans This Week',
-      value: String(stats.weeklyScans),
-      change: scanChange.text,
-      changeType: scanChange.type,
-      icon: TrendingUp,
-    },
-  ];
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
@@ -244,44 +232,61 @@ export function Dashboard() {
         </p>
       </div>
 
-      {/* Stats Grid - 2 columns on mobile, 4 on desktop */}
-      <div className="grid gap-3 grid-cols-2 sm:gap-4 lg:grid-cols-4">
+      {/* Protection Status Hero */}
+      {hasStatsError ? (
+        <ErrorState message="Unable to load your protection status. Please try refreshing the page." />
+      ) : (
+        <ProtectionStatusHero
+          score={stats.protectionScore}
+          protectedImages={stats.protectedImages}
+          activeAlerts={stats.activeAlerts}
+          lastScanAt={lastScanAt}
+          isLoading={isStatsLoading || isScansLoading}
+        />
+      )}
+
+      {/* Activity Summary - Compact stats row */}
+      <div className="grid gap-3 grid-cols-2 sm:gap-4">
         {isStatsLoading ? (
           <>
             <StatCardSkeleton />
             <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
           </>
-        ) : hasStatsError ? (
-          <div className="col-span-full">
-            <ErrorState message="Unable to load some statistics. Please try refreshing the page." />
-          </div>
         ) : (
-          statCards.map((stat) => (
-            <div key={stat.label} className="card">
+          <>
+            <div className="card">
               <div className="flex items-center justify-between">
                 <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary-100">
-                  <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
                 </div>
                 <span
-                  className={`text-xs sm:text-sm font-medium ${
-                    stat.changeType === 'positive'
-                      ? 'text-success-600'
-                      : stat.changeType === 'negative'
-                        ? 'text-alert-600'
-                        : 'text-neutral-500'
-                  }`}
+                  className={`text-xs sm:text-sm font-medium ${scanChange.type === 'positive' ? 'text-success-600' : 'text-neutral-500'}`}
                 >
-                  {stat.change}
+                  {scanChange.text}
                 </span>
               </div>
               <div className="mt-3 sm:mt-4">
-                <p className="text-xl sm:text-2xl font-bold text-neutral-900">{stat.value}</p>
-                <p className="text-xs sm:text-sm text-neutral-600">{stat.label}</p>
+                <p className="text-xl sm:text-2xl font-bold text-neutral-900">{stats.weeklyScans}</p>
+                <p className="text-xs sm:text-sm text-neutral-600">Scans This Week</p>
               </div>
             </div>
-          ))
+            <div className="card">
+              <div className="flex items-center justify-between">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-primary-100">
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
+                </div>
+                <span
+                  className={`text-xs sm:text-sm font-medium ${scoreChange.type === 'positive' ? 'text-success-600' : scoreChange.type === 'negative' ? 'text-alert-600' : 'text-neutral-500'}`}
+                >
+                  {scoreChange.text}
+                </span>
+              </div>
+              <div className="mt-3 sm:mt-4">
+                <p className="text-xl sm:text-2xl font-bold text-neutral-900">{stats.protectionScore}%</p>
+                <p className="text-xs sm:text-sm text-neutral-600">Protection Score</p>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -318,7 +323,7 @@ export function Dashboard() {
             <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-neutral-600 line-clamp-1">Review your safety tasks</p>
           </button>
           <button
-            onClick={() => navigate('/scans')}
+            onClick={() => navigate('/images')}
             className="rounded-lg border border-neutral-200 p-3 sm:p-4 text-left transition-colors hover:border-primary-500 hover:bg-primary-50 active:bg-primary-100 touch-manipulation min-h-touch"
           >
             <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
@@ -350,7 +355,13 @@ export function Dashboard() {
           ) : alerts.length === 0 ? (
             <EmptyAlertsState />
           ) : (
-            alerts.map((alert) => <AlertCard key={alert.id} alert={alert} />)
+            alerts.map((alert: Alert) => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                onClick={() => navigate('/alerts')}
+              />
+            ))
           )}
         </div>
       </div>

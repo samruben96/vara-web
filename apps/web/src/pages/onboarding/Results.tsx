@@ -68,45 +68,71 @@ export function Results() {
   const displayRiskLevel = riskLevel || 'MEDIUM';
   const riskConfig = riskLevelConfig[displayRiskLevel];
 
-  // Mock protection plan items if none exist
+  // Category labels for display (convert from API format to human-readable)
+  const categoryLabels: Record<string, string> = {
+    IMAGE_PROTECTION: 'Image Protection',
+    ACCOUNT_SECURITY: 'Account Security',
+    PRIVACY_SETTINGS: 'Privacy Settings',
+    EMERGENCY_PLANNING: 'Emergency Planning',
+    MONITORING_SETUP: 'Monitoring Setup',
+    // Legacy categories for backward compatibility
+    Images: 'Image Protection',
+    Accounts: 'Account Security',
+    Privacy: 'Privacy Settings',
+  };
+
+  // Mock protection plan items if none exist (for development/demo)
   const planItems = protectionPlan?.items || [
     {
       id: '1',
-      category: 'Privacy',
-      title: 'Review social media privacy settings',
+      category: 'ACCOUNT_SECURITY',
+      title: 'Enable two-factor authentication',
       description:
-        'Ensure your accounts are set to private and limit who can see your posts.',
+        'Add an extra layer of security to your accounts. This simple step prevents most unauthorized access attempts.',
       priority: 1,
       status: 'PENDING' as const,
     },
     {
       id: '2',
-      category: 'Image Protection',
-      title: 'Upload photos for monitoring',
+      category: 'IMAGE_PROTECTION',
+      title: 'Upload your photos for protection',
       description:
-        'Add your photos so we can scan for unauthorized use across the web.',
+        'Add photos you want to monitor across the web. We will scan for unauthorized use and alert you if we find anything.',
       priority: 2,
       status: 'PENDING' as const,
     },
     {
       id: '3',
-      category: 'Account Security',
-      title: 'Enable two-factor authentication',
+      category: 'PRIVACY_SETTINGS',
+      title: 'Check for data breaches',
       description:
-        'Add an extra layer of security to your important accounts.',
+        'See if your email or personal information has appeared in known data breaches. Knowledge is the first step to protection.',
       priority: 3,
       status: 'PENDING' as const,
     },
     {
       id: '4',
-      category: 'Digital Footprint',
-      title: 'Review data broker exposure',
+      category: 'ACCOUNT_SECURITY',
+      title: 'Connect your social accounts',
       description:
-        'Check if your personal information is listed on data broker sites.',
+        'Link your social media accounts so we can monitor for suspicious activity and impersonation attempts.',
       priority: 4,
       status: 'PENDING' as const,
     },
+    {
+      id: '5',
+      category: 'MONITORING_SETUP',
+      title: 'Configure alert preferences',
+      description:
+        'Choose how and when you want to be notified about potential issues. Stay informed without feeling overwhelmed.',
+      priority: 5,
+      status: 'PENDING' as const,
+    },
   ];
+
+  // Helper to get display category name
+  const getCategoryLabel = (category: string) =>
+    categoryLabels[category] || category;
 
   return (
     <div className="animate-fade-in space-y-8">
@@ -162,7 +188,7 @@ export function Results() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium uppercase tracking-wide text-primary-600">
-                    {item.category}
+                    {getCategoryLabel(item.category)}
                   </span>
                 </div>
                 <h3 className="mt-1 font-medium text-neutral-900">

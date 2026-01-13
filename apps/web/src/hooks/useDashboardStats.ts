@@ -69,8 +69,8 @@ export function useDashboardAlerts(limit = 5) {
   const { data, isLoading, error } = useRecentAlerts(limit);
 
   return {
-    alerts: data?.data?.alerts ?? [],
-    pagination: data?.data?.pagination,
+    alerts: data?.data ?? [],
+    pagination: data?.meta?.pagination,
     isLoading,
     error,
   };

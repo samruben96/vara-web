@@ -1,0 +1,1 @@
+export { ProtectionStatusHero } from './ProtectionStatusHero';

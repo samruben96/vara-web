@@ -18,11 +18,11 @@ datasource db {
 // ============================================================================
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   profile             UserProfile?
@@ -73,16 +73,16 @@ model OnboardingResponse {
 // ============================================================================
 
 model ConnectedAccount {
-  id              String    @id @default(uuid())
-  userId          String
-  platform        Platform
-  platformUserId  String
-  accessToken     String    // Encrypted in application layer
-  refreshToken    String?   // Encrypted in application layer
-  tokenExpiry     DateTime?
-  permissions     Json?
-  lastSynced      DateTime?
-  createdAt       DateTime  @default(now())
+  id             String    @id @default(uuid())
+  userId         String
+  platform       Platform
+  platformUserId String
+  accessToken    String // Encrypted in application layer
+  refreshToken   String? // Encrypted in application layer
+  tokenExpiry    DateTime?
+  permissions    Json?
+  lastSynced     DateTime?
+  createdAt      DateTime  @default(now())
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -100,35 +100,45 @@ model ProtectedImage {
   userId      String
   storageUrl  String
   embedding   Unsupported("vector(512)")?
-  hash        String?                     // Perceptual hash for quick comparison
+  hash        String? // Perceptual hash for quick comparison
   uploadedAt  DateTime                    @default(now())
   lastScanned DateTime?
   status      ImageStatus                 @default(ACTIVE)
-  archivedAt  DateTime?                   // Timestamp when image was archived
+  archivedAt  DateTime? // Timestamp when image was archived
+  scanCount   Int                         @default(0) // Total number of scans performed
+  matchCount  Int                         @default(0) // Total number of matches found
 
   // Relations
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matches ImageMatch[]
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matches  ImageMatch[]
+  scanJobs ScanJob[]
 
   @@index([userId, status])
   @@index([userId, status, lastScanned])
+  @@index([hash])
   @@map("protected_images")
 }
 
 model ImageMatch {
   id               String           @id @default(uuid())
   protectedImageId String
+  scanJobId        String? // Link to the scan job that discovered this match
   sourceUrl        String
   platform         String?
   similarity       Float
   matchType        ImageMatchType
   detectedAt       DateTime         @default(now())
   status           ImageMatchStatus @default(NEW)
+  firstSeenAt      DateTime         @default(now()) // First time this match was detected
+  lastSeenAt       DateTime         @default(now()) // Last time this match was confirmed
 
   // Relations
   protectedImage ProtectedImage @relation(fields: [protectedImageId], references: [id], onDelete: Cascade)
+  scanJob        ScanJob?       @relation(fields: [scanJobId], references: [id], onDelete: SetNull)
 
+  @@unique([protectedImageId, sourceUrl])
   @@index([protectedImageId, status])
+  @@index([scanJobId])
   @@map("image_matches")
 }
 
@@ -197,21 +207,30 @@ model ProtectionPlanItem {
 // ============================================================================
 
 model ScanJob {
-  id           String        @id @default(uuid())
-  userId       String
-  type         ScanJobType
-  status       ScanJobStatus @default(PENDING)
-  startedAt    DateTime?
-  completedAt  DateTime?
-  result       Json?
-  errorMessage String?
-  createdAt    DateTime      @default(now())
+  id               String        @id @default(uuid())
+  userId           String
+  protectedImageId String? // Optional link to specific image being scanned
+  type             ScanJobType
+  status           ScanJobStatus @default(PENDING)
+  priority         Int           @default(0) // Higher priority jobs run first
+  progress         Int           @default(0) // Progress percentage (0-100)
+  retryCount       Int           @default(0) // Number of retry attempts
+  workerId         String? // ID of the worker processing this job
+  startedAt        DateTime?
+  completedAt      DateTime?
+  result           Json?
+  errorMessage     String?
+  createdAt        DateTime      @default(now())
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  protectedImage ProtectedImage? @relation(fields: [protectedImageId], references: [id], onDelete: SetNull)
+  imageMatches   ImageMatch[]
 
   @@index([userId, status])
   @@index([userId, createdAt])
+  @@index([status, priority, createdAt])
+  @@index([protectedImageId])
   @@map("scan_jobs")
 }
 

@@ -2,7 +2,11 @@ import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui';
-import { OnboardingProgress, QuestionCard } from '../../components/onboarding';
+import {
+  OnboardingProgress,
+  ProcessingAnimation,
+  QuestionCard,
+} from '../../components/onboarding';
 import { useOnboardingStore } from '../../stores/onboardingStore';
 import {
   useOnboardingQuestions,
@@ -114,67 +118,67 @@ export function Quiz() {
   const currentValue = responses[currentQuestion.id];
 
   return (
-    <div className="animate-fade-in space-y-8">
-      {/* Progress indicator */}
-      <OnboardingProgress
-        current={progress.current}
-        total={progress.total}
-      />
+    <>
+      {/* Processing animation overlay */}
+      <ProcessingAnimation isVisible={isSubmitting} />
 
-      {/* Question card with transition */}
-      <div
-        key={currentQuestion.id}
-        className="min-h-[300px]"
-      >
-        <QuestionCard
-          question={currentQuestion}
-          value={currentValue}
-          onChange={handleResponseChange}
+      <div className="animate-fade-in space-y-8">
+        {/* Progress indicator */}
+        <OnboardingProgress
+          current={progress.current}
+          total={progress.total}
         />
-      </div>
 
-      {/* Navigation buttons */}
-      <div className="flex items-center justify-between pt-4">
-        <Button
-          variant="ghost"
-          onClick={handleBack}
-          disabled={isSubmitting}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">
-            {isFirstQuestion() ? 'Back to intro' : 'Previous'}
-          </span>
-          <span className="sm:hidden">Back</span>
-        </Button>
-
-        <Button
-          onClick={handleNext}
-          disabled={!canProceed() || isSubmitting}
-          isLoading={isSubmitting}
-          className="gap-2"
-        >
-          <span>
-            {isLastQuestion() ? 'See my plan' : 'Continue'}
-          </span>
-          {!isSubmitting && !isLastQuestion() && (
-            <ArrowRight className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-
-      {/* Skip option for non-required questions */}
-      {!isLastQuestion() && (
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={nextQuestion}
-            className="text-sm text-neutral-500 underline-offset-4 hover:text-neutral-700 hover:underline"
-          >
-            Skip this question
-          </button>
+        {/* Question card with transition */}
+        <div key={currentQuestion.id} className="min-h-[300px]">
+          <QuestionCard
+            question={currentQuestion}
+            value={currentValue}
+            onChange={handleResponseChange}
+          />
         </div>
-      )}
-    </div>
+
+        {/* Navigation buttons */}
+        <div className="flex items-center justify-between pt-4">
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            disabled={isSubmitting}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {isFirstQuestion() ? 'Back to intro' : 'Previous'}
+            </span>
+            <span className="sm:hidden">Back</span>
+          </Button>
+
+          <Button
+            onClick={handleNext}
+            disabled={!canProceed() || isSubmitting}
+            isLoading={isSubmitting}
+            className="gap-2"
+          >
+            <span>{isLastQuestion() ? 'See my plan' : 'Continue'}</span>
+            {!isSubmitting && !isLastQuestion() && (
+              <ArrowRight className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Skip option for non-required questions */}
+        {!isLastQuestion() && (
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={nextQuestion}
+              className="text-sm text-neutral-500 underline-offset-4 hover:text-neutral-700 hover:underline"
+            >
+              Skip this question
+            </button>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

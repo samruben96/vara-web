@@ -15,6 +15,9 @@ import { protectionPlanRoutes } from './routes/protection-plan';
 import { scanRoutes } from './routes/scans';
 import { errorHandler } from './middleware/error-handler';
 import { env } from './config/env';
+import { closeQueues } from './queues';
+import { initializeWorkers, shutdownWorkers } from './workers/init';
+import { closeRedisConnection } from './config/redis';
 
 const app = Fastify({
   logger: {
@@ -70,6 +73,14 @@ async function start() {
   await app.register(protectionPlanRoutes, { prefix: '/api/v1/protection-plan' });
   await app.register(scanRoutes, { prefix: '/api/v1/scans' });
 
+  // Initialize workers if Redis is configured
+  if (env.REDIS_URL) {
+    initializeWorkers();
+    app.log.info('Background workers initialized');
+  } else {
+    app.log.warn('REDIS_URL not configured - background workers disabled');
+  }
+
   // Start server
   try {
     await app.listen({ port: env.PORT, host: '0.0.0.0' });
@@ -79,5 +90,41 @@ async function start() {
     process.exit(1);
   }
 }
+
+/**
+ * Graceful shutdown handler.
+ * Closes all connections in proper order.
+ */
+async function shutdown(signal: string): Promise<void> {
+  console.log(`\n[Server] Received ${signal}, starting graceful shutdown...`);
+
+  try {
+    // 1. Close Fastify server (stop accepting new requests)
+    await app.close();
+    console.log('[Server] Fastify server closed');
+
+    // 2. Shutdown workers (wait for in-progress jobs)
+    await shutdownWorkers();
+    console.log('[Server] Workers shut down');
+
+    // 3. Close queue connections
+    await closeQueues();
+    console.log('[Server] Queues closed');
+
+    // 4. Close Redis connection
+    await closeRedisConnection();
+    console.log('[Server] Redis connection closed');
+
+    console.log('[Server] Graceful shutdown complete');
+    process.exit(0);
+  } catch (error) {
+    console.error('[Server] Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
+// Register shutdown handlers
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 start();

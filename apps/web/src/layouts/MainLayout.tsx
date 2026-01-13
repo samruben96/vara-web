@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Shield, Bell, User, LogOut, Menu, X } from 'lucide-react';
+import { Shield, Bell, User, LogOut, Menu, X, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../stores/authStore';
@@ -7,6 +7,7 @@ import { cn } from '../lib/cn';
 import { useIsMobile } from '../hooks/mobile';
 import { MobileBottomNav, OfflineIndicator } from '../components/mobile';
 import { useLockBodyScroll } from '../hooks/mobile/useLockBodyScroll';
+import { useActiveAlertCount } from '../hooks/useAlerts';
 
 export function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -30,13 +31,22 @@ export function MainLayout() {
     { label: 'Alerts', href: '/alerts' },
     { label: 'Protection Plan', href: '/protection-plan' },
     { label: 'Settings', href: '/settings' },
+    { label: 'Help', href: '/help' },
   ];
 
-  // Mock alert count - in real app, this would come from a hook/store
-  const alertCount = 3;
+  // Fetch count of NEW (unread) alerts from the API
+  const { data: alertCount = 0 } = useActiveAlertCount();
 
   return (
     <div className="min-h-screen-dynamic bg-neutral-50">
+      {/* Skip Link for Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-primary-600 focus:ring-2 focus:ring-primary-500 focus:rounded-md"
+      >
+        Skip to main content
+      </a>
+
       {/* Offline Indicator */}
       <OfflineIndicator />
 
@@ -91,6 +101,19 @@ export function MainLayout() {
                   {alertCount > 9 ? '9+' : alertCount}
                 </span>
               )}
+            </Link>
+
+            {/* Help link - visible on desktop */}
+            <Link
+              to="/help"
+              className={cn(
+                'hidden md:flex rounded-lg p-2.5 text-neutral-600 transition-colors',
+                'hover:bg-neutral-100 hover:text-neutral-900',
+                'min-h-touch min-w-touch items-center justify-center'
+              )}
+              aria-label="Help & Resources"
+            >
+              <HelpCircle className="h-5 w-5" />
             </Link>
 
             {/* Desktop-only user section */}
@@ -220,10 +243,14 @@ export function MainLayout() {
 
       {/* Main Content - add bottom padding for mobile bottom nav */}
       <main
+        id="main-content"
+        tabIndex={-1}
         className={cn(
           'container py-4 sm:py-6 lg:py-8',
           // Add padding for bottom nav on mobile
-          'pb-20 md:pb-6 lg:pb-8'
+          'pb-20 md:pb-6 lg:pb-8',
+          // Remove focus outline since focus is managed programmatically
+          'focus:outline-none'
         )}
       >
         <Outlet />

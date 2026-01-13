@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import type { ProtectionPlan, ApiResponse } from '@vara/shared';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { ProtectionPlan, ProtectionPlanItem, ProtectionPlanItemStatus, ApiResponse } from '@vara/shared';
 import { api } from '../lib/api';
 
 // Query keys for caching
@@ -91,5 +91,44 @@ export function useProtectionPlanStats(enabled = true) {
     isLoading,
     error,
     plan: data?.data,
+  };
+}
+
+/**
+ * Mutations for updating protection plan items
+ */
+export function useProtectionPlanMutations() {
+  const queryClient = useQueryClient();
+
+  const updateItemStatus = useMutation({
+    mutationFn: async ({
+      itemId,
+      status,
+    }: {
+      itemId: string;
+      status: ProtectionPlanItemStatus;
+    }) => {
+      return api.patch<ProtectionPlanItem>(
+        `/api/v1/protection-plan/items/${itemId}`,
+        { status }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: protectionPlanKeys.all });
+    },
+  });
+
+  const regeneratePlan = useMutation({
+    mutationFn: async () => {
+      return api.post<ProtectionPlan>('/api/v1/protection-plan/regenerate');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: protectionPlanKeys.all });
+    },
+  });
+
+  return {
+    updateItemStatus,
+    regeneratePlan,
   };
 }

@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Shield, Trash2, Search, Clock, CheckCircle, Archive, Loader2 } from 'lucide-react';
+import { Shield, Trash2, Search, Clock, CheckCircle, Archive, Loader2, Scan } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { cn } from '../lib/cn';
 import { Button } from '../components/ui/Button';
 import { ImageUpload, EmptyImagesState } from '../components/ImageUpload';
+import { ScanStatus } from '../components/ScanStatus';
 import { useImages, useDeleteImage } from '../hooks/useImages';
+import { useActiveScan, useTriggerScan, useTriggerImageScan } from '../hooks/useScans';
 import type { ProtectedImage } from '@vara/shared';
 
 type ImageFilter = 'all' | 'scanned' | 'not_scanned' | 'archived';
@@ -16,6 +19,13 @@ export function ProtectedImages() {
     setSearchParams({ filter: newFilter });
   };
   const [imageToDelete, setImageToDelete] = useState<string | null>(null);
+  const [scanningImageId, setScanningImageId] = useState<string | null>(null);
+  const [recentlyCompleted, setRecentlyCompleted] = useState(false);
+  const [completedResult, setCompletedResult] = useState<{
+    matchesFound: number;
+    imagesScanned: number;
+  } | null>(null);
+  const [previousScanStatus, setPreviousScanStatus] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useImages({
     filter,
@@ -23,9 +33,104 @@ export function ProtectedImages() {
   });
 
   const deleteImage = useDeleteImage();
+  const triggerScan = useTriggerScan();
+  const triggerImageScan = useTriggerImageScan();
+  const { data: activeScanData } = useActiveScan();
 
   const images = data?.data || [];
   const hasImages = images.length > 0;
+
+  // Get active scan from query data
+  const activeScan = activeScanData?.data?.scans?.[0] || null;
+  const isScanRunning = activeScan?.status === 'RUNNING' || activeScan?.status === 'PENDING';
+
+  // Track scan completion
+  useEffect(() => {
+    const scanStatus = activeScan?.status ?? null;
+    const scanResult = activeScan?.result as { matchesFound?: number; imagesScanned?: number } | null;
+
+    if (previousScanStatus === 'RUNNING' && scanStatus === 'COMPLETED') {
+      // Scan just completed
+      setRecentlyCompleted(true);
+
+      // Extract results from scan
+      setCompletedResult({
+        matchesFound: scanResult?.matchesFound ?? 0,
+        imagesScanned: scanResult?.imagesScanned ?? images.length,
+      });
+
+      // Clear scanning image state
+      setScanningImageId(null);
+
+      // Refetch images to update lastScanned status
+      refetch();
+    }
+    setPreviousScanStatus(scanStatus);
+  }, [activeScan?.status, activeScan?.result, previousScanStatus, images.length, refetch]);
+
+  // Handle scan all images
+  const handleScanAll = useCallback(async () => {
+    try {
+      await triggerScan.mutateAsync({ type: 'IMAGE_SCAN' });
+      toast.success('Scan started', {
+        duration: 3000,
+        icon: null,
+        style: {
+          background: '#f0fdf4',
+          color: '#166534',
+          border: '1px solid #bbf7d0',
+        },
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to start scan. Please try again.',
+        {
+          duration: 4000,
+          style: {
+            background: '#fef2f2',
+            color: '#991b1b',
+            border: '1px solid #fecaca',
+          },
+        }
+      );
+    }
+  }, [triggerScan]);
+
+  // Handle scan single image
+  const handleScanImage = useCallback(async (imageId: string) => {
+    setScanningImageId(imageId);
+    try {
+      await triggerImageScan.mutateAsync(imageId);
+      toast.success('Image scan started', {
+        duration: 3000,
+        icon: null,
+        style: {
+          background: '#f0fdf4',
+          color: '#166534',
+          border: '1px solid #bbf7d0',
+        },
+      });
+    } catch (error) {
+      setScanningImageId(null);
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to start scan. Please try again.',
+        {
+          duration: 4000,
+          style: {
+            background: '#fef2f2',
+            color: '#991b1b',
+            border: '1px solid #fecaca',
+          },
+        }
+      );
+    }
+  }, [triggerImageScan]);
+
+  // Dismiss scan status
+  const handleDismissScanStatus = useCallback(() => {
+    setRecentlyCompleted(false);
+    setCompletedResult(null);
+  }, []);
 
   const handleDelete = async (imageId: string) => {
     try {
@@ -65,11 +170,24 @@ export function ProtectedImages() {
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Page Header - mobile optimized */}
       <div className="flex flex-col gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">Protected Images</h1>
-          <p className="mt-1 text-sm sm:text-base text-neutral-600">
-            Upload and manage photos you want monitored.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">Protected Images</h1>
+            <p className="mt-1 text-sm sm:text-base text-neutral-600">
+              Upload and manage photos you want monitored.
+            </p>
+          </div>
+          {hasImages && (
+            <Button
+              onClick={handleScanAll}
+              disabled={isScanRunning || triggerScan.isPending}
+              isLoading={triggerScan.isPending}
+              className="self-start sm:self-auto"
+            >
+              <Scan className="h-4 w-4" />
+              <span>{isScanRunning ? 'Scanning...' : 'Scan All Images'}</span>
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2 self-start">
           <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
@@ -78,6 +196,14 @@ export function ProtectedImages() {
           </span>
         </div>
       </div>
+
+      {/* Scan Status Banner */}
+      <ScanStatus
+        activeScan={activeScan}
+        recentlyCompleted={recentlyCompleted}
+        completedResult={completedResult}
+        onDismiss={handleDismissScanStatus}
+      />
 
       {/* Upload Section */}
       <div className="card">
@@ -150,6 +276,9 @@ export function ProtectedImages() {
                 key={image.id}
                 image={image}
                 onDelete={() => setImageToDelete(image.id)}
+                onScan={() => handleScanImage(image.id)}
+                isScanning={scanningImageId === image.id}
+                isScanDisabled={isScanRunning || triggerImageScan.isPending}
                 formatTimeAgo={formatTimeAgo}
               />
             ))}
@@ -197,10 +326,13 @@ function FilterTab({ label, icon, isActive, onClick }: FilterTabProps) {
 interface ImageCardProps {
   image: ProtectedImage;
   onDelete: () => void;
+  onScan: () => void;
+  isScanning: boolean;
+  isScanDisabled: boolean;
   formatTimeAgo: (date: Date | string | null) => string;
 }
 
-function ImageCard({ image, onDelete, formatTimeAgo }: ImageCardProps) {
+function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, formatTimeAgo }: ImageCardProps) {
   const [hasImageError, setHasImageError] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const isArchived = image.status === 'ARCHIVED';
@@ -298,6 +430,30 @@ function ImageCard({ image, onDelete, formatTimeAgo }: ImageCardProps) {
           >
             <Search className="h-5 w-5" />
           </button>
+          {!isArchived && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isScanDisabled) {
+                  onScan();
+                }
+              }}
+              disabled={isScanDisabled}
+              className={cn(
+                'flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white transition-colors',
+                isScanDisabled
+                  ? 'text-neutral-400 cursor-not-allowed'
+                  : 'text-primary-600 hover:bg-primary-50 active:bg-primary-100'
+              )}
+              aria-label={isScanning ? 'Scanning image...' : 'Scan this image'}
+            >
+              {isScanning ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Scan className="h-5 w-5" />
+              )}
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();

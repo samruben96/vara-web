@@ -64,9 +64,14 @@ export function Landing() {
             </Link>
           </nav>
 
-          <Link to="/signup" className="md:hidden">
-            <Button size="sm">Get Started</Button>
-          </Link>
+          <div className="flex items-center gap-4 md:hidden">
+            <Link to="/login" className="text-sm font-medium text-neutral-600 hover:text-neutral-900">
+              Log in
+            </Link>
+            <Link to="/signup">
+              <Button size="sm">Get Started</Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -231,13 +236,16 @@ export function Landing() {
               <span className="font-semibold text-neutral-900">Vara</span>
             </div>
             <nav className="flex flex-wrap justify-center gap-6">
-              <a href="#" className="text-sm text-neutral-600 hover:text-neutral-900">
+              <Link to="/privacy" className="text-sm text-neutral-600 hover:text-neutral-900">
                 Privacy Policy
-              </a>
-              <a href="#" className="text-sm text-neutral-600 hover:text-neutral-900">
+              </Link>
+              <Link to="/terms" className="text-sm text-neutral-600 hover:text-neutral-900">
                 Terms of Service
-              </a>
-              <a href="#" className="text-sm text-neutral-600 hover:text-neutral-900">
+              </Link>
+              <a
+                href="mailto:support@vara.com"
+                className="text-sm text-neutral-600 hover:text-neutral-900"
+              >
                 Contact
               </a>
             </nav>

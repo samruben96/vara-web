@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast';
 import { loginSchema, type LoginInput } from '@vara/shared';
 import { Button, Input } from '../../components/ui';
 import { useAuthStore } from '../../stores/authStore';
@@ -49,6 +50,10 @@ export function Login() {
           authData.session.refresh_token,
           authData.session.expires_at
         );
+        toast.success('Welcome back!', {
+          duration: 2500,
+          style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+        });
         navigate(from, { replace: true });
       }
     } catch {
@@ -86,6 +91,7 @@ export function Login() {
             autoComplete="current-password"
             placeholder="Enter your password"
             error={errors.password?.message}
+            showPasswordToggle
             {...register('password')}
           />
           <div className="mt-2 text-right">

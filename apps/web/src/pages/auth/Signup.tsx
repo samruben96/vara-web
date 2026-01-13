@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast';
 import { signupSchema, type SignupInput } from '@vara/shared';
 import { Button, Input } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
@@ -34,16 +35,12 @@ export function Signup() {
       });
 
       if (authError) {
-        console.error('Signup error:', authError);
         setError(authError.message);
         return;
       }
 
-      console.log('Signup response:', { user: authData.user, session: !!authData.session });
-
       if (authData.user && authData.session) {
         // Session available - log in and go to onboarding
-        console.log('Got session, logging in and redirecting to onboarding');
         login(
           {
             id: authData.user.id,
@@ -55,24 +52,24 @@ export function Signup() {
           authData.session.refresh_token,
           authData.session.expires_at
         );
+        toast.success('Welcome to Vara!', {
+          duration: 2500,
+          style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+        });
         navigate('/onboarding', { replace: true });
       } else if (authData.user && !authData.session) {
         // No session - email confirmation might be required
-        console.log('No session returned, trying to sign in...');
-
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
         });
 
         if (signInError) {
-          console.error('Sign in error:', signInError);
           setError('Account created! Please disable "Confirm email" in Supabase Auth settings, or verify your email first.');
           return;
         }
 
         if (signInData.user && signInData.session) {
-          console.log('Signed in successfully, redirecting to onboarding');
           login(
             {
               id: signInData.user.id,
@@ -84,10 +81,13 @@ export function Signup() {
             signInData.session.refresh_token,
             signInData.session.expires_at
           );
+          toast.success('Welcome to Vara!', {
+            duration: 2500,
+            style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+          });
           navigate('/onboarding', { replace: true });
         }
       } else {
-        console.log('Unexpected state - no user returned');
         setError('Something went wrong. Please try again.');
       }
     } catch {
@@ -125,6 +125,7 @@ export function Signup() {
           placeholder="Create a strong password"
           hint="At least 8 characters with uppercase, lowercase, and a number"
           error={errors.password?.message}
+          showPasswordToggle
           {...register('password')}
         />
 
@@ -134,6 +135,7 @@ export function Signup() {
           autoComplete="new-password"
           placeholder="Confirm your password"
           error={errors.confirmPassword?.message}
+          showPasswordToggle
           {...register('confirmPassword')}
         />
 

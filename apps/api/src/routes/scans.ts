@@ -3,6 +3,8 @@ import { paginationSchema, triggerScanSchema } from '@vara/shared';
 import { prisma } from '../config/prisma';
 import { requireAuth } from '../middleware/auth';
 import { AppError } from '../middleware/error-handler';
+import { addImageScanJob, addProfileScanJob, addBreachCheckJob, getQueueStats } from '../queues';
+import { getActiveWorkers } from '../workers/init';
 
 export async function scanRoutes(app: FastifyInstance) {
   // List scan jobs
@@ -78,12 +80,82 @@ export async function scanRoutes(app: FastifyInstance) {
       },
     });
 
-    // In production, this would add the job to BullMQ queue
-    // For now, simulate async processing
-    // queue.add('scan', { scanId: scan.id, userId, type, targetId });
+    // Add job to BullMQ queue based on scan type
+    // Jobs will be processed by worker processes
+    switch (type) {
+      case 'IMAGE_SCAN':
+        await addImageScanJob({
+          scanJobId: scan.id,
+          userId,
+          targetId,
+        });
+        break;
+      case 'PROFILE_SCAN':
+        await addProfileScanJob({
+          scanJobId: scan.id,
+          userId,
+          accountId: targetId,
+        });
+        break;
+      case 'BREACH_CHECK': {
+        // Get user email for breach check
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        });
+        if (user) {
+          await addBreachCheckJob({
+            scanJobId: scan.id,
+            userId,
+            email: user.email,
+          });
+        }
+        break;
+      }
+      // BEHAVIORAL_ANALYSIS and FULL_SCAN not yet implemented
+      default:
+        request.log.warn({ type }, 'Scan type not yet implemented for queue processing');
+    }
 
     return reply.status(202).send({
       data: scan,
+    });
+  });
+
+  // Health check for workers and queues
+  // This endpoint is public for monitoring systems
+  // NOTE: Must be defined BEFORE /:id/status to avoid route conflicts
+  app.get('/health', async (_request, reply) => {
+    const workers = getActiveWorkers();
+    const queueStats = await getQueueStats();
+
+    const workerStatus = workers.map((worker) => ({
+      name: worker.name,
+      running: worker.isRunning(),
+      paused: worker.isPaused(),
+    }));
+
+    const response = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      workers: {
+        count: workers.length,
+        status: workerStatus,
+        enabled: workers.length > 0,
+      },
+      queues: queueStats
+        ? {
+            enabled: true,
+            stats: queueStats,
+          }
+        : {
+            enabled: false,
+            message: 'Queues disabled - REDIS_URL not configured',
+          },
+    };
+
+    return reply.send({
+      data: response,
     });
   });
 

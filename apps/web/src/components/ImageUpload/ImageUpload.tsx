@@ -453,16 +453,36 @@ function FilePreviewCard({
 // Empty state component for use in the gallery
 export function EmptyImagesState() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-        <ImageIcon className="h-8 w-8 text-primary-600" />
+    <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-4">
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-100">
+        <ImageIcon className="h-10 w-10 text-primary-600" />
       </div>
-      <h3 className="mt-4 text-lg font-medium text-neutral-900">
-        No protected images yet
+      <h3 className="mt-6 text-xl font-semibold text-neutral-900">
+        Start Protecting Your Images
       </h3>
-      <p className="mt-2 max-w-sm text-neutral-600">
-        Upload your photos to start monitoring them across the web. We'll alert
-        you if we find any unauthorized use.
+      <p className="mt-2 text-primary-600 font-medium">
+        Take control of your digital presence
+      </p>
+      <p className="mt-3 max-w-md text-neutral-600">
+        Upload photos you want to protect. We'll continuously scan the web and alert
+        you immediately if we find any unauthorized use of your images.
+      </p>
+      <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <Check className="h-4 w-4 text-green-500" />
+          <span>Secure & Private</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <Check className="h-4 w-4 text-green-500" />
+          <span>24/7 Monitoring</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <Check className="h-4 w-4 text-green-500" />
+          <span>Instant Alerts</span>
+        </div>
+      </div>
+      <p className="mt-6 text-xs text-neutral-400">
+        Use the upload area above to add your first image
       </p>
     </div>
   );

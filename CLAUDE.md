@@ -605,23 +605,186 @@ pnpm db:seed      # Seed database
 
 ---
 
-## Multi-Agent Collaboration
+## Claude Code Subagent System (MANDATORY)
 
-This project uses specialized Claude Code agents for different domains:
+This project leverages Claude Code's powerful subagent system for efficient development. **Always prefer using specialized subagents over manual file searching and reading.**
 
-### Agent Usage Guidelines
-1. **Always check CLAUDE.md first** for context and established patterns
-2. **Follow existing patterns** - check similar code before creating new patterns
-3. **Document decisions** - update CLAUDE.md when making architectural choices
-4. **Use conventional commits** for clear history
-5. **Create focused PRs** - one feature/fix per branch
+### Why Use Subagents?
 
-### Domain Responsibilities
-- **Frontend**: React components, hooks, pages, state management
-- **Backend**: API routes, business logic, integrations
-- **Database**: Schema design, migrations, queries
-- **Security**: Auth, encryption, validation
-- **AI/ML**: Image processing, embedding generation, similarity search
+Subagents provide:
+- **Parallel execution** - Multiple agents can work simultaneously
+- **Domain expertise** - Each agent is optimized for specific tasks
+- **Reduced context usage** - Agents handle their own context management
+- **Better results** - Specialized agents produce higher quality output
+
+### Available Subagents
+
+#### Exploration & Research Agents
+
+| Agent | Use When | Example Prompts |
+|-------|----------|-----------------|
+| **Explore** | Finding files, understanding code, researching the codebase | "Find all authentication-related files", "How does the image scanning workflow work?" |
+| **general-purpose** | Complex multi-step research, autonomous investigation | "Investigate why the scan queue is failing and propose solutions" |
+
+**Explore Agent Thoroughness Levels:**
+- `quick` - Basic file/pattern search
+- `medium` - Moderate exploration with some context
+- `very thorough` - Comprehensive analysis across multiple locations
+
+#### Planning Agent
+
+| Agent | Use When | Example Prompts |
+|-------|----------|-----------------|
+| **Plan** | Before implementing any non-trivial feature | "Design the implementation approach for adding deepfake detection" |
+
+**Always use Plan before:**
+- New feature implementation
+- Major refactoring
+- Architectural changes
+- Multi-file modifications
+
+#### Domain Specialist Agents
+
+| Agent | Domain | Use For |
+|-------|--------|---------|
+| **backend-developer** | Server-side | APIs, Fastify routes, authentication, middleware, background jobs, integrations |
+| **frontend-developer** | Client-side | React components, hooks, pages, forms, state management, UI logic |
+| **sql-pro** | Database | Schema design, migrations, query optimization, PostgreSQL/pgvector |
+| **postgres-pro** | PostgreSQL DBA | Performance tuning, replication, backup/recovery, EXPLAIN analysis |
+| **ui-designer** | Visual Design | Component styling, accessibility, design systems, responsive layouts |
+| **react-specialist** | React 18+ | Hooks, state management, Server Components, performance optimization |
+| **mobile-developer** | Mobile | React Native, native modules, mobile-specific optimizations |
+
+#### Code Quality Agents
+
+| Agent | Use When | Example |
+|-------|----------|---------|
+| **code-reviewer** | After writing significant code | Review authentication implementation for security issues |
+
+#### Orchestration Agents
+
+| Agent | Use When | How It Helps |
+|-------|----------|--------------|
+| **agent-organizer** | Complex tasks requiring 3+ agents | Decomposes tasks, selects optimal agents, designs workflows |
+
+### The Agent Organizer (Your Secret Weapon)
+
+The **agent-organizer** is essential for complex, multi-domain tasks. Use it when:
+
+- A task spans frontend, backend, AND database
+- You're unsure which agents to use
+- Work needs to be coordinated across multiple specialists
+- Dependencies between subtasks need management
+
+**Example Usage:**
+```
+Task: "Build a real-time notification system for image scan results"
+
+Agent Organizer will:
+1. Decompose into subtasks (WebSocket setup, UI components, database triggers)
+2. Identify required agents (backend-developer, frontend-developer, sql-pro)
+3. Define execution order and dependencies
+4. Coordinate handoffs between agents
+```
+
+### Trigger Keywords → Required Agents
+
+| User Says | Launch This Agent |
+|-----------|-------------------|
+| "find", "search", "where is", "locate" | **Explore** |
+| "how does X work", "explain", "understand" | **Explore** |
+| "implement", "add feature", "build", "create" | **Plan** first |
+| "fix bug", "debug", "error", "not working" | **Explore** first |
+| "refactor", "improve", "optimize" | **Plan** first |
+| "database", "migration", "SQL", "schema" | **sql-pro** |
+| "component", "UI", "React", "hook", "page" | **frontend-developer** |
+| "API", "endpoint", "auth", "backend" | **backend-developer** |
+| "design", "accessibility", "visual", "layout" | **ui-designer** |
+| complex multi-domain task | **agent-organizer** |
+
+### Best Practices
+
+#### 1. Evaluate Before Acting
+```
+ALWAYS: Check if a subagent applies before manual grep/glob/read
+NEVER: Jump straight into manual file searching
+```
+
+#### 2. Launch Agents in Parallel
+When tasks are independent, launch ALL applicable agents in a single message:
+```
+✅ CORRECT: One message with 3 Task tool calls (parallel)
+❌ WRONG: Three separate messages with sequential calls
+```
+
+#### 3. Be Specific in Prompts
+Every agent prompt should include:
+- Clear objective
+- Scope boundaries (which directories/files)
+- Expected output format
+- Thoroughness level (for Explore)
+
+#### 4. Trust Agent Results
+Agent outputs are reliable. Synthesize and present findings without re-doing their work.
+
+### Common Patterns for Vara
+
+#### Understanding the Codebase
+```
+→ Explore (very thorough): "Map out the image scanning workflow from upload to alert generation"
+```
+
+#### Implementing a New Feature
+```
+1. Explore: "Find similar existing features or patterns"
+2. Plan: "Design implementation approach"
+3. Review plan with user
+4. frontend-developer / backend-developer: Implement
+5. code-reviewer: Review implementation
+```
+
+#### Fixing a Bug
+```
+1. Explore: "Find all code related to [feature/error]"
+2. Analyze findings
+3. Implement fix
+4. Test
+```
+
+#### Database Changes
+```
+→ sql-pro: "Design migration for adding scan priority field with index optimization"
+```
+
+#### Full-Stack Feature
+```
+→ agent-organizer: "Coordinate implementation of user notification preferences"
+   ↳ Decomposes into: API endpoints, React components, database schema
+   ↳ Assigns: backend-developer, frontend-developer, sql-pro
+   ↳ Manages: execution order and dependencies
+```
+
+### Anti-Patterns (Avoid These)
+
+| Don't Do This | Do This Instead |
+|---------------|-----------------|
+| Manual grep for "where is auth?" | Use Explore agent |
+| Start coding without a plan | Use Plan agent first |
+| Sequential single-agent calls | Parallel multi-agent calls |
+| Re-verify agent findings manually | Trust and synthesize results |
+| Use agents for trivial tasks | Read known single files directly |
+
+### Domain Responsibilities in Vara
+
+| Domain | Primary Agent | Scope |
+|--------|---------------|-------|
+| Frontend | frontend-developer | `apps/web/src/**` - Components, hooks, pages |
+| Backend | backend-developer | `apps/api/src/**` - Routes, services, workers |
+| Database | sql-pro | `apps/api/prisma/**` - Schema, migrations |
+| Queues | backend-developer | `apps/api/src/queues/**`, `apps/api/src/workers/**` |
+| Shared | Explore | `packages/shared/**` - Types, utilities |
+| Security | backend-developer + code-reviewer | Auth, encryption, validation |
+| AI/ML | backend-developer | Image processing, embeddings, similarity |
 
 ---
 

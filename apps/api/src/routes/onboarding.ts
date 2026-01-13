@@ -2,6 +2,10 @@ import type { FastifyInstance } from 'fastify';
 import { submitOnboardingSchema } from '@vara/shared';
 import { prisma } from '../config/prisma';
 import { requireAuth } from '../middleware/auth';
+import {
+  generateProtectionPlan,
+  getPlanFocusAreas,
+} from '../services/protectionPlanGenerator';
 
 // Onboarding questions (matching frontend question IDs for consistency)
 const ONBOARDING_QUESTIONS = [
@@ -186,45 +190,32 @@ export async function onboardingRoutes(app: FastifyInstance) {
       },
     });
 
-    // Create initial protection plan
+    // Generate personalized protection plan items based on responses
+    const planItems = generateProtectionPlan(body.responses, riskLevel);
+
+    // Create the protection plan with personalized items
     const plan = await prisma.protectionPlan.create({
       data: {
         userId,
         items: {
-          create: [
-            {
-              category: 'Images',
-              title: 'Upload photos to protect',
-              description: 'Add photos of yourself so we can monitor for unauthorized use.',
-              priority: 1,
-              status: 'PENDING',
-            },
-            {
-              category: 'Accounts',
-              title: 'Connect your social accounts',
-              description: 'Link your social media accounts for behavioral monitoring.',
-              priority: 2,
-              status: 'PENDING',
-            },
-            {
-              category: 'Privacy',
-              title: 'Check for data breaches',
-              description: 'See if your email has been exposed in known data breaches.',
-              priority: 3,
-              status: 'PENDING',
-            },
-          ],
+          create: planItems,
         },
       },
       include: {
-        items: true,
+        items: {
+          orderBy: { priority: 'asc' },
+        },
       },
     });
+
+    // Get focus areas for the response
+    const focusAreas = getPlanFocusAreas(planItems);
 
     return reply.status(201).send({
       data: {
         riskLevel,
         protectionPlan: plan,
+        focusAreas,
       },
     });
   });
