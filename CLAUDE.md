@@ -59,9 +59,137 @@ vara-web/
 
 #### Infrastructure
 - **Frontend Hosting**: Vercel
-- **Backend Hosting**: Railway or Render
+- **Backend Hosting**: Render
 - **CI/CD**: GitHub Actions
 - **Database**: Supabase (PostgreSQL)
+
+---
+
+## Production Deployment
+
+### Live URLs
+
+| Service | URL | Platform |
+|---------|-----|----------|
+| **Frontend** | https://vara-web-eta.vercel.app | Vercel |
+| **Backend API** | https://vara-api-yaqq.onrender.com | Render |
+| **Database** | PostgreSQL via Supabase | Supabase |
+
+### Vercel Configuration (Frontend)
+
+**Project:** `vara-web` in `samruben96s-projects`
+
+**Environment Variables (Production & Preview):**
+
+| Variable | Value |
+|----------|-------|
+| `VITE_API_URL` | `https://vara-api-yaqq.onrender.com` |
+| `VITE_SUPABASE_URL` | `https://vgwkptzwvoxtfaxmeuqn.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
+
+**Build Configuration (vercel.json):**
+- Build Command: `pnpm turbo build --filter=@vara/web`
+- Output Directory: `apps/web/dist`
+- Install Command: `pnpm install`
+- Framework: Vite
+
+**Deployment:**
+```bash
+# Deploy to production
+vercel --prod
+
+# Check deployment status
+vercel ls
+
+# View environment variables
+vercel env ls
+```
+
+### Render Configuration (Backend API)
+
+**Service:** `vara-api` (Web Service)
+
+**Environment Variables:**
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `NODE_ENV` | `production` | |
+| `PORT` | `4000` | Or let Render set automatically |
+| `WEB_URL` | `https://vara-web-eta.vercel.app` | **Critical for CORS** - must match frontend URL exactly, no trailing slash |
+| `DATABASE_URL` | Supabase pooler connection string | Use `?pgbouncer=true` for connection pooling |
+| `SUPABASE_URL` | `https://vgwkptzwvoxtfaxmeuqn.supabase.co` | |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key | Keep secret! |
+| `SUPABASE_JWT_SECRET` | Supabase JWT secret | Keep secret! |
+| `OPENAI_API_KEY` | OpenAI API key | For CLIP embeddings |
+| `GOOGLE_VISION_API_KEY` | Google Cloud API key | For reverse image search |
+
+**Build & Start Commands:**
+- Build: `pnpm install && pnpm build --filter=@vara/api`
+- Start: `node apps/api/dist/index.js`
+
+### Supabase Configuration
+
+**Project:** `vgwkptzwvoxtfaxmeuqn`
+
+**Services Used:**
+- PostgreSQL database (with pgvector extension)
+- Authentication (email/password + OAuth providers)
+- Storage (for protected images)
+
+**Connection Strings:**
+- Pooler (for API): Use port `6543` with `?pgbouncer=true`
+- Direct (for migrations): Use port `5432`
+
+### Deployment Checklist
+
+When deploying changes:
+
+1. **Frontend changes only:**
+   - Push to `main` branch (auto-deploys via Vercel GitHub integration)
+   - Or run `vercel --prod` manually
+
+2. **Backend changes only:**
+   - Push to `main` branch (auto-deploys via Render GitHub integration)
+   - Or trigger manual deploy in Render dashboard
+
+3. **Database schema changes:**
+   ```bash
+   # Generate migration
+   pnpm db:migrate:dev --name <migration_name>
+
+   # Apply to production (run from local with production DATABASE_URL)
+   DATABASE_URL="<production_url>" pnpm db:migrate:deploy
+   ```
+
+4. **Environment variable changes:**
+   - Vercel: `vercel env add <NAME> production`
+   - Render: Update in dashboard → Environment → Redeploy
+
+### Troubleshooting
+
+#### CORS Errors
+If you see CORS errors in the browser console:
+1. Check `WEB_URL` on Render matches the exact frontend URL
+2. Ensure no trailing slash on `WEB_URL`
+3. Redeploy backend after changing `WEB_URL`
+
+**Verify CORS:**
+```bash
+curl -I -X OPTIONS https://vara-api-yaqq.onrender.com/api/v1/auth/login \
+  -H "Origin: https://vara-web-eta.vercel.app" \
+  -H "Access-Control-Request-Method: POST"
+# Should return: access-control-allow-origin: https://vara-web-eta.vercel.app
+```
+
+#### API Connection Issues
+1. Verify `VITE_API_URL` on Vercel points to correct Render URL
+2. Check Render service is running (not sleeping on free tier)
+3. Test API directly: `curl https://vara-api-yaqq.onrender.com/api/v1/auth/login`
+
+#### Authentication Failures
+1. Verify Supabase keys match between frontend (anon) and backend (service role)
+2. Check `SUPABASE_JWT_SECRET` is set correctly on Render
+3. Ensure Supabase project URL is consistent across all configs
 
 ---
 
@@ -797,6 +925,9 @@ Agent outputs are reliable. Synthesize and present findings without re-doing the
 | 2025-01-07 | Fastify over Express | Better TypeScript support, faster, built-in validation | Initial |
 | 2025-01-07 | Supabase for Auth | OAuth support, good DX, handles social providers | Initial |
 | 2025-01-07 | pgvector for embeddings | Native PostgreSQL, no separate vector DB needed | Initial |
+| 2026-01-12 | Vercel for frontend hosting | GitHub integration, automatic deployments, good monorepo support | Deployment |
+| 2026-01-12 | Render for backend hosting | Simple deployment, auto-sleep on free tier, good Node.js support | Deployment |
+| 2026-01-12 | Supabase pooler for production DB | Connection pooling via pgbouncer prevents connection exhaustion | Deployment |
 
 ---
 
