@@ -90,8 +90,8 @@ export function Quiz() {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary-600" />
-          <p className="mt-4 text-neutral-600">Loading your questions...</p>
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-foreground-muted">Loading your questions...</p>
         </div>
       </div>
     );
@@ -101,7 +101,7 @@ export function Quiz() {
   if (!currentQuestion) {
     return (
       <div className="text-center">
-        <p className="text-neutral-600">
+        <p className="text-foreground-muted">
           Unable to load questions. Please try again.
         </p>
         <Button
@@ -172,7 +172,7 @@ export function Quiz() {
             <button
               type="button"
               onClick={nextQuestion}
-              className="text-sm text-neutral-500 underline-offset-4 hover:text-neutral-700 hover:underline"
+              className="text-sm text-foreground-muted underline-offset-4 hover:text-foreground hover:underline"
             >
               Skip this question
             </button>

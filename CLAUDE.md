@@ -737,6 +737,50 @@ pnpm db:seed      # Seed database
 
 This project leverages Claude Code's powerful subagent system for efficient development. **Always prefer using specialized subagents over manual file searching and reading.**
 
+### Slash Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `/swarm <task>` | Decompose a complex task and run multiple agents in parallel | `/swarm Add user notifications with database, API, and UI` |
+| `/swarm --dry-run <task>` | Preview execution plan without running agents | `/swarm --dry-run Refactor auth system` |
+| `/swarm --fast <task>` | Use haiku model for simple subtasks (reduces tokens) | `/swarm --fast Add health check endpoint` |
+| `/swarm --focus=N <task>` | Run only phase N of the execution plan | `/swarm --focus=2 Add image upload` |
+| `/swarm --no-mcp <task>` | Disable MCP tools (agents only) | `/swarm --no-mcp Simple code refactor` |
+
+The `/swarm` command automatically:
+1. Analyzes and decomposes your task into subtasks
+2. Selects the optimal agent for each subtask (with color-coded indicators)
+3. Estimates token usage per agent and total
+4. Identifies dependencies and parallelization opportunities
+5. Executes agents in parallel phases for maximum efficiency
+6. Tracks timing, success rates, and files changed per agent
+7. Handles failures with automatic retry for critical agents
+8. Synthesizes results into a unified output with comprehensive statistics
+
+**Features:**
+- **Agent Colors**: Each agent has a unique color indicator (🟡 backend, 🔴 frontend, 🟢 test, etc.)
+- **MCP Integration**: Automatically uses available MCP tools (context7, serena, playwright, etc.)
+- **Token Estimates**: See estimated token usage before and after execution
+- **Dry Run Mode**: Preview the plan before executing with `--dry-run`
+- **Fast Mode**: Use `--fast` to reduce token usage on simple subtasks
+- **Phase Focus**: Run specific phases with `--focus=N`
+- **Error Recovery**: Automatic retry for critical failures
+- **Time Tracking**: Duration for each agent, phase, and total execution
+- **Parallel Efficiency**: See how much time is saved vs sequential execution
+- **File Metrics**: Lines added/removed per agent and total
+
+**MCP Tools Used by Swarm:**
+| MCP | Color | Use For |
+|-----|-------|---------|
+| 🔷 **context7** | Blue Diamond | Library documentation (React, Fastify, Prisma) |
+| 🔶 **serena** | Orange Diamond | Symbolic code navigation and editing |
+| 🟤 **morph-mcp** | Brown | Smart file editing and codebase search |
+| 🟢 **playwright** | Green | Browser automation and E2E testing |
+| 🔵 **chrome-devtools** | Blue | Frontend debugging and performance |
+| 🟣 **sequential-thinking** | Purple | Complex multi-step reasoning |
+
+**Use `/swarm` for any task that spans multiple domains or would benefit from multiple specialist agents working together.**
+
 ### Why Use Subagents?
 
 Subagents provide:
@@ -745,7 +789,7 @@ Subagents provide:
 - **Reduced context usage** - Agents handle their own context management
 - **Better results** - Specialized agents produce higher quality output
 
-### Available Subagents
+### Complete Agent Reference
 
 #### Exploration & Research Agents
 
@@ -777,11 +821,15 @@ Subagents provide:
 |-------|--------|---------|
 | **backend-developer** | Server-side | APIs, Fastify routes, authentication, middleware, background jobs, integrations |
 | **frontend-developer** | Client-side | React components, hooks, pages, forms, state management, UI logic |
-| **sql-pro** | Database | Schema design, migrations, query optimization, PostgreSQL/pgvector |
-| **postgres-pro** | PostgreSQL DBA | Performance tuning, replication, backup/recovery, EXPLAIN analysis |
-| **ui-designer** | Visual Design | Component styling, accessibility, design systems, responsive layouts |
-| **react-specialist** | React 18+ | Hooks, state management, Server Components, performance optimization |
-| **mobile-developer** | Mobile | React Native, native modules, mobile-specific optimizations |
+| **react-specialist** | React 18+ | Hooks, state management, Server Components, performance optimization, concurrent features |
+| **ui-designer** | Visual Design | Component styling, accessibility, design systems, responsive layouts, dark mode |
+| **mobile-developer** | Mobile | React Native, Flutter, native modules, mobile-specific optimizations, app store prep |
+| **postgres-pro** | PostgreSQL DBA | Performance tuning, replication, backup/recovery, EXPLAIN analysis, index design |
+| **microservices-architect** | Distributed Systems | Service boundaries, communication patterns (REST/gRPC/messaging), service mesh, container orchestration, resilience patterns |
+| **security-engineer** | Security | Security audits, OAuth flows, encryption, OWASP compliance, PII handling, vulnerability assessment |
+| **ai-ml-engineer** | AI/ML | Image embeddings (CLIP), vector search (pgvector), deepfake detection, similarity matching, ML pipelines |
+| **test-engineer** | Testing | Unit tests (Jest), integration tests, E2E tests (Playwright), coverage analysis, test strategy |
+| **devops-engineer** | DevOps | CI/CD (GitHub Actions), Docker, deployment automation, monitoring, Vercel/Render configuration |
 
 #### Code Quality Agents
 
@@ -794,6 +842,83 @@ Subagents provide:
 | Agent | Use When | How It Helps |
 |-------|----------|--------------|
 | **agent-organizer** | Complex tasks requiring 3+ agents | Decomposes tasks, selects optimal agents, designs workflows |
+
+#### System & Utility Agents
+
+| Agent | Use When | Example |
+|-------|----------|---------|
+| **Bash** | Git operations, command execution, terminal tasks | "Run git status", "Execute npm install" |
+| **claude-code-guide** | Questions about Claude Code CLI, Agent SDK, or Claude API | "How do I configure hooks?", "How do I use the Anthropic SDK?" |
+
+### Agent Details
+
+#### security-engineer
+Essential for Vara's sensitive data handling:
+- OAuth token security and encryption
+- Image upload validation and virus scanning
+- PII protection (GDPR/CCPA compliance)
+- OWASP Top 10 vulnerability checks
+- Authentication flow security audits
+- Secure session management
+- Input sanitization and validation
+
+#### ai-ml-engineer
+Core to Vara's image protection features:
+- CLIP embedding generation and optimization
+- pgvector similarity search configuration
+- Deepfake detection API integration
+- Reverse image search (TinEye, Google Vision)
+- Perceptual hashing for duplicate detection
+- Batch processing and ML pipeline design
+- Similarity threshold tuning
+
+#### test-engineer
+Comprehensive testing coverage:
+- Unit tests with Jest for business logic
+- React Testing Library for components
+- Supertest for API integration tests
+- Playwright for E2E critical paths
+- Test factories and mock utilities
+- Coverage analysis and reporting
+
+#### devops-engineer
+Deployment and infrastructure:
+- GitHub Actions CI/CD pipelines
+- Docker multi-stage builds
+- Vercel frontend deployment
+- Render backend deployment
+- Health checks and monitoring
+- Environment variable management
+- Secret rotation procedures
+
+#### microservices-architect
+Use this agent when designing, implementing, or evolving distributed microservices architectures:
+- Service boundary definition and decomposition
+- Communication patterns (REST/gRPC/messaging)
+- Service mesh configuration (Istio/Linkerd)
+- Container orchestration (Kubernetes)
+- Resilience patterns (circuit breakers, retries, fallbacks)
+- Data management strategies across services
+- Observability and monitoring setup
+
+#### react-specialist
+Use for advanced React 18+ work including:
+- Hooks implementation and optimization
+- State management (Redux, Zustand, Jotai, Context API)
+- Performance optimization (memoization, virtualization)
+- Server-side rendering (Next.js, Remix)
+- Server Components and concurrent features
+- Testing with React Testing Library
+
+#### postgres-pro
+Use for PostgreSQL-specific database work:
+- Query performance tuning and EXPLAIN analysis
+- Replication setup and high availability
+- Backup and recovery strategies
+- Vacuum and maintenance operations
+- Configuration tuning
+- Partitioning strategies
+- JSONB optimization
 
 ### The Agent Organizer (Your Secret Weapon)
 
@@ -810,7 +935,7 @@ Task: "Build a real-time notification system for image scan results"
 
 Agent Organizer will:
 1. Decompose into subtasks (WebSocket setup, UI components, database triggers)
-2. Identify required agents (backend-developer, frontend-developer, sql-pro)
+2. Identify required agents (backend-developer, frontend-developer, postgres-pro)
 3. Define execution order and dependencies
 4. Coordinate handoffs between agents
 ```
@@ -824,11 +949,17 @@ Agent Organizer will:
 | "implement", "add feature", "build", "create" | **Plan** first |
 | "fix bug", "debug", "error", "not working" | **Explore** first |
 | "refactor", "improve", "optimize" | **Plan** first |
-| "database", "migration", "SQL", "schema" | **sql-pro** |
+| "database", "migration", "SQL", "schema" | **postgres-pro** |
 | "component", "UI", "React", "hook", "page" | **frontend-developer** |
 | "API", "endpoint", "auth", "backend" | **backend-developer** |
 | "design", "accessibility", "visual", "layout" | **ui-designer** |
-| complex multi-domain task | **agent-organizer** |
+| "microservices", "service mesh", "kubernetes" | **microservices-architect** |
+| "security", "vulnerability", "encryption", "OAuth" | **security-engineer** |
+| "embedding", "CLIP", "vector", "similarity", "ML" | **ai-ml-engineer** |
+| "test", "coverage", "Jest", "Playwright" | **test-engineer** |
+| "deploy", "CI/CD", "Docker", "pipeline" | **devops-engineer** |
+| "how do I use Claude Code", "hooks", "SDK" | **claude-code-guide** |
+| complex multi-domain task | **agent-organizer** or **/swarm** |
 
 ### Best Practices
 
@@ -841,8 +972,8 @@ NEVER: Jump straight into manual file searching
 #### 2. Launch Agents in Parallel
 When tasks are independent, launch ALL applicable agents in a single message:
 ```
-✅ CORRECT: One message with 3 Task tool calls (parallel)
-❌ WRONG: Three separate messages with sequential calls
+CORRECT: One message with 3 Task tool calls (parallel)
+WRONG: Three separate messages with sequential calls
 ```
 
 #### 3. Be Specific in Prompts
@@ -859,7 +990,7 @@ Agent outputs are reliable. Synthesize and present findings without re-doing the
 
 #### Understanding the Codebase
 ```
-→ Explore (very thorough): "Map out the image scanning workflow from upload to alert generation"
+-> Explore (very thorough): "Map out the image scanning workflow from upload to alert generation"
 ```
 
 #### Implementing a New Feature
@@ -881,15 +1012,15 @@ Agent outputs are reliable. Synthesize and present findings without re-doing the
 
 #### Database Changes
 ```
-→ sql-pro: "Design migration for adding scan priority field with index optimization"
+-> postgres-pro: "Design migration for adding scan priority field with index optimization"
 ```
 
 #### Full-Stack Feature
 ```
-→ agent-organizer: "Coordinate implementation of user notification preferences"
-   ↳ Decomposes into: API endpoints, React components, database schema
-   ↳ Assigns: backend-developer, frontend-developer, sql-pro
-   ↳ Manages: execution order and dependencies
+-> agent-organizer: "Coordinate implementation of user notification preferences"
+   - Decomposes into: API endpoints, React components, database schema
+   - Assigns: backend-developer, frontend-developer, postgres-pro
+   - Manages: execution order and dependencies
 ```
 
 ### Anti-Patterns (Avoid These)
@@ -908,11 +1039,13 @@ Agent outputs are reliable. Synthesize and present findings without re-doing the
 |--------|---------------|-------|
 | Frontend | frontend-developer | `apps/web/src/**` - Components, hooks, pages |
 | Backend | backend-developer | `apps/api/src/**` - Routes, services, workers |
-| Database | sql-pro | `apps/api/prisma/**` - Schema, migrations |
+| Database | postgres-pro | `apps/api/prisma/**` - Schema, migrations |
 | Queues | backend-developer | `apps/api/src/queues/**`, `apps/api/src/workers/**` |
 | Shared | Explore | `packages/shared/**` - Types, utilities |
-| Security | backend-developer + code-reviewer | Auth, encryption, validation |
-| AI/ML | backend-developer | Image processing, embeddings, similarity |
+| Security | security-engineer | Auth, OAuth, encryption, PII, vulnerability audits |
+| AI/ML | ai-ml-engineer | CLIP embeddings, pgvector, deepfake detection, similarity |
+| Testing | test-engineer | `**/*.test.ts`, `e2e/**` - Unit, integration, E2E tests |
+| DevOps | devops-engineer | `.github/workflows/**`, `Dockerfile`, deployment configs |
 
 ---
 

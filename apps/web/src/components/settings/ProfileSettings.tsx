@@ -86,15 +86,15 @@ export function ProfileSettings() {
       <div className="flex items-start gap-4">
         {/* Avatar */}
         <div className="relative">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-100">
-            <User className="h-10 w-10 text-primary-600" />
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-subtle">
+            <User className="h-10 w-10 text-primary" />
           </div>
           <button
             type="button"
             className={cn(
               'absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center',
-              'rounded-full bg-white border border-neutral-200 shadow-sm',
-              'text-neutral-500 hover:text-primary-600 hover:border-primary-300',
+              'rounded-full bg-card border border-border shadow-sm',
+              'text-foreground-subtle hover:text-primary hover:border-primary-muted',
               'transition-colors cursor-not-allowed opacity-50'
             )}
             disabled
@@ -106,11 +106,11 @@ export function ProfileSettings() {
         </div>
 
         <div className="flex-1">
-          <h3 className="font-semibold text-neutral-900">
+          <h3 className="font-semibold text-foreground">
             {user?.profile?.displayName || 'Your Profile'}
           </h3>
-          <p className="text-sm text-neutral-600">{user?.email}</p>
-          <p className="mt-1 text-xs text-neutral-400">
+          <p className="text-sm text-foreground-muted">{user?.email}</p>
+          <p className="mt-1 text-xs text-foreground-subtle">
             Profile picture upload coming soon
           </p>
         </div>
@@ -127,22 +127,22 @@ export function ProfileSettings() {
         />
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground-muted mb-1.5">
             Email Address
           </label>
-          <div className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-base sm:text-sm text-neutral-600">
+          <div className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-base sm:text-sm text-foreground-muted">
             {user?.email}
           </div>
-          <p className="mt-1.5 text-xs text-neutral-500">
+          <p className="mt-1.5 text-xs text-foreground-subtle">
             Email address cannot be changed
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+          <label className="block text-sm font-medium text-foreground-muted mb-1.5">
             Account Created
           </label>
-          <div className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-base sm:text-sm text-neutral-600">
+          <div className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-base sm:text-sm text-foreground-muted">
             {user?.profile?.createdAt
               ? new Date(user.profile.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',

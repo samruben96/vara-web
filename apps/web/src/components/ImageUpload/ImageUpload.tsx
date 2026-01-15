@@ -225,9 +225,9 @@ export function ImageUpload({
         className={cn(
           'relative cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all',
           isDragging
-            ? 'border-primary-500 bg-primary-50'
-            : 'border-neutral-300 bg-neutral-50 hover:border-primary-400 hover:bg-primary-50/50',
-          'focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2'
+            ? 'border-primary bg-primary-subtle'
+            : 'border-border bg-card hover:border-primary/60 hover:bg-primary-subtle/50',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2'
         )}
         role="button"
         tabIndex={0}
@@ -253,28 +253,28 @@ export function ImageUpload({
           <div
             className={cn(
               'flex h-14 w-14 items-center justify-center rounded-full transition-colors',
-              isDragging ? 'bg-primary-100' : 'bg-neutral-100'
+              isDragging ? 'bg-primary-muted' : 'bg-muted'
             )}
           >
             <Upload
               className={cn(
                 'h-6 w-6 transition-colors',
-                isDragging ? 'text-primary-600' : 'text-neutral-500'
+                isDragging ? 'text-primary' : 'text-foreground-muted'
               )}
             />
           </div>
 
           <div>
-            <p className="text-base font-medium text-neutral-900">
+            <p className="text-base font-medium text-foreground">
               {isDragging ? 'Drop your images here' : 'Drag and drop images here'}
             </p>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-foreground-muted">
               or{' '}
-              <span className="font-medium text-primary-600">browse files</span>
+              <span className="font-medium text-primary">browse files</span>
             </p>
           </div>
 
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-foreground-subtle">
             JPEG, PNG, or WebP up to {formatFileSize(MAX_FILE_SIZE)}
           </p>
         </div>
@@ -282,14 +282,14 @@ export function ImageUpload({
 
       {/* Validation Errors */}
       {validationErrors.length > 0 && (
-        <div className="rounded-lg border border-alert-200 bg-alert-50 p-4">
+        <div className="rounded-lg border border-destructive-muted bg-destructive-subtle p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 flex-shrink-0 text-alert-500" />
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
             <div className="flex-1">
-              <p className="font-medium text-alert-800">
+              <p className="font-medium text-destructive-foreground-subtle">
                 Some files could not be added
               </p>
-              <ul className="mt-1 space-y-1 text-sm text-alert-700">
+              <ul className="mt-1 space-y-1 text-sm text-destructive-foreground-subtle/80">
                 {validationErrors.map((error, index) => (
                   <li key={index}>{error}</li>
                 ))}
@@ -297,7 +297,7 @@ export function ImageUpload({
             </div>
             <button
               onClick={() => setValidationErrors([])}
-              className="text-alert-500 hover:text-alert-700"
+              className="text-destructive hover:text-destructive-foreground-subtle"
               aria-label="Dismiss errors"
             >
               <X className="h-5 w-5" />
@@ -365,14 +365,14 @@ function FilePreviewCard({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-lg border bg-white transition-all',
-        isSuccess && 'border-success-300 ring-2 ring-success-100',
-        isError && 'border-alert-300 ring-2 ring-alert-100',
-        !isSuccess && !isError && 'border-neutral-200'
+        'relative overflow-hidden rounded-lg border bg-card transition-all',
+        isSuccess && 'border-success ring-2 ring-success-subtle',
+        isError && 'border-destructive ring-2 ring-destructive-subtle',
+        !isSuccess && !isError && 'border-border-subtle'
       )}
     >
       {/* Image Preview */}
-      <div className="relative aspect-square bg-neutral-100">
+      <div className="relative aspect-square bg-muted">
         <img
           src={file.preview}
           alt={`Preview of ${file.file.name}`}
@@ -381,10 +381,10 @@ function FilePreviewCard({
 
         {/* Upload Overlay */}
         {isUploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+          <div className="absolute inset-0 flex items-center justify-center bg-card/80">
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-              <span className="text-sm font-medium text-neutral-700">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="text-sm font-medium text-foreground-muted">
                 {status.progress}%
               </span>
             </div>
@@ -393,18 +393,18 @@ function FilePreviewCard({
 
         {/* Success Overlay */}
         {isSuccess && (
-          <div className="absolute inset-0 flex items-center justify-center bg-success-500/20">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-500">
-              <Check className="h-6 w-6 text-white" />
+          <div className="absolute inset-0 flex items-center justify-center bg-success/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success">
+              <Check className="h-6 w-6 text-success-foreground" />
             </div>
           </div>
         )}
 
         {/* Error Overlay */}
         {isError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-alert-500/20">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-alert-500">
-              <AlertCircle className="h-6 w-6 text-white" />
+          <div className="absolute inset-0 flex items-center justify-center bg-destructive/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive">
+              <AlertCircle className="h-6 w-6 text-destructive-foreground" />
             </div>
           </div>
         )}
@@ -416,7 +416,7 @@ function FilePreviewCard({
               e.stopPropagation();
               onRemove();
             }}
-            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900/60 text-white transition-colors hover:bg-neutral-900/80"
+            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-charcoal-800/60 text-white transition-colors hover:bg-charcoal-800/80"
             aria-label={`Remove ${file.file.name}`}
           >
             <X className="h-4 w-4" />
@@ -426,22 +426,22 @@ function FilePreviewCard({
 
       {/* File Info */}
       <div className="p-3">
-        <p className="truncate text-sm font-medium text-neutral-900">
+        <p className="truncate text-sm font-medium text-foreground">
           {file.file.name}
         </p>
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-foreground-muted">
           {formatFileSize(file.file.size)}
         </p>
         {isError && status?.error && (
-          <p className="mt-1 text-xs text-alert-600">{status.error}</p>
+          <p className="mt-1 text-xs text-destructive">{status.error}</p>
         )}
       </div>
 
       {/* Progress Bar */}
       {isUploading && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-neutral-100">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
           <div
-            className="h-full bg-primary-600 transition-all duration-300"
+            className="h-full bg-primary transition-all duration-300"
             style={{ width: `${status.progress}%` }}
           />
         </div>
@@ -454,34 +454,34 @@ function FilePreviewCard({
 export function EmptyImagesState() {
   return (
     <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-4">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-100">
-        <ImageIcon className="h-10 w-10 text-primary-600" />
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-subtle">
+        <ImageIcon className="h-10 w-10 text-primary" />
       </div>
-      <h3 className="mt-6 text-xl font-semibold text-neutral-900">
+      <h3 className="mt-6 text-xl font-semibold text-foreground">
         Start Protecting Your Images
       </h3>
-      <p className="mt-2 text-primary-600 font-medium">
+      <p className="mt-2 text-primary font-medium">
         Take control of your digital presence
       </p>
-      <p className="mt-3 max-w-md text-neutral-600">
+      <p className="mt-3 max-w-md text-foreground-muted">
         Upload photos you want to protect. We'll continuously scan the web and alert
         you immediately if we find any unauthorized use of your images.
       </p>
       <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
-        <div className="flex items-center gap-2 text-sm text-neutral-500">
-          <Check className="h-4 w-4 text-green-500" />
+        <div className="flex items-center gap-2 text-sm text-foreground-muted">
+          <Check className="h-4 w-4 text-success" />
           <span>Secure & Private</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500">
-          <Check className="h-4 w-4 text-green-500" />
+        <div className="flex items-center gap-2 text-sm text-foreground-muted">
+          <Check className="h-4 w-4 text-success" />
           <span>24/7 Monitoring</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500">
-          <Check className="h-4 w-4 text-green-500" />
+        <div className="flex items-center gap-2 text-sm text-foreground-muted">
+          <Check className="h-4 w-4 text-success" />
           <span>Instant Alerts</span>
         </div>
       </div>
-      <p className="mt-6 text-xs text-neutral-400">
+      <p className="mt-6 text-xs text-foreground-subtle">
         Use the upload area above to add your first image
       </p>
     </div>

@@ -38,11 +38,11 @@ export function MainLayout() {
   const { data: alertCount = 0 } = useActiveAlertCount();
 
   return (
-    <div className="min-h-screen-dynamic bg-neutral-50">
+    <div className="min-h-screen-dynamic bg-background">
       {/* Skip Link for Accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-primary-600 focus:ring-2 focus:ring-primary-500 focus:rounded-md"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-card focus:text-primary focus:ring-2 focus:ring-ring focus:rounded-md"
       >
         Skip to main content
       </a>
@@ -51,12 +51,12 @@ export function MainLayout() {
       <OfflineIndicator />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm">
         <div className="container flex h-14 items-center justify-between md:h-16">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 tap-highlight-none">
-            <Shield className="h-7 w-7 text-primary-600 md:h-8 md:w-8" />
-            <span className="text-lg font-semibold text-neutral-900 md:text-xl">Vara</span>
+            <Shield className="h-7 w-7 text-primary md:h-8 md:w-8" />
+            <span className="text-lg font-semibold text-foreground md:text-xl">Vara</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -69,11 +69,11 @@ export function MainLayout() {
                   to={item.href}
                   className={cn(
                     'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    'hover:bg-neutral-100 hover:text-neutral-900',
+                    'hover:bg-muted hover:text-foreground',
                     'min-h-touch flex items-center',
                     isActive
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-neutral-600'
+                      ? 'text-primary bg-primary-subtle'
+                      : 'text-foreground-muted'
                   )}
                 >
                   {item.label}
@@ -88,8 +88,8 @@ export function MainLayout() {
             <Link
               to="/alerts"
               className={cn(
-                'relative rounded-lg p-2.5 text-neutral-600 transition-colors',
-                'hover:bg-neutral-100 hover:text-neutral-900',
+                'relative rounded-lg p-2.5 text-foreground-muted transition-colors',
+                'hover:bg-muted hover:text-foreground',
                 'min-h-touch min-w-touch flex items-center justify-center',
                 'tap-highlight-none active-scale'
               )}
@@ -97,7 +97,7 @@ export function MainLayout() {
             >
               <Bell className="h-5 w-5" />
               {alertCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-alert-500 px-1 text-[10px] font-bold text-white">
+                <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
                   {alertCount > 9 ? '9+' : alertCount}
                 </span>
               )}
@@ -107,8 +107,8 @@ export function MainLayout() {
             <Link
               to="/help"
               className={cn(
-                'hidden md:flex rounded-lg p-2.5 text-neutral-600 transition-colors',
-                'hover:bg-neutral-100 hover:text-neutral-900',
+                'hidden md:flex rounded-lg p-2.5 text-foreground-muted transition-colors',
+                'hover:bg-muted hover:text-foreground',
                 'min-h-touch min-w-touch items-center justify-center'
               )}
               aria-label="Help & Resources"
@@ -117,12 +117,12 @@ export function MainLayout() {
             </Link>
 
             {/* Desktop-only user section */}
-            <div className="hidden items-center gap-2 border-l border-neutral-200 pl-3 md:flex">
+            <div className="hidden items-center gap-2 border-l border-border pl-3 md:flex">
               <Link
                 to="/settings"
                 className={cn(
-                  'flex items-center gap-2 rounded-lg p-2 text-neutral-600 transition-colors',
-                  'hover:bg-neutral-100 hover:text-neutral-900',
+                  'flex items-center gap-2 rounded-lg p-2 text-foreground-muted transition-colors',
+                  'hover:bg-muted hover:text-foreground',
                   'min-h-touch'
                 )}
               >
@@ -134,8 +134,8 @@ export function MainLayout() {
               <button
                 onClick={handleLogout}
                 className={cn(
-                  'rounded-lg p-2 text-neutral-600 transition-colors',
-                  'hover:bg-neutral-100 hover:text-neutral-900',
+                  'rounded-lg p-2 text-foreground-muted transition-colors',
+                  'hover:bg-muted hover:text-foreground',
                   'min-h-touch min-w-touch flex items-center justify-center'
                 )}
                 aria-label="Log out"
@@ -147,8 +147,8 @@ export function MainLayout() {
             {/* Mobile menu button - only show on tablet, hide on phone (we have bottom nav) */}
             <button
               className={cn(
-                'rounded-lg p-2.5 text-neutral-600 transition-colors',
-                'hover:bg-neutral-100',
+                'rounded-lg p-2.5 text-foreground-muted transition-colors',
+                'hover:bg-muted',
                 'min-h-touch min-w-touch flex items-center justify-center',
                 'tap-highlight-none active-scale',
                 'hidden sm:flex md:hidden'
@@ -182,7 +182,7 @@ export function MainLayout() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="absolute left-0 right-0 top-full z-50 border-t border-neutral-200 bg-white shadow-lg md:hidden"
+                className="absolute left-0 right-0 top-full z-50 border-t border-border bg-card shadow-lg md:hidden"
               >
                 <nav className="container py-2">
                   {navItems.map((item) => {
@@ -193,11 +193,11 @@ export function MainLayout() {
                         to={item.href}
                         className={cn(
                           'flex items-center rounded-lg px-4 py-3 text-base font-medium transition-colors',
-                          'hover:bg-neutral-100',
+                          'hover:bg-muted',
                           'min-h-touch',
                           isActive
-                            ? 'text-primary-600 bg-primary-50'
-                            : 'text-neutral-700'
+                            ? 'text-primary bg-primary-subtle'
+                            : 'text-foreground-muted'
                         )}
                         onClick={() => setMobileMenuOpen(false)}
                       >
@@ -207,16 +207,16 @@ export function MainLayout() {
                   })}
 
                   {/* User info and logout in mobile menu */}
-                  <div className="mt-2 border-t border-neutral-200 pt-2">
+                  <div className="mt-2 border-t border-border pt-2">
                     <div className="flex items-center gap-3 px-4 py-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
-                        <User className="h-5 w-5 text-primary-600" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
+                        <User className="h-5 w-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 truncate">
+                        <p className="text-sm font-medium text-foreground truncate">
                           {user?.profile?.displayName || 'User'}
                         </p>
-                        <p className="text-xs text-neutral-500 truncate">
+                        <p className="text-xs text-foreground-subtle truncate">
                           {user?.email}
                         </p>
                       </div>
@@ -225,8 +225,8 @@ export function MainLayout() {
                       onClick={handleLogout}
                       className={cn(
                         'flex w-full items-center gap-3 rounded-lg px-4 py-3',
-                        'text-base font-medium text-neutral-700 transition-colors',
-                        'hover:bg-neutral-100',
+                        'text-base font-medium text-foreground-muted transition-colors',
+                        'hover:bg-muted',
                         'min-h-touch'
                       )}
                     >

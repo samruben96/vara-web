@@ -86,12 +86,12 @@ export function Settings() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-100">
-          <SettingsIcon className="h-6 w-6 text-primary-600" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-subtle">
+          <SettingsIcon className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Settings</h1>
-          <p className="text-neutral-600">Manage your account preferences and security</p>
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <p className="text-foreground-muted">Manage your account preferences and security</p>
         </div>
       </div>
 
@@ -114,14 +114,14 @@ export function Settings() {
                   onClick={() => handleTabChange(tab.id)}
                   className={cn(
                     'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left',
-                    'transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                    'transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
                     isActive
                       ? isDanger
-                        ? 'bg-rose-50 text-rose-700'
-                        : 'bg-primary-50 text-primary-700'
+                        ? 'bg-destructive-subtle text-destructive-foreground-subtle'
+                        : 'bg-primary-subtle text-primary'
                       : isDanger
-                        ? 'text-rose-600 hover:bg-rose-50'
-                        : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                        ? 'text-destructive hover:bg-destructive-subtle'
+                        : 'text-foreground-muted hover:bg-muted hover:text-foreground'
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -130,11 +130,11 @@ export function Settings() {
                       'h-5 w-5 flex-shrink-0',
                       isActive
                         ? isDanger
-                          ? 'text-rose-600'
-                          : 'text-primary-600'
+                          ? 'text-destructive'
+                          : 'text-primary'
                         : isDanger
-                          ? 'text-rose-500'
-                          : 'text-neutral-400'
+                          ? 'text-destructive'
+                          : 'text-foreground-subtle'
                     )}
                   />
                   <div className="min-w-0">
@@ -144,9 +144,9 @@ export function Settings() {
                         'text-xs truncate block',
                         isActive
                           ? isDanger
-                            ? 'text-rose-600'
-                            : 'text-primary-600'
-                          : 'text-neutral-400'
+                            ? 'text-destructive'
+                            : 'text-primary'
+                          : 'text-foreground-subtle'
                       )}
                     >
                       {tab.description}
@@ -180,14 +180,14 @@ export function Settings() {
                   className={cn(
                     'flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap',
                     'text-sm font-medium transition-colors',
-                    'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                    'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
                     isActive
                       ? isDanger
-                        ? 'bg-rose-100 text-rose-700'
-                        : 'bg-primary-100 text-primary-700'
+                        ? 'bg-destructive-subtle text-destructive-foreground-subtle'
+                        : 'bg-primary-subtle text-primary'
                       : isDanger
-                        ? 'bg-neutral-100 text-rose-600 hover:bg-rose-50'
-                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                        ? 'bg-muted text-destructive hover:bg-destructive-subtle'
+                        : 'bg-muted text-foreground-muted hover:bg-muted-hover'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -207,8 +207,8 @@ export function Settings() {
         >
           {/* Section Header - Mobile */}
           <div className="lg:hidden mb-6">
-            <h2 className="text-lg font-semibold text-neutral-900">{currentTab.label}</h2>
-            <p className="text-sm text-neutral-600">{currentTab.description}</p>
+            <h2 className="text-lg font-semibold text-foreground">{currentTab.label}</h2>
+            <p className="text-sm text-foreground-muted">{currentTab.description}</p>
           </div>
 
           {/* Tab Content Card */}

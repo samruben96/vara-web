@@ -53,7 +53,7 @@ export function MobileBottomNav({ alertCount = 0 }: MobileBottomNavProps) {
     <nav
       className={cn(
         'fixed bottom-0 left-0 right-0 z-50',
-        'border-t border-neutral-200 bg-white/95 backdrop-blur-sm',
+        'border-t border-nav-border bg-nav/95 backdrop-blur-sm',
         'pb-safe md:hidden',
         'tap-highlight-none select-none-mobile'
       )}
@@ -93,7 +93,7 @@ export function MobileBottomNav({ alertCount = 0 }: MobileBottomNavProps) {
                 <item.icon
                   className={cn(
                     'h-6 w-6 transition-colors duration-150',
-                    active ? 'text-primary-600' : 'text-neutral-400'
+                    active ? 'text-nav-active' : 'text-nav-foreground'
                   )}
                   strokeWidth={active ? 2.5 : 2}
                 />
@@ -107,8 +107,8 @@ export function MobileBottomNav({ alertCount = 0 }: MobileBottomNavProps) {
                       'absolute -top-1 -right-1.5',
                       'flex items-center justify-center',
                       'min-w-[16px] h-4 px-1',
-                      'rounded-full bg-alert-500',
-                      'text-[10px] font-bold text-white'
+                      'rounded-full bg-destructive',
+                      'text-[10px] font-bold text-destructive-foreground'
                     )}
                   >
                     {alertCount > 99 ? '99+' : alertCount}
@@ -120,7 +120,7 @@ export function MobileBottomNav({ alertCount = 0 }: MobileBottomNavProps) {
               <span
                 className={cn(
                   'mt-1 text-[10px] font-medium transition-colors duration-150',
-                  active ? 'text-primary-600' : 'text-neutral-500'
+                  active ? 'text-nav-active' : 'text-nav-foreground'
                 )}
               >
                 {item.label}
@@ -130,7 +130,7 @@ export function MobileBottomNav({ alertCount = 0 }: MobileBottomNavProps) {
               {active && (
                 <motion.div
                   layoutId="activeIndicator"
-                  className="absolute top-1 w-1 h-1 rounded-full bg-primary-600"
+                  className="absolute top-1 w-1 h-1 rounded-full bg-nav-active"
                   transition={{
                     type: 'spring',
                     stiffness: 400,

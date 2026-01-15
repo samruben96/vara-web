@@ -52,7 +52,7 @@ export function Login() {
         );
         toast.success('Welcome back!', {
           duration: 2500,
-          style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+          className: 'bg-success-subtle text-success-foreground-subtle border border-success-muted',
         });
         navigate(from, { replace: true });
       }
@@ -63,13 +63,13 @@ export function Login() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-neutral-900">Welcome back</h1>
-      <p className="mt-2 text-neutral-600">
+      <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
+      <p className="mt-2 text-foreground-muted">
         Sign in to your account to continue protecting your digital presence.
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg bg-alert-50 p-4 text-sm text-alert-700">
+        <div className="mt-6 rounded-lg bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
           {error}
         </div>
       )}
@@ -95,7 +95,7 @@ export function Login() {
             {...register('password')}
           />
           <div className="mt-2 text-right">
-            <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700">
+            <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-hover">
               Forgot password?
             </Link>
           </div>
@@ -106,9 +106,9 @@ export function Login() {
         </Button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-neutral-600">
+      <p className="mt-8 text-center text-sm text-foreground-muted">
         Don't have an account?{' '}
-        <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-700">
+        <Link to="/signup" className="font-medium text-primary hover:text-primary-hover">
           Sign up
         </Link>
       </p>

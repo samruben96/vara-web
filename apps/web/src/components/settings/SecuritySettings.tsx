@@ -77,14 +77,14 @@ export function SecuritySettings() {
   return (
     <div className="space-y-6">
       {/* Password Section */}
-      <div className="rounded-xl border border-neutral-200 p-4 sm:p-6">
+      <div className="rounded-xl border border-border p-4 sm:p-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100">
-            <Lock className="h-5 w-5 text-primary-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-subtle">
+            <Lock className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-neutral-900">Password</h3>
-            <p className="text-sm text-neutral-600">
+            <h3 className="font-semibold text-foreground">Password</h3>
+            <p className="text-sm text-foreground-muted">
               Keep your account secure by using a strong password
             </p>
           </div>
@@ -155,26 +155,26 @@ export function SecuritySettings() {
       </div>
 
       {/* Two-Factor Authentication Section */}
-      <div className="rounded-xl border border-neutral-200 p-4 sm:p-6">
+      <div className="rounded-xl border border-border p-4 sm:p-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-100">
-            <Smartphone className="h-5 w-5 text-neutral-500" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+            <Smartphone className="h-5 w-5 text-foreground-subtle" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-neutral-900">Two-Factor Authentication</h3>
-              <span className="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">
+              <h3 className="font-semibold text-foreground">Two-Factor Authentication</h3>
+              <span className="inline-flex items-center rounded-full bg-primary-subtle px-2 py-0.5 text-xs font-medium text-primary">
                 Coming Soon
               </span>
             </div>
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-foreground-muted">
               Add an extra layer of security to your account with 2FA
             </p>
           </div>
         </div>
 
-        <div className="mt-4 rounded-lg bg-neutral-50 p-4">
-          <p className="text-sm text-neutral-600">
+        <div className="mt-4 rounded-lg bg-muted p-4">
+          <p className="text-sm text-foreground-muted">
             Two-factor authentication will be available soon. This feature will allow you to
             secure your account with an authenticator app or SMS verification.
           </p>
@@ -182,40 +182,40 @@ export function SecuritySettings() {
       </div>
 
       {/* Session Security */}
-      <div className="rounded-xl border border-neutral-200 p-4 sm:p-6">
+      <div className="rounded-xl border border-border p-4 sm:p-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success-100">
-            <Shield className="h-5 w-5 text-success-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success-subtle">
+            <Shield className="h-5 w-5 text-success" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-neutral-900">Session Security</h3>
-            <p className="text-sm text-neutral-600">
+            <h3 className="font-semibold text-foreground">Session Security</h3>
+            <p className="text-sm text-foreground-muted">
               Your session is protected with secure authentication
             </p>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 text-success-700">
+        <div className="mt-4 flex items-center gap-2 text-success">
           <CheckCircle className="h-4 w-4" />
           <span className="text-sm font-medium">Secure session active</span>
         </div>
 
         <div className={cn(
-          'mt-4 rounded-lg bg-neutral-50 p-4',
-          'border border-neutral-100'
+          'mt-4 rounded-lg bg-muted p-4',
+          'border border-border-subtle'
         )}>
-          <h4 className="text-sm font-medium text-neutral-700 mb-2">Security Tips</h4>
-          <ul className="space-y-2 text-sm text-neutral-600">
+          <h4 className="text-sm font-medium text-foreground-muted mb-2">Security Tips</h4>
+          <ul className="space-y-2 text-sm text-foreground-muted">
             <li className="flex items-start gap-2">
-              <span className="text-primary-600">-</span>
+              <span className="text-primary">-</span>
               Use a unique password for your Vara account
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-primary-600">-</span>
+              <span className="text-primary">-</span>
               Never share your login credentials with anyone
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-primary-600">-</span>
+              <span className="text-primary">-</span>
               Log out when using shared devices
             </li>
           </ul>

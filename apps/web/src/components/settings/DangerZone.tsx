@@ -48,8 +48,8 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteMo
           disabled={isDeleting}
           className={cn(
             'absolute right-4 top-4 p-1 rounded-lg',
-            'text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100',
-            'focus:outline-none focus:ring-2 focus:ring-neutral-500',
+            'text-foreground-subtle hover:text-foreground hover:bg-muted',
+            'focus:outline-none focus:ring-2 focus:ring-ring',
             'transition-colors'
           )}
           aria-label="Close dialog"
@@ -58,24 +58,24 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteMo
         </button>
 
         {/* Warning Icon */}
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 mx-auto">
-          <AlertTriangle className="h-6 w-6 text-rose-600" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive-subtle mx-auto">
+          <AlertTriangle className="h-6 w-6 text-destructive" />
         </div>
 
         {/* Title */}
         <h2
           id="delete-modal-title"
-          className="mt-4 text-xl font-bold text-neutral-900 text-center"
+          className="mt-4 text-xl font-bold text-foreground text-center"
         >
           Delete Your Account?
         </h2>
 
         {/* Warning Message */}
-        <div className="mt-4 rounded-lg bg-rose-50 border border-rose-100 p-4">
-          <p className="text-sm text-rose-700 font-medium mb-2">
+        <div className="mt-4 rounded-lg bg-destructive-subtle border border-destructive-muted p-4">
+          <p className="text-sm text-destructive-foreground-subtle font-medium mb-2">
             This action cannot be undone. The following will be permanently deleted:
           </p>
-          <ul className="text-sm text-rose-600 space-y-1">
+          <ul className="text-sm text-destructive space-y-1">
             <li>- Your account and profile information</li>
             <li>- All protected images and their embeddings</li>
             <li>- All alerts and detection history</li>
@@ -87,8 +87,8 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteMo
 
         {/* Confirmation Input */}
         <div className="mt-4">
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-            Type <span className="font-mono bg-neutral-100 px-1 rounded">delete my account</span> to confirm:
+          <label className="block text-sm font-medium text-foreground-muted mb-1.5">
+            Type <span className="font-mono bg-muted px-1 rounded">delete my account</span> to confirm:
           </label>
           <Input
             type="text"
@@ -111,7 +111,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteMo
             Cancel
           </Button>
           <Button
-            variant="danger"
+            variant="destructive"
             onClick={onConfirm}
             disabled={!isConfirmValid || isDeleting}
             className="flex-1"
@@ -145,7 +145,6 @@ export function DangerZone() {
     onSuccess: () => {
       toast.success('Your account has been deleted', {
         duration: 5000,
-        style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
       });
       logout();
       // Redirect to landing page
@@ -164,14 +163,14 @@ export function DangerZone() {
   return (
     <div className="space-y-6">
       {/* Warning Header */}
-      <div className="rounded-xl border-2 border-rose-200 bg-rose-50 p-4 sm:p-6">
+      <div className="rounded-xl border-2 border-destructive-muted bg-destructive-subtle p-4 sm:p-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 flex-shrink-0">
-            <AlertTriangle className="h-6 w-6 text-rose-600" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive-muted flex-shrink-0">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-rose-900">Danger Zone</h3>
-            <p className="text-sm text-rose-700 mt-1">
+            <h3 className="text-lg font-semibold text-destructive-foreground-subtle">Danger Zone</h3>
+            <p className="text-sm text-destructive mt-1">
               Actions in this section are permanent and cannot be undone. Please proceed with
               caution.
             </p>
@@ -180,54 +179,54 @@ export function DangerZone() {
       </div>
 
       {/* Delete Account Section */}
-      <div className="rounded-xl border border-neutral-200 p-4 sm:p-6">
+      <div className="rounded-xl border border-border p-4 sm:p-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 flex-shrink-0">
-            <Trash2 className="h-5 w-5 text-rose-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive-subtle flex-shrink-0">
+            <Trash2 className="h-5 w-5 text-destructive" />
           </div>
           <div className="flex-1">
-            <h4 className="font-semibold text-neutral-900">Delete Account</h4>
-            <p className="text-sm text-neutral-600 mt-1">
+            <h4 className="font-semibold text-foreground">Delete Account</h4>
+            <p className="text-sm text-foreground-muted mt-1">
               Permanently delete your Vara account and all associated data. This will remove
               your profile, protected images, alerts, scan history, and connected accounts.
             </p>
 
             {/* What gets deleted */}
-            <div className="mt-4 rounded-lg bg-neutral-50 p-4">
-              <h5 className="text-sm font-medium text-neutral-700 mb-2">
+            <div className="mt-4 rounded-lg bg-background-muted p-4">
+              <h5 className="text-sm font-medium text-foreground mb-2">
                 What will be deleted:
               </h5>
-              <ul className="grid gap-1 text-sm text-neutral-600 sm:grid-cols-2">
+              <ul className="grid gap-1 text-sm text-foreground-muted sm:grid-cols-2">
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground-subtle" />
                   Account credentials
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground-subtle" />
                   Profile information
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground-subtle" />
                   All protected images
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground-subtle" />
                   Image embeddings
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground-subtle" />
                   Alerts and matches
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground-subtle" />
                   Scan history
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground-subtle" />
                   Connected accounts
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground-subtle" />
                   Protection plan
                 </li>
               </ul>
@@ -235,7 +234,7 @@ export function DangerZone() {
 
             <div className="mt-4">
               <Button
-                variant="danger"
+                variant="destructive"
                 onClick={() => setIsModalOpen(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -247,8 +246,8 @@ export function DangerZone() {
       </div>
 
       {/* Additional Warning */}
-      <div className="rounded-lg bg-amber-50 border border-amber-100 p-4">
-        <p className="text-sm text-amber-700">
+      <div className="rounded-lg bg-warning-subtle border border-warning-muted p-4">
+        <p className="text-sm text-warning-foreground-subtle">
           <strong>Before you go:</strong> If you are experiencing issues with Vara, please
           consider reaching out to our support team first. We would love to help resolve any
           problems and keep protecting your digital presence.

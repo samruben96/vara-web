@@ -99,8 +99,8 @@ export function ResetPassword() {
   if (isValidSession === null) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
-        <p className="mt-4 text-sm text-neutral-600">Verifying reset link...</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-muted border-t-primary" />
+        <p className="mt-4 text-sm text-foreground-muted">Verifying reset link...</p>
       </div>
     );
   }
@@ -109,11 +109,11 @@ export function ResetPassword() {
   if (success) {
     return (
       <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-100">
-          <CheckCircle className="h-8 w-8 text-success-600" />
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-subtle">
+          <CheckCircle className="h-8 w-8 text-success" />
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-neutral-900">Password updated</h1>
-        <p className="mt-2 text-neutral-600">
+        <h1 className="mt-6 text-2xl font-bold text-foreground">Password updated</h1>
+        <p className="mt-2 text-foreground-muted">
           Your password has been successfully reset. You'll be redirected to sign in shortly.
         </p>
         <div className="mt-8">
@@ -132,9 +132,9 @@ export function ResetPassword() {
   if (!isValidSession) {
     return (
       <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-alert-100">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive-subtle">
           <svg
-            className="h-8 w-8 text-alert-600"
+            className="h-8 w-8 text-destructive"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -147,8 +147,8 @@ export function ResetPassword() {
             />
           </svg>
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-neutral-900">Reset link invalid</h1>
-        <p className="mt-2 text-neutral-600">
+        <h1 className="mt-6 text-2xl font-bold text-foreground">Reset link invalid</h1>
+        <p className="mt-2 text-foreground-muted">
           {error || 'This password reset link is invalid or has expired.'}
         </p>
         <div className="mt-8 space-y-3">
@@ -171,19 +171,19 @@ export function ResetPassword() {
     <div>
       <Link
         to="/login"
-        className="inline-flex items-center gap-1 text-sm text-neutral-600 hover:text-neutral-900"
+        className="inline-flex items-center gap-1 text-sm text-foreground-muted hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to sign in
       </Link>
 
-      <h1 className="mt-6 text-2xl font-bold text-neutral-900">Create new password</h1>
-      <p className="mt-2 text-neutral-600">
+      <h1 className="mt-6 text-2xl font-bold text-foreground">Create new password</h1>
+      <p className="mt-2 text-foreground-muted">
         Enter your new password below. Make sure it's strong and unique.
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg bg-alert-50 p-4 text-sm text-alert-700">
+        <div className="mt-6 rounded-lg bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
           {error}
         </div>
       )}

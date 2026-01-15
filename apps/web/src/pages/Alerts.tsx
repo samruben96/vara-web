@@ -27,36 +27,36 @@ import type { Alert, AlertType, AlertSeverity, AlertStatus } from '@vara/shared'
 
 type AlertFilter = 'all' | 'NEW' | 'VIEWED' | 'ACTIONED' | 'DISMISSED';
 
-// Severity configuration with calming colors (per CLAUDE.md design philosophy)
+// Severity configuration with calming semantic colors (per CLAUDE.md design philosophy)
 const severityConfig: Record<AlertSeverity, { label: string; color: string; bgColor: string; icon: typeof AlertTriangle }> = {
   CRITICAL: {
     label: 'Critical',
-    color: 'text-rose-700',
-    bgColor: 'bg-rose-50 border-rose-200',
+    color: 'text-alert-critical-text',
+    bgColor: 'bg-alert-critical-bg border-alert-critical-border',
     icon: AlertTriangle,
   },
   HIGH: {
     label: 'High',
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-50 border-amber-200',
+    color: 'text-alert-high-text',
+    bgColor: 'bg-alert-high-bg border-alert-high-border',
     icon: AlertTriangle,
   },
   MEDIUM: {
     label: 'Medium',
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-50 border-yellow-200',
+    color: 'text-alert-medium-text',
+    bgColor: 'bg-alert-medium-bg border-alert-medium-border',
     icon: Eye,
   },
   LOW: {
     label: 'Low',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50 border-blue-200',
+    color: 'text-alert-low-text',
+    bgColor: 'bg-alert-low-bg border-alert-low-border',
     icon: Eye,
   },
   INFO: {
     label: 'Info',
-    color: 'text-neutral-600',
-    bgColor: 'bg-neutral-50 border-neutral-200',
+    color: 'text-alert-info-text',
+    bgColor: 'bg-alert-info-bg border-alert-info-border',
     icon: Bell,
   },
 };
@@ -74,10 +74,10 @@ const alertTypeConfig: Record<AlertType, { label: string; icon: typeof Image }> 
 
 // Status badge configuration
 const statusConfig: Record<AlertStatus, { label: string; color: string }> = {
-  NEW: { label: 'New', color: 'bg-primary-100 text-primary-700' },
-  VIEWED: { label: 'Viewed', color: 'bg-blue-100 text-blue-700' },
-  ACTIONED: { label: 'Actioned', color: 'bg-green-100 text-green-700' },
-  DISMISSED: { label: 'Dismissed', color: 'bg-neutral-100 text-neutral-600' },
+  NEW: { label: 'New', color: 'bg-primary-subtle text-primary' },
+  VIEWED: { label: 'Viewed', color: 'bg-info-subtle text-info-foreground-subtle' },
+  ACTIONED: { label: 'Actioned', color: 'bg-success-subtle text-success-foreground-subtle' },
+  DISMISSED: { label: 'Dismissed', color: 'bg-muted text-muted-foreground' },
 };
 
 function formatDate(date: Date | string): string {
@@ -147,9 +147,9 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
       }}
       className={cn(
         'rounded-xl border p-4 transition-all cursor-pointer',
-        'hover:shadow-md hover:border-primary-300',
+        'hover:shadow-md hover:border-primary/50',
         severity.bgColor,
-        alert.status === 'NEW' && 'ring-2 ring-primary-200',
+        alert.status === 'NEW' && 'ring-2 ring-primary/30',
         alert.status === 'DISMISSED' && 'opacity-60'
       )}
       aria-label={`View details for alert: ${alert.title}`}
@@ -166,22 +166,22 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
               {status.label}
             </span>
             {metadata?.isMock && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-lavender-100 text-lavender-700">
                 Test Data
               </span>
             )}
-            <span className="text-xs text-neutral-500 flex items-center gap-1">
+            <span className="text-xs text-foreground-subtle flex items-center gap-1">
               <TypeIcon className="h-3 w-3" />
               {alertType.label}
             </span>
-            <span className="text-xs text-neutral-400">
+            <span className="text-xs text-foreground-subtle">
               {formatDate(alert.createdAt)}
             </span>
           </div>
 
 
-          <h3 className="mt-1 font-semibold text-neutral-900">{alert.title}</h3>
-          <p className="mt-1 text-sm text-neutral-600 line-clamp-2">{alert.description}</p>
+          <h3 className="mt-1 font-semibold text-foreground">{alert.title}</h3>
+          <p className="mt-1 text-sm text-foreground-muted line-clamp-2">{alert.description}</p>
         </div>
 
         <button
@@ -189,9 +189,9 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
           onKeyDown={handleExpandKeyDown}
           aria-expanded={expanded}
           aria-label={expanded ? 'Collapse alert details' : 'Expand alert details'}
-          className="p-1 hover:bg-white/50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          className="p-1 hover:bg-white/50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         >
-          <ChevronRight className={cn('h-5 w-5 text-neutral-400 transition-transform', expanded && 'rotate-90')} />
+          <ChevronRight className={cn('h-5 w-5 text-foreground-subtle transition-transform', expanded && 'rotate-90')} />
         </button>
       </div>
 
@@ -201,14 +201,14 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
           {/* Similarity score */}
           {metadata?.similarity && (
             <div className="mb-3 flex items-center gap-2">
-              <span className="text-sm text-neutral-600">Similarity:</span>
+              <span className="text-sm text-foreground-muted">Similarity:</span>
               <div className="flex-1 h-2 bg-white/50 rounded-full overflow-hidden max-w-32">
                 <div
-                  className="h-full bg-primary-500 rounded-full"
+                  className="h-full bg-primary rounded-full"
                   style={{ width: `${metadata.similarity * 100}%` }}
                 />
               </div>
-              <span className="text-sm font-medium text-neutral-700">
+              <span className="text-sm font-medium text-foreground">
                 {Math.round(metadata.similarity * 100)}%
               </span>
             </div>
@@ -217,12 +217,12 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
           {/* Source URL */}
           {metadata?.sourceUrl && (
             <div className="mb-3">
-              <span className="text-sm text-neutral-600">Found at:</span>
+              <span className="text-sm text-foreground-muted">Found at:</span>
               <a
                 href={metadata.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-2 text-sm text-primary-600 hover:text-primary-700 inline-flex items-center gap-1"
+                className="ml-2 text-sm text-primary hover:text-primary-hover inline-flex items-center gap-1"
               >
                 {metadata.platform || new URL(metadata.sourceUrl).hostname}
                 <ExternalLink className="h-3 w-3" />
@@ -233,16 +233,16 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
           {/* Breach details */}
           {metadata?.breaches && metadata.breaches.length > 0 && (
             <div className="mb-3">
-              <span className="text-sm font-medium text-neutral-700 block mb-2">Affected breaches:</span>
+              <span className="text-sm font-medium text-foreground block mb-2">Affected breaches:</span>
               <ul className="space-y-1">
                 {metadata.breaches.slice(0, 3).map((breach, idx) => (
-                  <li key={idx} className="text-sm text-neutral-600 flex items-center gap-2">
+                  <li key={idx} className="text-sm text-foreground-muted flex items-center gap-2">
                     <Database className="h-3 w-3" />
                     {breach.name} ({breach.breachDate})
                   </li>
                 ))}
                 {metadata.breaches.length > 3 && (
-                  <li className="text-sm text-neutral-500">
+                  <li className="text-sm text-foreground-subtle">
                     +{metadata.breaches.length - 3} more
                   </li>
                 )}
@@ -308,7 +308,7 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
               </Button>
             )}
             {metadata?.isMock && (
-              <span className="text-xs text-purple-600 italic ml-2">
+              <span className="text-xs text-lavender-600 italic ml-2">
                 This is simulated test data for demonstration purposes
               </span>
             )}
@@ -412,8 +412,8 @@ export function Alerts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Alerts</h1>
-          <p className="mt-1 text-neutral-600">
+          <h1 className="text-2xl font-bold text-foreground">Alerts</h1>
+          <p className="mt-1 text-foreground-muted">
             Stay informed about potential concerns with your digital presence
           </p>
         </div>
@@ -424,13 +424,13 @@ export function Alerts() {
               size="sm"
               onClick={handleClearAll}
               disabled={clearAllMutation.isPending}
-              className="text-neutral-500 hover:text-rose-600"
+              className="text-foreground-subtle hover:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-1" />
               Clear All
             </Button>
           )}
-          <Shield className="h-8 w-8 text-primary-500" />
+          <Shield className="h-8 w-8 text-primary" />
         </div>
       </div>
 
@@ -444,15 +444,15 @@ export function Alerts() {
             aria-controls="alerts-list"
             onClick={() => setSearchParams(option.value === 'all' ? {} : { filter: option.value })}
             className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+              'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
               filter === option.value
-                ? 'bg-primary-100 text-primary-700'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                ? 'bg-primary-subtle text-primary'
+                : 'bg-muted text-foreground-muted hover:bg-muted-hover'
             )}
           >
             {option.label}
             {option.count !== undefined && option.count > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-primary-500 text-white rounded-full">
+              <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
                 {option.count}
               </span>
             )}
@@ -463,39 +463,39 @@ export function Alerts() {
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="rounded-xl bg-rose-50 border border-rose-200 p-6 text-center">
-          <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto mb-2" />
-          <p className="text-rose-700">Unable to load alerts. Please try again.</p>
+        <div className="rounded-xl bg-destructive-subtle border border-destructive p-6 text-center">
+          <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
+          <p className="text-destructive-foreground-subtle">Unable to load alerts. Please try again.</p>
         </div>
       )}
 
       {/* Empty State */}
       {!isLoading && !error && !hasAlerts && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-            <Shield className="h-10 w-10 text-green-600" />
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-success-subtle">
+            <Shield className="h-10 w-10 text-success" />
           </div>
-          <h2 className="mt-6 text-xl font-semibold text-neutral-900">
+          <h2 className="mt-6 text-xl font-semibold text-foreground">
             {filter === 'all' ? 'No Threats Detected' : 'All Clear'}
           </h2>
-          <p className="mt-2 text-green-700 font-medium">
+          <p className="mt-2 text-success-foreground-subtle font-medium">
             {filter === 'all'
               ? "We're actively monitoring your digital presence"
               : `No ${filter.toLowerCase()} alerts to show`}
           </p>
-          <p className="mt-3 max-w-md text-neutral-600">
+          <p className="mt-3 max-w-md text-foreground-muted">
             {filter === 'all'
               ? "Your protected images and connected accounts are being continuously scanned. We'll notify you immediately if we detect anything concerning."
               : "Try adjusting your filters to see other alerts."}
           </p>
           {filter === 'all' && (
-            <div className="mt-6 flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-sm text-green-700">
+            <div className="mt-6 flex items-center gap-2 rounded-full bg-success-subtle px-4 py-2 text-sm text-success-foreground-subtle">
               <CheckCircle className="h-4 w-4" />
               <span>Protection active</span>
             </div>
@@ -520,12 +520,12 @@ export function Alerts() {
       )}
 
       {/* Info Footer */}
-      <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4">
+      <div className="rounded-xl bg-muted border border-border p-4">
         <div className="flex items-start gap-3">
-          <Inbox className="h-5 w-5 text-neutral-400 mt-0.5" />
+          <Inbox className="h-5 w-5 text-foreground-subtle mt-0.5" />
           <div>
-            <p className="text-sm text-neutral-600">
-              <strong className="text-neutral-700">How alerts work:</strong> We scan your protected images
+            <p className="text-sm text-foreground-muted">
+              <strong className="text-foreground">How alerts work:</strong> We scan your protected images
               and connected accounts for potential misuse. When we find something concerning, you'll see
               it here with recommended actions.
             </p>

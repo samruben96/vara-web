@@ -103,20 +103,20 @@ export function ScanStatus({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border border-primary-200 bg-primary-50 p-3 sm:p-4',
+          'flex items-center gap-3 rounded-lg border border-primary-muted bg-primary-subtle p-3 sm:p-4',
           className
         )}
         role="status"
         aria-live="polite"
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100">
-          <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-muted">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-primary-900">
+          <p className="text-sm font-medium text-primary-foreground-subtle">
             {isPending ? 'Preparing scan...' : `Scanning ${scanTypeName} images...`}
           </p>
-          <p className="text-xs text-primary-700 mt-0.5">
+          <p className="text-xs text-primary mt-0.5">
             {isPending
               ? 'Your scan will begin shortly'
               : 'We\'re checking for unauthorized use of your images'}
@@ -124,9 +124,9 @@ export function ScanStatus({
         </div>
         {/* Progress indicator - simulated for now */}
         <div className="hidden sm:flex items-center gap-2">
-          <div className="h-1.5 w-20 rounded-full bg-primary-200 overflow-hidden">
+          <div className="h-1.5 w-20 rounded-full bg-primary-muted overflow-hidden">
             <div
-              className="h-full bg-primary-600 rounded-full animate-pulse"
+              className="h-full bg-primary rounded-full animate-pulse"
               style={{ width: isPending ? '10%' : '50%' }}
             />
           </div>
@@ -144,8 +144,8 @@ export function ScanStatus({
         className={cn(
           'flex items-center gap-3 rounded-lg border p-3 sm:p-4',
           hasMatches
-            ? 'border-amber-200 bg-amber-50'
-            : 'border-success-200 bg-success-50',
+            ? 'border-warning-muted bg-warning-subtle'
+            : 'border-success-muted bg-success-subtle',
           className
         )}
         role="status"
@@ -154,20 +154,20 @@ export function ScanStatus({
         <div
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-full',
-            hasMatches ? 'bg-amber-100' : 'bg-success-100'
+            hasMatches ? 'bg-warning-muted' : 'bg-success-muted'
           )}
         >
           {hasMatches ? (
-            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertCircle className="h-4 w-4 text-warning" />
           ) : (
-            <CheckCircle className="h-4 w-4 text-success-600" />
+            <CheckCircle className="h-4 w-4 text-success" />
           )}
         </div>
         <div className="flex-1 min-w-0">
           <p
             className={cn(
               'text-sm font-medium',
-              hasMatches ? 'text-amber-900' : 'text-success-900'
+              hasMatches ? 'text-warning-foreground-subtle' : 'text-success-foreground-subtle'
             )}
           >
             {hasMatches
@@ -177,7 +177,7 @@ export function ScanStatus({
           <p
             className={cn(
               'text-xs mt-0.5',
-              hasMatches ? 'text-amber-700' : 'text-success-700'
+              hasMatches ? 'text-warning' : 'text-success'
             )}
           >
             {hasMatches
@@ -190,8 +190,8 @@ export function ScanStatus({
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-full transition-colors',
             hasMatches
-              ? 'text-amber-600 hover:bg-amber-100 active:bg-amber-200'
-              : 'text-success-600 hover:bg-success-100 active:bg-success-200'
+              ? 'text-warning hover:bg-warning-muted active:bg-warning-subtle'
+              : 'text-success hover:bg-success-muted active:bg-success-subtle'
           )}
           aria-label="Dismiss notification"
         >
@@ -206,24 +206,24 @@ export function ScanStatus({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border border-success-200 bg-success-50 p-3 sm:p-4',
+          'flex items-center gap-3 rounded-lg border border-success-muted bg-success-subtle p-3 sm:p-4',
           className
         )}
         role="status"
         aria-live="polite"
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success-100">
-          <CheckCircle className="h-4 w-4 text-success-600" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success-muted">
+          <CheckCircle className="h-4 w-4 text-success" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-success-900">Scan complete</p>
-          <p className="text-xs text-success-700 mt-0.5">
+          <p className="text-sm font-medium text-success-foreground-subtle">Scan complete</p>
+          <p className="text-xs text-success mt-0.5">
             Your images have been checked for unauthorized use
           </p>
         </div>
         <button
           onClick={handleDismiss}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-success-600 hover:bg-success-100 active:bg-success-200 transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-success hover:bg-success-muted active:bg-success-subtle transition-colors"
           aria-label="Dismiss notification"
         >
           <X className="h-4 w-4" />

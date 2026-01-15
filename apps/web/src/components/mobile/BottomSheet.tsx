@@ -44,26 +44,26 @@ export function BottomSheet({
           className={cn(
             'fixed bottom-0 left-0 right-0 z-50',
             'flex max-h-[96vh] flex-col',
-            'rounded-t-2xl bg-white',
+            'rounded-t-2xl bg-card',
             'focus:outline-none'
           )}
           aria-describedby={description ? 'sheet-description' : undefined}
         >
           {/* Drag Handle */}
           <div className="flex justify-center pt-4 pb-2">
-            <div className="h-1.5 w-12 rounded-full bg-neutral-300" />
+            <div className="h-1.5 w-12 rounded-full bg-border" />
           </div>
 
           {/* Optional Header */}
           {showHeader && title && (
-            <div className="border-b border-neutral-200 px-4 pb-4">
-              <Drawer.Title className="text-lg font-semibold text-neutral-900">
+            <div className="border-b border-border px-4 pb-4">
+              <Drawer.Title className="text-lg font-semibold text-foreground">
                 {title}
               </Drawer.Title>
               {description && (
                 <Drawer.Description
                   id="sheet-description"
-                  className="mt-1 text-sm text-neutral-500"
+                  className="mt-1 text-sm text-foreground-subtle"
                 >
                   {description}
                 </Drawer.Description>

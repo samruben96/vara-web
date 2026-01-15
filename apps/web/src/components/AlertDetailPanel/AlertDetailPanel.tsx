@@ -31,7 +31,7 @@ interface AlertDetailPanelProps {
   isUpdating: boolean;
 }
 
-// Updated severity configuration with design-compliant colors
+// Severity configuration using Vara's calming semantic color system
 const severityConfig: Record<AlertSeverity, {
   label: string;
   color: string;
@@ -41,37 +41,37 @@ const severityConfig: Record<AlertSeverity, {
 }> = {
   CRITICAL: {
     label: 'Critical',
-    color: 'text-rose-700',
-    bgColor: 'bg-rose-50',
-    borderColor: 'border-rose-200',
+    color: 'text-alert-critical-text',
+    bgColor: 'bg-alert-critical-bg',
+    borderColor: 'border-alert-critical-border',
     icon: AlertTriangle,
   },
   HIGH: {
     label: 'High Priority',
-    color: 'text-coral-700',
-    bgColor: 'bg-coral-50',
-    borderColor: 'border-coral-200',
+    color: 'text-alert-high-text',
+    bgColor: 'bg-alert-high-bg',
+    borderColor: 'border-alert-high-border',
     icon: AlertTriangle,
   },
   MEDIUM: {
     label: 'Medium',
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
+    color: 'text-alert-medium-text',
+    bgColor: 'bg-alert-medium-bg',
+    borderColor: 'border-alert-medium-border',
     icon: Eye,
   },
   LOW: {
     label: 'Low',
-    color: 'text-green-700',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
+    color: 'text-alert-low-text',
+    bgColor: 'bg-alert-low-bg',
+    borderColor: 'border-alert-low-border',
     icon: Eye,
   },
   INFO: {
     label: 'Info',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-alert-info-text',
+    bgColor: 'bg-alert-info-bg',
+    borderColor: 'border-alert-info-border',
     icon: Shield,
   },
 };
@@ -306,7 +306,7 @@ export function AlertDetailPanel({
       {/* Backdrop */}
       <div
         className={cn(
-          'fixed inset-0 z-40 bg-neutral-900/50 transition-opacity duration-300',
+          'fixed inset-0 z-40 bg-charcoal-900/50 transition-opacity duration-300',
           alertId ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
         onClick={onClose}
@@ -328,15 +328,15 @@ export function AlertDetailPanel({
         {/* Loading State */}
         {isLoading && (
           <div className="flex flex-1 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
 
         {/* Error State */}
         {error && (
           <div className="flex flex-1 flex-col items-center justify-center p-6">
-            <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
-            <p className="text-neutral-700 text-center">Unable to load alert details.</p>
+            <AlertTriangle className="h-12 w-12 text-warning mb-4" />
+            <p className="text-foreground-muted text-center">Unable to load alert details.</p>
             <Button variant="secondary" onClick={onClose} className="mt-4">
               Close
             </Button>
@@ -363,15 +363,15 @@ export function AlertDetailPanel({
                     {severity.label}
                   </span>
                   {metadata?.isMock && (
-                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary-subtle text-primary border border-primary-muted">
                       Test Data
                     </span>
                   )}
                 </div>
-                <h2 id="alert-detail-title" className="text-lg font-semibold text-neutral-900 leading-tight">
+                <h2 id="alert-detail-title" className="text-lg font-semibold text-foreground leading-tight">
                   {alert.title}
                 </h2>
-                <p className="mt-1 text-sm text-neutral-600 flex items-center gap-1">
+                <p className="mt-1 text-sm text-foreground-muted flex items-center gap-1">
                   <TypeIcon className="h-4 w-4" />
                   {alertType.label}
                 </p>
@@ -379,31 +379,31 @@ export function AlertDetailPanel({
               <button
                 ref={closeButtonRef}
                 onClick={onClose}
-                className="shrink-0 p-2 rounded-lg hover:bg-white/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="shrink-0 p-2 rounded-lg hover:bg-white/50 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Close panel"
               >
-                <X className="h-5 w-5 text-neutral-500" />
+                <X className="h-5 w-5 text-foreground-subtle" />
               </button>
             </div>
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Detection Time */}
-              <div className="flex items-center gap-2 text-sm text-neutral-500">
+              <div className="flex items-center gap-2 text-sm text-foreground-subtle">
                 <Clock className="h-4 w-4" />
                 <span>Detected {formatDate(alert.createdAt)}</span>
               </div>
 
               {/* Alert Description */}
               <div>
-                <h3 className="text-sm font-semibold text-neutral-700 mb-2">What We Found</h3>
-                <p className="text-neutral-600 leading-relaxed">{alert.description}</p>
+                <h3 className="text-sm font-semibold text-foreground-muted mb-2">What We Found</h3>
+                <p className="text-foreground-muted leading-relaxed">{alert.description}</p>
               </div>
 
               {/* Source Information */}
               {metadata?.sourceUrl && (
-                <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4">
-                  <h3 className="text-sm font-semibold text-neutral-700 mb-2 flex items-center gap-2">
+                <div className="rounded-lg bg-muted border border-border p-4">
+                  <h3 className="text-sm font-semibold text-foreground-muted mb-2 flex items-center gap-2">
                     <Link2 className="h-4 w-4" />
                     Source Location
                   </h3>
@@ -411,21 +411,21 @@ export function AlertDetailPanel({
                     href={metadata.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary-600 hover:text-primary-700 text-sm break-all inline-flex items-center gap-1"
+                    className="text-primary hover:text-primary-hover text-sm break-all inline-flex items-center gap-1"
                   >
                     {metadata.platform || new URL(metadata.sourceUrl).hostname}
                     <ExternalLink className="h-3 w-3 shrink-0" />
                   </a>
                   {metadata.similarity && (
                     <div className="mt-3 flex items-center gap-2">
-                      <span className="text-sm text-neutral-600">Match confidence:</span>
-                      <div className="flex-1 h-2 bg-white rounded-full overflow-hidden max-w-32 border border-neutral-200">
+                      <span className="text-sm text-foreground-muted">Match confidence:</span>
+                      <div className="flex-1 h-2 bg-background-elevated rounded-full overflow-hidden max-w-32 border border-border">
                         <div
-                          className="h-full bg-primary-500 rounded-full transition-all"
+                          className="h-full bg-primary rounded-full transition-all"
                           style={{ width: `${metadata.similarity * 100}%` }}
                         />
                       </div>
-                      <span className="text-sm font-medium text-neutral-700">
+                      <span className="text-sm font-medium text-foreground-muted">
                         {Math.round(metadata.similarity * 100)}%
                       </span>
                     </div>
@@ -435,27 +435,27 @@ export function AlertDetailPanel({
 
               {/* Breach Details */}
               {metadata?.breaches && metadata.breaches.length > 0 && (
-                <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4">
-                  <h3 className="text-sm font-semibold text-neutral-700 mb-3 flex items-center gap-2">
+                <div className="rounded-lg bg-muted border border-border p-4">
+                  <h3 className="text-sm font-semibold text-foreground-muted mb-3 flex items-center gap-2">
                     <Database className="h-4 w-4" />
                     Affected Services ({metadata.breaches.length})
                   </h3>
                   <ul className="space-y-3">
                     {metadata.breaches.map((breach, idx) => (
                       <li key={idx} className="text-sm">
-                        <div className="font-medium text-neutral-800">{breach.name}</div>
-                        <div className="text-neutral-500 text-xs mt-0.5">
+                        <div className="font-medium text-foreground">{breach.name}</div>
+                        <div className="text-foreground-subtle text-xs mt-0.5">
                           Breach date: {new Date(breach.breachDate).toLocaleDateString()}
                         </div>
                         {breach.dataClasses?.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {breach.dataClasses.slice(0, 4).map((dc, i) => (
-                              <span key={i} className="text-xs px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded">
+                              <span key={i} className="text-xs px-2 py-0.5 bg-background-muted text-foreground-muted rounded">
                                 {dc}
                               </span>
                             ))}
                             {breach.dataClasses.length > 4 && (
-                              <span className="text-xs px-2 py-0.5 bg-neutral-200 text-neutral-500 rounded">
+                              <span className="text-xs px-2 py-0.5 bg-background-muted text-foreground-subtle rounded">
                                 +{breach.dataClasses.length - 4} more
                               </span>
                             )}
@@ -469,23 +469,23 @@ export function AlertDetailPanel({
 
               {/* What This Means */}
               <div>
-                <h3 className="text-sm font-semibold text-neutral-700 mb-2">What This Means</h3>
-                <p className="text-neutral-600 leading-relaxed text-sm">{alertType.explanation}</p>
+                <h3 className="text-sm font-semibold text-foreground-muted mb-2">What This Means</h3>
+                <p className="text-foreground-muted leading-relaxed text-sm">{alertType.explanation}</p>
               </div>
 
               {/* Next Steps */}
               <div>
-                <h3 className="text-sm font-semibold text-neutral-700 mb-3">Next Steps</h3>
+                <h3 className="text-sm font-semibold text-foreground-muted mb-3">Next Steps</h3>
                 <ol className="space-y-2">
                   {alertType.nextSteps.map((step, index) => (
                     <li key={index} className="flex items-start gap-3">
                       <span className={cn(
                         'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium',
-                        'bg-primary-100 text-primary-700'
+                        'bg-primary-subtle text-primary'
                       )}>
                         {index + 1}
                       </span>
-                      <span className="text-sm text-neutral-600 pt-0.5">{step}</span>
+                      <span className="text-sm text-foreground-muted pt-0.5">{step}</span>
                     </li>
                   ))}
                 </ol>
@@ -494,7 +494,7 @@ export function AlertDetailPanel({
               {/* Report Links */}
               {relevantReportLinks.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-700 mb-3">Report This Content</h3>
+                  <h3 className="text-sm font-semibold text-foreground-muted mb-3">Report This Content</h3>
                   <div className="grid gap-2">
                     {relevantReportLinks.map((link, index) => (
                       <a
@@ -503,20 +503,20 @@ export function AlertDetailPanel({
                         target="_blank"
                         rel="noopener noreferrer"
                         className={cn(
-                          'flex items-center justify-between p-3 rounded-lg border border-neutral-200',
-                          'bg-white hover:bg-neutral-50 transition-colors group'
+                          'flex items-center justify-between p-3 rounded-lg border border-border',
+                          'bg-card hover:bg-muted transition-colors group'
                         )}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-neutral-100 flex items-center justify-center">
-                            <FileText className="h-4 w-4 text-neutral-600" />
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                            <FileText className="h-4 w-4 text-foreground-muted" />
                           </div>
                           <div>
-                            <span className="text-sm font-medium text-neutral-800 block">{link.label}</span>
-                            <span className="text-xs text-neutral-500">{link.platform}</span>
+                            <span className="text-sm font-medium text-foreground block">{link.label}</span>
+                            <span className="text-xs text-foreground-subtle">{link.platform}</span>
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-neutral-400 group-hover:text-neutral-600 transition-colors" />
+                        <ChevronRight className="h-4 w-4 text-foreground-subtle group-hover:text-foreground-muted transition-colors" />
                       </a>
                     ))}
                   </div>
@@ -526,16 +526,16 @@ export function AlertDetailPanel({
               {/* Related Alerts */}
               {metadata?.relatedAlerts && metadata.relatedAlerts.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-700 mb-3">Related Alerts</h3>
+                  <h3 className="text-sm font-semibold text-foreground-muted mb-3">Related Alerts</h3>
                   <div className="space-y-2">
                     {metadata.relatedAlerts.map((related) => (
                       <button
                         key={related.id}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors text-left"
+                        className="w-full flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted transition-colors text-left"
                       >
-                        <AlertTriangle className="h-4 w-4 text-neutral-500 shrink-0" />
-                        <span className="text-sm text-neutral-700 truncate">{related.title}</span>
-                        <ChevronRight className="h-4 w-4 text-neutral-400 ml-auto shrink-0" />
+                        <AlertTriangle className="h-4 w-4 text-foreground-subtle shrink-0" />
+                        <span className="text-sm text-foreground-muted truncate">{related.title}</span>
+                        <ChevronRight className="h-4 w-4 text-foreground-subtle ml-auto shrink-0" />
                       </button>
                     ))}
                   </div>
@@ -544,8 +544,8 @@ export function AlertDetailPanel({
 
               {/* Test Data Notice */}
               {metadata?.isMock && (
-                <div className="rounded-lg bg-purple-50 border border-purple-200 p-4">
-                  <p className="text-sm text-purple-700">
+                <div className="rounded-lg bg-primary-subtle border border-primary-muted p-4">
+                  <p className="text-sm text-primary">
                     <strong>This is test data</strong> for demonstration purposes. In a real scenario,
                     you would be able to view the actual source and take action.
                   </p>
@@ -554,7 +554,7 @@ export function AlertDetailPanel({
             </div>
 
             {/* Footer Actions */}
-            <div className="border-t border-neutral-200 p-4 bg-neutral-50">
+            <div className="border-t border-border p-4 bg-muted">
               <div className="flex flex-wrap gap-2">
                 {!metadata?.isMock && (
                   <Button
@@ -599,22 +599,22 @@ export function AlertDetailPanel({
               </div>
 
               {/* Status indicator */}
-              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-neutral-500">
+              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-foreground-muted">
                 {alert.status === 'ACTIONED' && (
                   <>
-                    <CheckCircle className="h-3 w-3 text-green-500" />
+                    <CheckCircle className="h-3 w-3 text-success" />
                     <span>You marked this as handled</span>
                   </>
                 )}
                 {alert.status === 'DISMISSED' && (
                   <>
-                    <Archive className="h-3 w-3 text-neutral-400" />
+                    <Archive className="h-3 w-3 text-foreground-subtle" />
                     <span>This alert has been archived</span>
                   </>
                 )}
                 {alert.status === 'VIEWED' && (
                   <>
-                    <Eye className="h-3 w-3 text-blue-500" />
+                    <Eye className="h-3 w-3 text-info" />
                     <span>Reviewed - awaiting action</span>
                   </>
                 )}

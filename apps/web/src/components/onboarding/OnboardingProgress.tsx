@@ -20,17 +20,17 @@ export function OnboardingProgress({
   return (
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-neutral-700">
+        <span className="font-medium text-foreground">
           Step {current} of {total}
         </span>
-        <span className="text-neutral-500">{Math.round(percentage)}% complete</span>
+        <span className="text-foreground-muted">{Math.round(percentage)}% complete</span>
       </div>
 
       {/* Progress bar container */}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         {/* Animated progress fill */}
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-500 ease-out"
+          className="h-full rounded-full bg-gradient-to-r from-primary to-primary-hover transition-all duration-500 ease-out"
           style={{ width: `${percentage}%` }}
           role="progressbar"
           aria-valuenow={current}
@@ -47,7 +47,7 @@ export function OnboardingProgress({
             key={step}
             className={cn(
               'h-1.5 w-1.5 rounded-full transition-colors duration-300',
-              step <= current ? 'bg-primary-500' : 'bg-neutral-300'
+              step <= current ? 'bg-primary' : 'bg-border-strong'
             )}
             aria-hidden="true"
           />

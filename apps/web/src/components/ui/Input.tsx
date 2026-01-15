@@ -9,6 +9,14 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   showPasswordToggle?: boolean;
 }
 
+/**
+ * Input component using Vara's calming color system
+ *
+ * Design Philosophy:
+ * - Soft cream backgrounds with subtle borders
+ * - Lavender focus states for pleasant interaction
+ * - Coral (not red) for error states - supportive, not alarming
+ */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, label, error, hint, id, showPasswordToggle, ...props }, ref) => {
     const inputId = id || props.name;
@@ -23,7 +31,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-neutral-700"
+            className="block text-sm font-medium text-foreground"
           >
             {label}
           </label>
@@ -34,10 +42,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={cn(
               // Base styles - using 16px font to prevent iOS zoom on focus
-              'w-full rounded-lg border bg-white px-4 py-3 sm:py-2.5',
+              'w-full rounded-lg border bg-card px-4 py-3 sm:py-2.5',
               // Font size: 16px on mobile prevents iOS zoom, can be smaller on desktop
-              'text-base sm:text-sm text-neutral-900',
-              'placeholder:text-neutral-400',
+              'text-base sm:text-sm text-foreground',
+              'placeholder:text-foreground-subtle',
               // Transition and focus styles
               'transition-colors duration-150',
               'focus:outline-none focus:ring-2',
@@ -47,8 +55,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               shouldShowToggle && 'pr-12',
               // Error vs normal state
               error
-                ? 'border-alert-500 focus:border-alert-500 focus:ring-alert-500/20'
-                : 'border-neutral-300 focus:border-primary-500 focus:ring-primary-500/20',
+                ? 'border-destructive focus:border-destructive focus:ring-destructive/20'
+                : 'border-input focus:border-input-focus focus:ring-ring/20',
               className
             )}
             ref={ref}
@@ -65,8 +73,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               className={cn(
                 'absolute right-3 top-1/2 -translate-y-1/2',
                 'p-1 rounded-md',
-                'text-neutral-500 hover:text-neutral-700',
-                'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+                'text-foreground-muted hover:text-foreground',
+                'focus:outline-none focus:ring-2 focus:ring-ring/20',
                 'transition-colors duration-150'
               )}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
@@ -82,14 +90,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {error && (
           <p
             id={`${inputId}-error`}
-            className="text-sm text-alert-600"
+            className="text-sm text-destructive"
             role="alert"
           >
             {error}
           </p>
         )}
         {hint && !error && (
-          <p id={`${inputId}-hint`} className="text-sm text-neutral-500">
+          <p id={`${inputId}-hint`} className="text-sm text-foreground-subtle">
             {hint}
           </p>
         )}

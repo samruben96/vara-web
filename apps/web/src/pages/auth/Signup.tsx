@@ -54,7 +54,7 @@ export function Signup() {
         );
         toast.success('Welcome to Vara!', {
           duration: 2500,
-          style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+          className: 'bg-success-subtle text-success-foreground-subtle border border-success-muted',
         });
         navigate('/onboarding', { replace: true });
       } else if (authData.user && !authData.session) {
@@ -83,7 +83,7 @@ export function Signup() {
           );
           toast.success('Welcome to Vara!', {
             duration: 2500,
-            style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+            className: 'bg-success-subtle text-success-foreground-subtle border border-success-muted',
           });
           navigate('/onboarding', { replace: true });
         }
@@ -97,13 +97,13 @@ export function Signup() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-neutral-900">Create your account</h1>
-      <p className="mt-2 text-neutral-600">
+      <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
+      <p className="mt-2 text-foreground-muted">
         Start your journey to comprehensive digital safety.
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg bg-alert-50 p-4 text-sm text-alert-700">
+        <div className="mt-6 rounded-lg bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
           {error}
         </div>
       )}
@@ -139,13 +139,13 @@ export function Signup() {
           {...register('confirmPassword')}
         />
 
-        <div className="text-sm text-neutral-600">
+        <div className="text-sm text-foreground-muted">
           By creating an account, you agree to our{' '}
-          <a href="#" className="text-primary-600 hover:text-primary-700">
+          <a href="#" className="text-primary hover:text-primary-hover">
             Terms of Service
           </a>{' '}
           and{' '}
-          <a href="#" className="text-primary-600 hover:text-primary-700">
+          <a href="#" className="text-primary hover:text-primary-hover">
             Privacy Policy
           </a>
           .
@@ -156,9 +156,9 @@ export function Signup() {
         </Button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-neutral-600">
+      <p className="mt-8 text-center text-sm text-foreground-muted">
         Already have an account?{' '}
-        <Link to="/login" className="font-medium text-primary-600 hover:text-primary-700">
+        <Link to="/login" className="font-medium text-primary hover:text-primary-hover">
           Sign in
         </Link>
       </p>

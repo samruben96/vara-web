@@ -190,28 +190,28 @@ function FAQAccordion({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boole
   const Icon = item.icon;
 
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
       <button
         onClick={onToggle}
         className={cn(
           'flex w-full items-center gap-4 p-4 text-left transition-colors',
-          'hover:bg-neutral-50',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-inset'
+          'hover:bg-muted',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset'
         )}
         aria-expanded={isOpen}
       >
         <div
           className={cn(
             'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-colors',
-            isOpen ? 'bg-primary-100' : 'bg-neutral-100'
+            isOpen ? 'bg-primary-subtle' : 'bg-muted'
           )}
         >
-          <Icon className={cn('h-5 w-5', isOpen ? 'text-primary-600' : 'text-neutral-500')} />
+          <Icon className={cn('h-5 w-5', isOpen ? 'text-primary' : 'text-foreground-subtle')} />
         </div>
-        <span className="flex-1 font-medium text-neutral-900">{item.question}</span>
+        <span className="flex-1 font-medium text-foreground">{item.question}</span>
         <ChevronDown
           className={cn(
-            'h-5 w-5 flex-shrink-0 text-neutral-400 transition-transform duration-200',
+            'h-5 w-5 flex-shrink-0 text-foreground-subtle transition-transform duration-200',
             isOpen && 'rotate-180'
           )}
         />
@@ -223,7 +223,7 @@ function FAQAccordion({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boole
         )}
       >
         <div className="px-4 pb-4 pl-18">
-          <p className="text-neutral-600 leading-relaxed ml-14">{item.answer}</p>
+          <p className="text-foreground-muted leading-relaxed ml-14">{item.answer}</p>
         </div>
       </div>
     </div>
@@ -246,27 +246,27 @@ export function Help() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Help & Resources</h1>
-          <p className="mt-1 text-neutral-600">
+          <h1 className="text-2xl font-bold text-foreground">Help & Resources</h1>
+          <p className="mt-1 text-foreground-muted">
             Find answers, resources, and support when you need it
           </p>
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100">
-          <HelpCircle className="h-6 w-6 text-primary-600" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-subtle">
+          <HelpCircle className="h-6 w-6 text-primary" />
         </div>
       </div>
 
       {/* Emergency Resources - Prominent but not alarming */}
-      <section className="rounded-2xl bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 p-6">
+      <section className="rounded-2xl bg-gradient-to-r from-lavender-50 to-lavender-100 border border-lavender-200 p-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-violet-100">
-            <Heart className="h-6 w-6 text-violet-600" />
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-lavender-100">
+            <Heart className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-violet-900">
+            <h2 className="text-lg font-semibold text-primary">
               You Are Not Alone
             </h2>
-            <p className="mt-1 text-violet-700">
+            <p className="mt-1 text-primary">
               If you are in immediate danger, please call 911. These confidential resources are available 24/7.
             </p>
           </div>
@@ -276,26 +276,26 @@ export function Help() {
           {EMERGENCY_CONTACTS.map((contact) => (
             <div
               key={contact.name}
-              className="rounded-xl bg-white/80 p-4 border border-violet-100"
+              className="rounded-xl bg-card/80 p-4 border border-lavender-100"
             >
               <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-violet-600 mt-0.5 flex-shrink-0" />
+                <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-medium text-neutral-900">{contact.name}</h3>
-                  <p className="mt-1 text-lg font-semibold text-violet-700">{contact.phone}</p>
-                  <p className="mt-1 text-sm text-neutral-600">{contact.description}</p>
-                  <p className="mt-1 text-xs text-neutral-500">{contact.available}</p>
+                  <h3 className="font-medium text-foreground">{contact.name}</h3>
+                  <p className="mt-1 text-lg font-semibold text-primary">{contact.phone}</p>
+                  <p className="mt-1 text-sm text-foreground-muted">{contact.description}</p>
+                  <p className="mt-1 text-xs text-foreground-subtle">{contact.available}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-4 pt-4 border-t border-violet-200">
+        <div className="mt-4 pt-4 border-t border-lavender-200">
           <div className="flex items-start gap-3">
-            <FileText className="h-5 w-5 text-violet-600 mt-0.5 flex-shrink-0" />
+            <FileText className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm text-violet-800">
+              <p className="text-sm text-primary">
                 <strong>Law Enforcement Guidance:</strong> If you need to report a crime, contact your local police department.
                 Vara can provide documentation of detected threats to support your report.
                 Many jurisdictions have laws specifically addressing cyberstalking, harassment, and non-consensual image sharing.
@@ -308,12 +308,12 @@ export function Help() {
       {/* FAQs Section */}
       <section>
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
-            <HelpCircle className="h-5 w-5 text-primary-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-subtle">
+            <HelpCircle className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-neutral-900">Frequently Asked Questions</h2>
-            <p className="text-sm text-neutral-600">Quick answers to common questions</p>
+            <h2 className="text-xl font-semibold text-foreground">Frequently Asked Questions</h2>
+            <p className="text-sm text-foreground-muted">Quick answers to common questions</p>
           </div>
         </div>
 
@@ -332,12 +332,12 @@ export function Help() {
       {/* Safety Resources Section */}
       <section>
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100">
-            <Shield className="h-5 w-5 text-teal-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success-subtle">
+            <Shield className="h-5 w-5 text-success" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-neutral-900">Safety Resources</h2>
-            <p className="text-sm text-neutral-600">Expert organizations and support services</p>
+            <h2 className="text-xl font-semibold text-foreground">Safety Resources</h2>
+            <p className="text-sm text-foreground-muted">Expert organizations and support services</p>
           </div>
         </div>
 
@@ -345,10 +345,10 @@ export function Help() {
           {SAFETY_RESOURCES.map((category) => (
             <div
               key={category.title}
-              className="rounded-xl border border-neutral-200 bg-white p-5"
+              className="rounded-xl border border-border bg-card p-5"
             >
-              <h3 className="font-semibold text-neutral-900">{category.title}</h3>
-              <p className="mt-1 text-sm text-neutral-600">{category.description}</p>
+              <h3 className="font-semibold text-foreground">{category.title}</h3>
+              <p className="mt-1 text-sm text-foreground-muted">{category.description}</p>
 
               <ul className="mt-4 space-y-3">
                 {category.resources.map((resource) => (
@@ -359,15 +359,15 @@ export function Help() {
                       rel="noopener noreferrer"
                       className={cn(
                         'group flex items-start gap-3 rounded-lg p-3 -mx-3 transition-colors',
-                        'hover:bg-neutral-50'
+                        'hover:bg-muted'
                       )}
                     >
-                      <ExternalLink className="h-4 w-4 text-neutral-400 mt-0.5 flex-shrink-0 group-hover:text-primary-500" />
+                      <ExternalLink className="h-4 w-4 text-foreground-subtle mt-0.5 flex-shrink-0 group-hover:text-primary" />
                       <div>
-                        <span className="font-medium text-neutral-800 group-hover:text-primary-600">
+                        <span className="font-medium text-foreground group-hover:text-primary">
                           {resource.name}
                         </span>
-                        <p className="text-sm text-neutral-500">{resource.description}</p>
+                        <p className="text-sm text-foreground-subtle">{resource.description}</p>
                       </div>
                     </a>
                   </li>
@@ -379,52 +379,52 @@ export function Help() {
       </section>
 
       {/* Contact Us Section */}
-      <section className="rounded-2xl bg-neutral-50 border border-neutral-200 p-6">
+      <section className="rounded-2xl bg-muted border border-border p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-200">
-            <MessageCircle className="h-5 w-5 text-neutral-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-card">
+            <MessageCircle className="h-5 w-5 text-foreground-muted" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-neutral-900">Contact Us</h2>
-            <p className="text-sm text-neutral-600">Our support team is here to help</p>
+            <h2 className="text-xl font-semibold text-foreground">Contact Us</h2>
+            <p className="text-sm text-foreground-muted">Our support team is here to help</p>
           </div>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
-          <div className="rounded-xl bg-white border border-neutral-200 p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
-                <Mail className="h-5 w-5 text-primary-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-subtle">
+                <Mail className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-medium text-neutral-900">Email Support</h3>
+                <h3 className="font-medium text-foreground">Email Support</h3>
                 <a
                   href="mailto:support@vara.com"
-                  className="mt-1 text-primary-600 hover:text-primary-700 font-medium"
+                  className="mt-1 text-primary hover:text-primary-hover font-medium"
                 >
                   support@vara.com
                 </a>
-                <p className="mt-2 text-sm text-neutral-600">
+                <p className="mt-2 text-sm text-foreground-muted">
                   We typically respond within 24-48 hours during business days.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white border border-neutral-200 p-5">
+          <div className="rounded-xl bg-card border border-border p-5">
             <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning-subtle">
+                <AlertTriangle className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <h3 className="font-medium text-neutral-900">Urgent Safety Concerns</h3>
+                <h3 className="font-medium text-foreground">Urgent Safety Concerns</h3>
                 <a
                   href="mailto:urgent@vara.com"
-                  className="mt-1 text-amber-600 hover:text-amber-700 font-medium"
+                  className="mt-1 text-warning hover:text-warning-hover font-medium"
                 >
                   urgent@vara.com
                 </a>
-                <p className="mt-2 text-sm text-neutral-600">
+                <p className="mt-2 text-sm text-foreground-muted">
                   For time-sensitive safety issues. Our team monitors this inbox closely.
                 </p>
               </div>
@@ -432,8 +432,8 @@ export function Help() {
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-neutral-200">
-          <p className="text-sm text-neutral-500">
+        <div className="mt-6 pt-4 border-t border-border">
+          <p className="text-sm text-foreground-subtle">
             Before contacting support, please check our FAQ section above - you might find your answer there.
             When reaching out, include as much detail as possible about your issue so we can help you faster.
           </p>
@@ -442,10 +442,10 @@ export function Help() {
 
       {/* Supportive footer message */}
       <div className="text-center py-6">
-        <p className="text-neutral-600">
+        <p className="text-foreground-muted">
           Remember: Your safety matters, and taking steps to protect yourself online is a sign of strength.
         </p>
-        <p className="mt-2 text-sm text-neutral-500">
+        <p className="mt-2 text-sm text-foreground-subtle">
           Vara is committed to supporting you every step of the way.
         </p>
       </div>

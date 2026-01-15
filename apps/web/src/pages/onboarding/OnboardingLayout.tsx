@@ -7,15 +7,15 @@ import { Shield } from 'lucide-react';
  */
 export function OnboardingLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-primary-50/50 to-white">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-primary-subtle/50 to-background">
       {/* Header with logo */}
       <header className="flex items-center justify-center px-4 py-6 sm:justify-start sm:px-8">
         <Link
           to="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
-          <Shield className="h-8 w-8 text-primary-600" />
-          <span className="text-xl font-semibold text-neutral-900">Vara</span>
+          <Shield className="h-8 w-8 text-primary" />
+          <span className="text-xl font-semibold text-foreground">Vara</span>
         </Link>
       </header>
 
@@ -27,8 +27,8 @@ export function OnboardingLayout() {
       </main>
 
       {/* Footer with reassurance */}
-      <footer className="border-t border-neutral-200 bg-white/50 px-4 py-4">
-        <div className="mx-auto max-w-lg text-center text-sm text-neutral-500">
+      <footer className="border-t border-border bg-card/50 px-4 py-4">
+        <div className="mx-auto max-w-lg text-center text-sm text-foreground-muted">
           <p>
             Your responses are confidential and help us personalize your safety
             experience.

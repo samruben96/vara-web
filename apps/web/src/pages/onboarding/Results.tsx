@@ -36,29 +36,29 @@ export function Results() {
   > = {
     LOW: {
       label: 'Low Risk',
-      color: 'text-success-700',
-      bgColor: 'bg-success-100',
+      color: 'text-success-foreground-subtle',
+      bgColor: 'bg-success-subtle',
       description:
         'Your digital presence is relatively secure. We recommend some basic protective measures.',
     },
     MEDIUM: {
       label: 'Moderate Risk',
-      color: 'text-warning-700',
-      bgColor: 'bg-warning-100',
+      color: 'text-warning-foreground-subtle',
+      bgColor: 'bg-warning-subtle',
       description:
         'There are some areas where we can strengthen your digital safety.',
     },
     HIGH: {
       label: 'Elevated Risk',
-      color: 'text-alert-700',
-      bgColor: 'bg-alert-100',
+      color: 'text-alert-high-text',
+      bgColor: 'bg-alert-high-bg',
       description:
         'We have identified areas that need attention. Your personalized plan will help address them.',
     },
     CRITICAL: {
       label: 'Priority Protection',
-      color: 'text-alert-800',
-      bgColor: 'bg-alert-100',
+      color: 'text-alert-critical-text',
+      bgColor: 'bg-alert-critical-bg',
       description:
         'Your safety is our priority. We have prepared immediate protective measures for you.',
     },
@@ -138,13 +138,13 @@ export function Results() {
     <div className="animate-fade-in space-y-8">
       {/* Success header */}
       <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-success-100">
-          <Sparkles className="h-8 w-8 text-success-600" />
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-success-subtle">
+          <Sparkles className="h-8 w-8 text-success" />
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-neutral-900 sm:text-3xl">
+        <h1 className="mt-4 text-2xl font-bold text-foreground sm:text-3xl">
           Your protection plan is ready
         </h1>
-        <p className="mt-2 text-neutral-600">
+        <p className="mt-2 text-foreground-muted">
           Based on your answers, we've created a personalized safety plan.
         </p>
       </div>
@@ -169,7 +169,7 @@ export function Results() {
 
       {/* Protection plan items */}
       <div className="space-y-4">
-        <h2 className="font-semibold text-neutral-900">
+        <h2 className="font-semibold text-foreground">
           Your personalized action items
         </h2>
 
@@ -177,24 +177,24 @@ export function Results() {
           {planItems.map((item, index) => (
             <div
               key={item.id}
-              className="flex items-start gap-4 rounded-xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-sm"
+              className="flex items-start gap-4 rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-sm"
             >
               {/* Priority number */}
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-subtle text-sm font-semibold text-primary">
                 {index + 1}
               </div>
 
               {/* Content */}
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium uppercase tracking-wide text-primary-600">
+                  <span className="text-xs font-medium uppercase tracking-wide text-primary">
                     {getCategoryLabel(item.category)}
                   </span>
                 </div>
-                <h3 className="mt-1 font-medium text-neutral-900">
+                <h3 className="mt-1 font-medium text-foreground">
                   {item.title}
                 </h3>
-                <p className="mt-1 text-sm text-neutral-600">
+                <p className="mt-1 text-sm text-foreground-muted">
                   {item.description}
                 </p>
               </div>
@@ -202,11 +202,11 @@ export function Results() {
               {/* Status indicator */}
               <div className="shrink-0">
                 {item.status === 'COMPLETED' ? (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success-100">
-                    <Check className="h-4 w-4 text-success-600" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-success-subtle">
+                    <Check className="h-4 w-4 text-success" />
                   </div>
                 ) : (
-                  <div className="h-6 w-6 rounded-full border-2 border-neutral-300" />
+                  <div className="h-6 w-6 rounded-full border-2 border-border-strong" />
                 )}
               </div>
             </div>
@@ -221,7 +221,7 @@ export function Results() {
           <ArrowRight className="h-4 w-4" />
         </Button>
 
-        <p className="text-center text-sm text-neutral-500">
+        <p className="text-center text-sm text-foreground-muted">
           You can always update your plan from the dashboard
         </p>
       </div>

@@ -32,8 +32,8 @@ function PageLoadingFallback() {
   return (
     <div className="flex min-h-[40vh] sm:min-h-[60vh] items-center justify-center">
       <div className="flex flex-col items-center gap-3 sm:gap-4">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
-        <p className="text-sm text-neutral-500">Loading...</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-muted border-t-primary" />
+        <p className="text-sm text-foreground-muted">Loading...</p>
       </div>
     </div>
   );
@@ -43,13 +43,13 @@ function PageLoadingFallback() {
 export function ContentSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
-      <div className="h-8 w-48 rounded bg-neutral-200" />
+      <div className="h-8 w-48 rounded bg-skeleton" />
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-24 sm:h-28 rounded-xl bg-neutral-200" />
+          <div key={i} className="h-24 sm:h-28 rounded-xl bg-skeleton" />
         ))}
       </div>
-      <div className="h-64 rounded-xl bg-neutral-200" />
+      <div className="h-64 rounded-xl bg-skeleton" />
     </div>
   );
 }

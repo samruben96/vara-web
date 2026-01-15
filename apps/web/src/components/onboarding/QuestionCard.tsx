@@ -50,15 +50,15 @@ export function QuestionCard({
       <div className="space-y-2">
         <h2
           id={`question-${question.id}`}
-          className="text-xl font-semibold text-neutral-900 sm:text-2xl"
+          className="text-xl font-semibold text-foreground sm:text-2xl"
         >
           {question.question}
         </h2>
         {question.description && (
-          <p className="text-neutral-600">{question.description}</p>
+          <p className="text-foreground-muted">{question.description}</p>
         )}
         {isMultipleChoice && (
-          <p className="text-sm text-neutral-500">Select all that apply</p>
+          <p className="text-sm text-foreground-muted">Select all that apply</p>
         )}
       </div>
 
@@ -107,10 +107,10 @@ export function QuestionCard({
                 onClick={() => handleSingleSelect(option.value)}
                 className={cn(
                   'flex-1 rounded-lg border-2 py-3 text-center font-medium transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
                   value === option.value
-                    ? 'border-primary-500 bg-primary-100 text-primary-700'
-                    : 'border-neutral-200 bg-white text-neutral-600 hover:border-primary-300 hover:bg-neutral-50'
+                    ? 'border-primary bg-primary-subtle text-primary'
+                    : 'border-border bg-card text-foreground-muted hover:border-primary/50 hover:bg-card-hover'
                 )}
                 role="radio"
                 aria-checked={value === option.value}
@@ -121,7 +121,7 @@ export function QuestionCard({
           </div>
           {/* Scale labels */}
           {question.options.length > 0 && (
-            <div className="flex justify-between px-1 text-xs text-neutral-500">
+            <div className="flex justify-between px-1 text-xs text-foreground-muted">
               <span>{question.options[0]?.description || 'Low'}</span>
               <span>
                 {question.options[question.options.length - 1]?.description ||

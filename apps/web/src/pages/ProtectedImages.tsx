@@ -172,8 +172,8 @@ export function ProtectedImages() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">Protected Images</h1>
-            <p className="mt-1 text-sm sm:text-base text-neutral-600">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Protected Images</h1>
+            <p className="mt-1 text-sm sm:text-base text-foreground-muted">
               Upload and manage photos you want monitored.
             </p>
           </div>
@@ -190,8 +190,8 @@ export function ProtectedImages() {
           )}
         </div>
         <div className="flex items-center gap-2 self-start">
-          <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
-          <span className="text-sm font-medium text-neutral-700">
+          <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          <span className="text-sm font-medium text-foreground">
             {images.length} image{images.length !== 1 ? 's' : ''} protected
           </span>
         </div>
@@ -207,10 +207,10 @@ export function ProtectedImages() {
 
       {/* Upload Section */}
       <div className="card">
-        <h2 className="text-base sm:text-lg font-semibold text-neutral-900">
+        <h2 className="text-base sm:text-lg font-semibold text-foreground">
           Upload New Images
         </h2>
-        <p className="mt-1 text-xs sm:text-sm text-neutral-600">
+        <p className="mt-1 text-xs sm:text-sm text-foreground-muted">
           Add photos to protect. We'll scan the web for unauthorized use.
         </p>
         <div className="mt-3 sm:mt-4">
@@ -252,11 +252,11 @@ export function ProtectedImages() {
       <div className="card">
         {isLoading ? (
           <div className="flex items-center justify-center py-12 sm:py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : error ? (
           <div className="py-12 sm:py-16 text-center">
-            <p className="text-sm sm:text-base text-neutral-600">
+            <p className="text-sm sm:text-base text-foreground-muted">
               Unable to load images. Please try again.
             </p>
             <Button
@@ -313,8 +313,8 @@ function FilterTab({ label, icon, isActive, onClick }: FilterTabProps) {
         'flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 sm:px-4 py-2 text-sm font-medium transition-colors',
         'whitespace-nowrap min-h-touch touch-manipulation active-scale scroll-snap-start',
         isActive
-          ? 'bg-primary-100 text-primary-700'
-          : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 active:bg-neutral-200'
+          ? 'bg-primary-subtle text-primary'
+          : 'text-foreground-muted hover:bg-muted hover:text-foreground active:bg-muted-hover'
       )}
     >
       {icon}
@@ -353,20 +353,20 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
   const getBadgeConfig = () => {
     if (isArchived) {
       return {
-        className: 'bg-neutral-100 text-neutral-600',
+        className: 'bg-muted text-muted-foreground',
         icon: <Archive className="h-3 w-3" />,
         label: 'Archived',
       };
     }
     if (isScanned) {
       return {
-        className: 'bg-success-100 text-success-700',
+        className: 'bg-success-subtle text-success-foreground-subtle',
         icon: <Shield className="h-3 w-3" />,
         label: 'Protected',
       };
     }
     return {
-      className: 'bg-amber-100 text-amber-700',
+      className: 'bg-warning-subtle text-warning-foreground-subtle',
       icon: <Clock className="h-3 w-3" />,
       label: 'Pending',
     };
@@ -382,14 +382,14 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-lg sm:rounded-xl border bg-white transition-all',
+        'group relative overflow-hidden rounded-lg sm:rounded-xl border bg-card transition-all',
         'hover:shadow-md active:scale-[0.98] touch-manipulation',
-        isArchived ? 'border-neutral-200 opacity-75' : 'border-neutral-200'
+        isArchived ? 'border-border opacity-75' : 'border-border'
       )}
     >
       {/* Image */}
       <div
-        className="relative aspect-square bg-neutral-100"
+        className="relative aspect-square bg-muted"
         onClick={handleImageClick}
       >
         <img
@@ -415,7 +415,7 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
         {/* Hover/Tap Actions */}
         <div
           className={cn(
-            'absolute inset-0 flex items-center justify-center gap-2 bg-neutral-900/60 transition-opacity',
+            'absolute inset-0 flex items-center justify-center gap-2 bg-foreground/60 transition-opacity',
             'opacity-0 group-hover:opacity-100',
             showActions && 'opacity-100'
           )}
@@ -425,7 +425,7 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
               e.stopPropagation();
               window.open(imageUrl, '_blank');
             }}
-            className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white text-neutral-700 transition-colors hover:bg-neutral-100 active:bg-neutral-200"
+            className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-card text-foreground transition-colors hover:bg-card-hover active:bg-muted"
             aria-label="View full size"
           >
             <Search className="h-5 w-5" />
@@ -440,10 +440,10 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
               }}
               disabled={isScanDisabled}
               className={cn(
-                'flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white transition-colors',
+                'flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-card transition-colors',
                 isScanDisabled
-                  ? 'text-neutral-400 cursor-not-allowed'
-                  : 'text-primary-600 hover:bg-primary-50 active:bg-primary-100'
+                  ? 'text-foreground-subtle cursor-not-allowed'
+                  : 'text-primary hover:bg-primary-subtle active:bg-primary-muted'
               )}
               aria-label={isScanning ? 'Scanning image...' : 'Scan this image'}
             >
@@ -459,7 +459,7 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
               e.stopPropagation();
               onDelete();
             }}
-            className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white text-alert-600 transition-colors hover:bg-alert-50 active:bg-alert-100"
+            className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-card text-destructive transition-colors hover:bg-destructive-subtle active:bg-destructive-muted"
             aria-label="Delete image"
           >
             <Trash2 className="h-5 w-5" />
@@ -469,11 +469,11 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
 
       {/* Image Info - compact on mobile */}
       <div className="p-2 sm:p-3">
-        <div className="flex items-center gap-1 text-xs sm:text-sm text-neutral-500">
+        <div className="flex items-center gap-1 text-xs sm:text-sm text-foreground-subtle">
           <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
           <span className="truncate">{formatTimeAgo(image.lastScanned)}</span>
         </div>
-        <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-neutral-400 truncate">
+        <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-foreground-subtle truncate">
           Uploaded {new Date(image.uploadedAt).toLocaleDateString()}
         </p>
       </div>
@@ -513,7 +513,7 @@ function DeleteConfirmationModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-neutral-900/50 p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 p-0 sm:p-4"
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
@@ -521,7 +521,7 @@ function DeleteConfirmationModal({
     >
       <div
         className={cn(
-          'w-full sm:max-w-md bg-white shadow-xl',
+          'w-full sm:max-w-md bg-card shadow-xl',
           // Mobile: bottom sheet style
           'rounded-t-2xl sm:rounded-xl',
           'p-4 pb-safe sm:p-6',
@@ -531,16 +531,16 @@ function DeleteConfirmationModal({
       >
         {/* Mobile handle */}
         <div className="flex justify-center pb-2 sm:hidden">
-          <div className="h-1 w-10 rounded-full bg-neutral-300" />
+          <div className="h-1 w-10 rounded-full bg-muted" />
         </div>
 
         <h2
           id="delete-dialog-title"
-          className="text-base sm:text-lg font-semibold text-neutral-900"
+          className="text-base sm:text-lg font-semibold text-foreground"
         >
           Remove Protected Image?
         </h2>
-        <p className="mt-2 text-sm sm:text-base text-neutral-600">
+        <p className="mt-2 text-sm sm:text-base text-foreground-muted">
           This image will no longer be monitored. This action cannot be undone.
         </p>
         <div className="mt-4 sm:mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
@@ -553,7 +553,7 @@ function DeleteConfirmationModal({
             Cancel
           </Button>
           <Button
-            variant="danger"
+            variant="destructive"
             onClick={onConfirm}
             isLoading={isDeleting}
             className="w-full sm:w-auto"

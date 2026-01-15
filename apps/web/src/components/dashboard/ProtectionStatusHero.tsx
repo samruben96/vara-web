@@ -36,45 +36,50 @@ function getStatusMessage(score: number): string {
 
 /**
  * Get score-based color classes for different elements
+ * Uses Vara's calming semantic color palette
  */
 function getScoreColors(score: number) {
   if (score >= 80) {
+    // Protected - Mint (safety, success)
     return {
-      text: 'text-green-600',
-      ring: 'text-green-500',
-      gradient: 'from-green-50 via-teal-50 to-green-50',
-      border: 'border-green-200',
-      badge: 'bg-green-100 text-green-700',
-      glow: 'shadow-green-100',
+      text: 'text-success',
+      ring: 'text-success',
+      gradient: 'from-success-subtle via-success-muted to-success-subtle',
+      border: 'border-success-muted',
+      badge: 'bg-success-subtle text-success-foreground-subtle',
+      glow: 'shadow-success-subtle',
     };
   }
   if (score >= 60) {
+    // Good Standing - Lavender (calming, positive)
     return {
-      text: 'text-teal-600',
-      ring: 'text-teal-500',
-      gradient: 'from-teal-50 via-cyan-50 to-teal-50',
-      border: 'border-teal-200',
-      badge: 'bg-teal-100 text-teal-700',
-      glow: 'shadow-teal-100',
+      text: 'text-primary',
+      ring: 'text-primary',
+      gradient: 'from-primary-subtle via-primary-muted to-primary-subtle',
+      border: 'border-primary-muted',
+      badge: 'bg-primary-subtle text-primary',
+      glow: 'shadow-primary-subtle',
     };
   }
   if (score >= 40) {
+    // Needs Attention - Coral light (warm attention)
     return {
-      text: 'text-amber-600',
-      ring: 'text-amber-500',
-      gradient: 'from-amber-50 via-yellow-50 to-amber-50',
-      border: 'border-amber-200',
-      badge: 'bg-amber-100 text-amber-700',
-      glow: 'shadow-amber-100',
+      text: 'text-warning',
+      ring: 'text-warning',
+      gradient: 'from-warning-subtle via-warning-muted to-warning-subtle',
+      border: 'border-warning-muted',
+      badge: 'bg-warning-subtle text-warning-foreground-subtle',
+      glow: 'shadow-warning-subtle',
     };
   }
+  // At Risk - Coral deeper (urgent but not alarming)
   return {
-    text: 'text-orange-600',
-    ring: 'text-orange-500',
-    gradient: 'from-orange-50 via-amber-50 to-orange-50',
-    border: 'border-orange-200',
-    badge: 'bg-orange-100 text-orange-700',
-    glow: 'shadow-orange-100',
+    text: 'text-destructive',
+    ring: 'text-destructive',
+    gradient: 'from-destructive-subtle via-destructive-muted to-destructive-subtle',
+    border: 'border-destructive-muted',
+    badge: 'bg-destructive-subtle text-destructive-foreground-subtle',
+    glow: 'shadow-destructive-subtle',
   };
 }
 
@@ -104,22 +109,22 @@ function formatLastScan(date: Date | string | null | undefined): string {
  */
 function HeroSkeleton() {
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 p-6 sm:p-8 animate-pulse">
+    <div className="rounded-2xl bg-gradient-to-br from-primary-subtle to-primary-muted border border-primary-muted p-6 sm:p-8 animate-pulse">
       <div className="flex flex-col items-center text-center">
         {/* Score circle skeleton */}
-        <div className="h-36 w-36 sm:h-44 sm:w-44 rounded-full bg-primary-200" />
+        <div className="h-36 w-36 sm:h-44 sm:w-44 rounded-full bg-primary-muted" />
 
         {/* Status label skeleton */}
-        <div className="mt-4 h-6 w-24 rounded-full bg-primary-200" />
+        <div className="mt-4 h-6 w-24 rounded-full bg-primary-muted" />
 
         {/* Message skeleton */}
-        <div className="mt-3 h-4 w-64 rounded bg-primary-200" />
+        <div className="mt-3 h-4 w-64 rounded bg-primary-muted" />
 
         {/* Stats skeleton */}
         <div className="mt-6 flex gap-6">
-          <div className="h-12 w-24 rounded-lg bg-primary-200" />
-          <div className="h-12 w-24 rounded-lg bg-primary-200" />
-          <div className="h-12 w-24 rounded-lg bg-primary-200" />
+          <div className="h-12 w-24 rounded-lg bg-primary-muted" />
+          <div className="h-12 w-24 rounded-lg bg-primary-muted" />
+          <div className="h-12 w-24 rounded-lg bg-primary-muted" />
         </div>
       </div>
     </div>
@@ -159,7 +164,7 @@ function ProgressRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-neutral-200"
+          className="text-border"
         />
         {/* Progress circle with animation */}
         <circle
@@ -187,7 +192,7 @@ function ProgressRing({
         <span className={cn('text-4xl sm:text-5xl font-bold', colors.text)}>
           {score}
         </span>
-        <span className="text-sm text-neutral-500 -mt-1">Protection Score</span>
+        <span className="text-sm text-foreground-muted -mt-1">Protection Score</span>
       </div>
     </div>
   );
@@ -242,43 +247,43 @@ export function ProtectionStatusHero({
         </div>
 
         {/* Supportive Message */}
-        <p className="mt-3 text-neutral-600 max-w-md text-sm sm:text-base">
+        <p className="mt-3 text-foreground-muted max-w-md text-sm sm:text-base">
           {statusMessage}
         </p>
 
         {/* Key Stats */}
         <div className="mt-6 flex flex-wrap justify-center gap-4 sm:gap-6">
           {/* Images Protected */}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/60 border border-neutral-200">
-            <Image className="h-4 w-4 text-primary-600" />
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card/60 border border-border">
+            <Image className="h-4 w-4 text-primary" />
             <div className="text-left">
-              <p className="text-lg font-semibold text-neutral-900">{protectedImages}</p>
-              <p className="text-xs text-neutral-500">Images Protected</p>
+              <p className="text-lg font-semibold text-foreground">{protectedImages}</p>
+              <p className="text-xs text-foreground-muted">Images Protected</p>
             </div>
           </div>
 
           {/* Active Alerts */}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/60 border border-neutral-200">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card/60 border border-border">
             <AlertTriangle className={cn(
               'h-4 w-4',
-              activeAlerts > 0 ? 'text-amber-600' : 'text-success-600'
+              activeAlerts > 0 ? 'text-warning' : 'text-success'
             )} />
             <div className="text-left">
-              <p className="text-lg font-semibold text-neutral-900">{activeAlerts}</p>
-              <p className="text-xs text-neutral-500">
+              <p className="text-lg font-semibold text-foreground">{activeAlerts}</p>
+              <p className="text-xs text-foreground-muted">
                 {activeAlerts === 0 ? 'No Alerts' : 'Active Alerts'}
               </p>
             </div>
           </div>
 
           {/* Last Scan */}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/60 border border-neutral-200">
-            <Clock className="h-4 w-4 text-primary-600" />
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card/60 border border-border">
+            <Clock className="h-4 w-4 text-primary" />
             <div className="text-left">
-              <p className="text-lg font-semibold text-neutral-900">
+              <p className="text-lg font-semibold text-foreground">
                 {formatLastScan(lastScanAt)}
               </p>
-              <p className="text-xs text-neutral-500">Last Scan</p>
+              <p className="text-xs text-foreground-muted">Last Scan</p>
             </div>
           </div>
         </div>

@@ -3,12 +3,21 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
+/**
+ * Button variants using Vara's calming color system
+ *
+ * Design Philosophy:
+ * - Primary: Lavender-based for main actions
+ * - Secondary: Subtle, card-based for supporting actions
+ * - Destructive: Coral (not red) for soft warnings
+ * - Ghost/Outline: Minimal emphasis options
+ */
 const buttonVariants = cva(
   // Base styles with mobile-friendly touch feedback
   [
     'inline-flex items-center justify-center gap-2 rounded-lg font-medium',
     'transition-all duration-150',
-    'focus:outline-none focus:ring-2 focus:ring-offset-2',
+    'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background',
     'disabled:cursor-not-allowed disabled:opacity-50',
     // Mobile touch feedback
     'active:scale-[0.98] touch-manipulation',
@@ -17,12 +26,62 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 active:bg-primary-700',
-        secondary:
-          'border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 focus:ring-neutral-500 active:bg-neutral-100',
-        ghost: 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 focus:ring-neutral-500 active:bg-neutral-200',
-        danger: 'bg-alert-600 text-white hover:bg-alert-700 focus:ring-alert-500 active:bg-alert-700',
-        link: 'text-primary-600 underline-offset-4 hover:underline focus:ring-primary-500',
+        // Primary - Lavender for main CTA
+        primary: [
+          'bg-primary text-primary-foreground',
+          'hover:bg-primary-hover',
+          'active:bg-primary-active',
+          'focus:ring-ring',
+        ].join(' '),
+
+        // Secondary - Card-based for supporting actions
+        secondary: [
+          'border border-border bg-card text-card-foreground',
+          'hover:bg-card-hover hover:border-border-strong',
+          'focus:ring-ring',
+        ].join(' '),
+
+        // Ghost - Minimal emphasis
+        ghost: [
+          'text-foreground-muted',
+          'hover:bg-muted hover:text-foreground',
+          'focus:ring-ring',
+        ].join(' '),
+
+        // Outline - Clear boundary with primary color
+        outline: [
+          'border border-primary bg-transparent text-primary',
+          'hover:bg-primary-subtle',
+          'focus:ring-ring',
+        ].join(' '),
+
+        // Destructive - Coral-based soft approach (not harsh red)
+        destructive: [
+          'bg-destructive text-destructive-foreground',
+          'hover:bg-destructive-hover',
+          'focus:ring-destructive',
+        ].join(' '),
+
+        // Destructive outline variant
+        'destructive-outline': [
+          'border border-destructive bg-transparent text-destructive',
+          'hover:bg-destructive-subtle',
+          'focus:ring-destructive',
+        ].join(' '),
+
+        // Success - Mint-based for positive actions
+        success: [
+          'bg-success text-success-foreground',
+          'hover:bg-success-hover',
+          'focus:ring-success',
+        ].join(' '),
+
+        // Link style
+        link: [
+          'text-primary underline-offset-4',
+          'hover:underline hover:text-primary-hover',
+          'focus:ring-ring',
+        ].join(' '),
       },
       size: {
         // Mobile-first sizing with minimum 44px touch targets
@@ -62,3 +121,5 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = 'Button';
+
+export { buttonVariants };

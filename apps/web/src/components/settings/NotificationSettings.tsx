@@ -43,14 +43,14 @@ function ToggleSwitch({ enabled, onChange, label }: ToggleSwitchProps) {
       className={cn(
         'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full',
         'border-2 border-transparent transition-colors duration-200 ease-in-out',
-        'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
-        enabled ? 'bg-primary-600' : 'bg-neutral-200'
+        'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+        enabled ? 'bg-primary' : 'bg-muted'
       )}
     >
       <span
         className={cn(
           'pointer-events-none inline-block h-5 w-5 transform rounded-full',
-          'bg-white shadow ring-0 transition duration-200 ease-in-out',
+          'bg-card shadow ring-0 transition duration-200 ease-in-out',
           enabled ? 'translate-x-5' : 'translate-x-0'
         )}
       />
@@ -83,8 +83,8 @@ function NotificationRow({
         <Icon className={cn('h-5 w-5', iconColor)} />
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="font-medium text-neutral-900">{title}</h4>
-        <p className="text-sm text-neutral-600">{description}</p>
+        <h4 className="font-medium text-foreground">{title}</h4>
+        <p className="text-sm text-foreground-muted">{description}</p>
       </div>
       <ToggleSwitch enabled={enabled} onChange={onChange} label={title} />
     </div>
@@ -134,20 +134,20 @@ export function NotificationSettings() {
   return (
     <div className="space-y-6">
       {/* Email Notifications Section */}
-      <div className="rounded-xl border border-neutral-200 p-4 sm:p-6">
+      <div className="rounded-xl border border-border p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
-          <Mail className="h-5 w-5 text-primary-600" />
-          <h3 className="font-semibold text-neutral-900">Email Notifications</h3>
+          <Mail className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold text-foreground">Email Notifications</h3>
         </div>
-        <p className="text-sm text-neutral-600 mb-4">
+        <p className="text-sm text-foreground-muted mb-4">
           Control which emails you receive from Vara
         </p>
 
-        <div className="divide-y divide-neutral-100">
+        <div className="divide-y divide-border-subtle">
           <NotificationRow
             icon={Bell}
-            iconBg="bg-primary-100"
-            iconColor="text-primary-600"
+            iconBg="bg-primary-subtle"
+            iconColor="text-primary"
             title="Alert Notifications"
             description="Get notified immediately when we detect potential threats"
             enabled={preferences.emailAlerts}
@@ -156,8 +156,8 @@ export function NotificationSettings() {
 
           <NotificationRow
             icon={Shield}
-            iconBg="bg-blue-100"
-            iconColor="text-blue-600"
+            iconBg="bg-info-subtle"
+            iconColor="text-info"
             title="Weekly Digest"
             description="Receive a weekly summary of your protection status"
             enabled={preferences.emailDigest}
@@ -166,8 +166,8 @@ export function NotificationSettings() {
 
           <NotificationRow
             icon={Mail}
-            iconBg="bg-neutral-100"
-            iconColor="text-neutral-600"
+            iconBg="bg-muted"
+            iconColor="text-foreground-muted"
             title="Product Updates"
             description="News about new features and improvements"
             enabled={preferences.marketingEmails}
@@ -177,20 +177,20 @@ export function NotificationSettings() {
       </div>
 
       {/* Alert Types Section */}
-      <div className="rounded-xl border border-neutral-200 p-4 sm:p-6">
+      <div className="rounded-xl border border-border p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
-          <AlertTriangle className="h-5 w-5 text-amber-600" />
-          <h3 className="font-semibold text-neutral-900">Alert Types</h3>
+          <AlertTriangle className="h-5 w-5 text-warning" />
+          <h3 className="font-semibold text-foreground">Alert Types</h3>
         </div>
-        <p className="text-sm text-neutral-600 mb-4">
+        <p className="text-sm text-foreground-muted mb-4">
           Choose which types of alerts you want to receive
         </p>
 
-        <div className="divide-y divide-neutral-100">
+        <div className="divide-y divide-border-subtle">
           <NotificationRow
             icon={Image}
-            iconBg="bg-rose-100"
-            iconColor="text-rose-600"
+            iconBg="bg-destructive-subtle"
+            iconColor="text-destructive"
             title="Image Alerts"
             description="When your protected images are found elsewhere online"
             enabled={preferences.imageAlerts}
@@ -199,8 +199,8 @@ export function NotificationSettings() {
 
           <NotificationRow
             icon={User}
-            iconBg="bg-amber-100"
-            iconColor="text-amber-600"
+            iconBg="bg-warning-subtle"
+            iconColor="text-warning"
             title="Profile Alerts"
             description="Fake profiles or impersonation attempts detected"
             enabled={preferences.profileAlerts}
@@ -209,8 +209,8 @@ export function NotificationSettings() {
 
           <NotificationRow
             icon={AlertTriangle}
-            iconBg="bg-purple-100"
-            iconColor="text-purple-600"
+            iconBg="bg-primary-subtle"
+            iconColor="text-primary"
             title="Data Breach Alerts"
             description="When your email is found in a data breach"
             enabled={preferences.breachAlerts}
@@ -220,8 +220,8 @@ export function NotificationSettings() {
       </div>
 
       {/* Info Note */}
-      <div className="rounded-lg bg-primary-50 border border-primary-100 p-4">
-        <p className="text-sm text-primary-700">
+      <div className="rounded-lg bg-primary-subtle border border-primary-muted p-4">
+        <p className="text-sm text-primary">
           <strong>Note:</strong> These preferences are saved locally for now. Full email
           notification integration is coming soon. Critical security alerts will always be
           sent regardless of these settings.

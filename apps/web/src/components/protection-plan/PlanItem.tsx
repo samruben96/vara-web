@@ -18,33 +18,33 @@ interface PlanItemProps {
   isUpdating: boolean;
 }
 
-/** Status configuration with colors and icons */
+/** Status configuration with Vara's calming semantic colors */
 const statusConfig: Record<
   ProtectionPlanItemStatus,
   { icon: typeof Check; color: string; bgColor: string; label: string }
 > = {
   PENDING: {
     icon: Circle,
-    color: 'text-neutral-400',
-    bgColor: 'bg-neutral-100 hover:bg-neutral-200',
+    color: 'text-foreground-subtle',
+    bgColor: 'bg-muted hover:bg-muted-hover',
     label: 'Pending',
   },
   IN_PROGRESS: {
     icon: Clock,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-100 hover:bg-blue-200',
+    color: 'text-info',
+    bgColor: 'bg-info-subtle hover:bg-info-muted',
     label: 'In Progress',
   },
   COMPLETED: {
     icon: Check,
-    color: 'text-green-500',
-    bgColor: 'bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success-subtle',
     label: 'Completed',
   },
   SKIPPED: {
     icon: SkipForward,
-    color: 'text-neutral-400',
-    bgColor: 'bg-neutral-50',
+    color: 'text-foreground-subtle',
+    bgColor: 'bg-background-muted',
     label: 'Skipped',
   },
 };
@@ -108,8 +108,8 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
       className={cn(
         'rounded-xl border p-4 transition-all',
         isDone
-          ? 'bg-neutral-50 border-neutral-200'
-          : 'bg-white border-neutral-200 hover:border-primary-200 hover:shadow-sm'
+          ? 'bg-background-muted border-border'
+          : 'bg-card border-border hover:border-primary-muted hover:shadow-sm'
       )}
     >
       <div className="flex items-start gap-3">
@@ -126,7 +126,7 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
           aria-label={`Mark as ${item.status === 'COMPLETED' ? 'incomplete' : 'complete'}`}
         >
           {isUpdating ? (
-            <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+            <Loader2 className="h-4 w-4 animate-spin text-foreground-subtle" />
           ) : (
             <StatusIcon className={cn('h-4 w-4', config.color)} />
           )}
@@ -140,8 +140,8 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
                 className={cn(
                   'font-medium transition-all',
                   isDone
-                    ? 'text-neutral-500 line-through'
-                    : 'text-neutral-900'
+                    ? 'text-foreground-muted line-through'
+                    : 'text-foreground'
                 )}
               >
                 {item.title}
@@ -149,7 +149,7 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
               <span
                 className={cn(
                   'inline-block text-xs px-2 py-0.5 rounded-full mt-1',
-                  isDone ? 'bg-neutral-100 text-neutral-500' : 'bg-primary-50 text-primary-700'
+                  isDone ? 'bg-muted text-muted-foreground' : 'bg-primary-subtle text-primary'
                 )}
               >
                 {item.category}
@@ -159,22 +159,22 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
             {/* Expand Button */}
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-1 hover:bg-neutral-100 rounded-lg transition-colors flex-shrink-0"
+              className="p-1 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
               aria-expanded={expanded}
               aria-label={expanded ? 'Collapse details' : 'Expand details'}
             >
               {expanded ? (
-                <ChevronUp className="h-4 w-4 text-neutral-400" />
+                <ChevronUp className="h-4 w-4 text-foreground-subtle" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-neutral-400" />
+                <ChevronDown className="h-4 w-4 text-foreground-subtle" />
               )}
             </button>
           </div>
 
           {/* Expanded Content */}
           {expanded && (
-            <div className="mt-3 pt-3 border-t border-neutral-100">
-              <p className={cn('text-sm', isDone ? 'text-neutral-400' : 'text-neutral-600')}>
+            <div className="mt-3 pt-3 border-t border-border-subtle">
+              <p className={cn('text-sm', isDone ? 'text-foreground-subtle' : 'text-foreground-muted')}>
                 {item.description}
               </p>
 
@@ -183,10 +183,10 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
                 <span
                   className={cn(
                     'inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full',
-                    item.status === 'COMPLETED' && 'bg-green-100 text-green-700',
-                    item.status === 'IN_PROGRESS' && 'bg-blue-100 text-blue-700',
-                    item.status === 'PENDING' && 'bg-neutral-100 text-neutral-600',
-                    item.status === 'SKIPPED' && 'bg-neutral-100 text-neutral-500'
+                    item.status === 'COMPLETED' && 'bg-success-subtle text-success-foreground-subtle',
+                    item.status === 'IN_PROGRESS' && 'bg-info-subtle text-info-foreground-subtle',
+                    item.status === 'PENDING' && 'bg-muted text-muted-foreground',
+                    item.status === 'SKIPPED' && 'bg-muted text-foreground-subtle'
                   )}
                 >
                   <StatusIcon className="h-3 w-3" />
@@ -194,7 +194,7 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
                 </span>
 
                 {item.dueDate && (
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-xs text-foreground-muted">
                     Due: {new Date(item.dueDate).toLocaleDateString()}
                   </span>
                 )}
@@ -217,7 +217,7 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
                       size="sm"
                       onClick={handleSkip}
                       disabled={isUpdating}
-                      className="text-neutral-500"
+                      className="text-foreground-muted"
                     >
                       <SkipForward className="h-4 w-4 mr-1" />
                       Skip
@@ -242,7 +242,7 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
                     size="sm"
                     onClick={handleStatusClick}
                     disabled={isUpdating}
-                    className="text-neutral-500"
+                    className="text-foreground-muted"
                   >
                     Mark Incomplete
                   </Button>

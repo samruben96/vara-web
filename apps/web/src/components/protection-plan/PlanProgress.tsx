@@ -23,17 +23,17 @@ interface PlanProgressProps {
 export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
   // Determine score color based on level
   const getScoreColor = (value: number) => {
-    if (value >= 80) return 'text-green-600';
-    if (value >= 60) return 'text-teal-600';
-    if (value >= 40) return 'text-amber-600';
-    return 'text-orange-600';
+    if (value >= 80) return 'text-success';
+    if (value >= 60) return 'text-info';
+    if (value >= 40) return 'text-warning';
+    return 'text-destructive';
   };
 
   const getProgressColor = (value: number) => {
-    if (value >= 80) return 'bg-green-500';
-    if (value >= 60) return 'bg-teal-500';
-    if (value >= 40) return 'bg-amber-500';
-    return 'bg-orange-500';
+    if (value >= 80) return 'bg-success';
+    if (value >= 60) return 'bg-info';
+    if (value >= 40) return 'bg-warning';
+    return 'bg-destructive';
   };
 
   const getEncouragementMessage = (value: number) => {
@@ -45,12 +45,12 @@ export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 p-6 animate-pulse">
+      <div className="rounded-2xl bg-gradient-to-br from-primary-subtle to-primary-muted border border-primary-muted p-6 animate-pulse">
         <div className="flex items-center gap-4">
-          <div className="h-20 w-20 rounded-full bg-primary-200" />
+          <div className="h-20 w-20 rounded-full bg-primary-muted" />
           <div className="flex-1 space-y-3">
-            <div className="h-6 w-32 bg-primary-200 rounded" />
-            <div className="h-4 w-48 bg-primary-200 rounded" />
+            <div className="h-6 w-32 bg-primary-muted rounded" />
+            <div className="h-4 w-48 bg-primary-muted rounded" />
           </div>
         </div>
       </div>
@@ -63,7 +63,7 @@ export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
     : 0;
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 p-6">
+    <div className="rounded-2xl bg-gradient-to-br from-primary-subtle to-primary-muted border border-primary-muted p-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-6">
         {/* Score Circle */}
         <div className="relative flex-shrink-0 mx-auto sm:mx-0">
@@ -76,7 +76,7 @@ export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
               fill="none"
               stroke="currentColor"
               strokeWidth="8"
-              className="text-primary-200"
+              className="text-primary-muted"
             />
             {/* Progress circle */}
             <circle
@@ -96,7 +96,7 @@ export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
               <span className={cn('text-2xl font-bold', getScoreColor(score))}>
                 {score}
               </span>
-              <span className="text-sm text-neutral-500 block -mt-1">score</span>
+              <span className="text-sm text-foreground-subtle block -mt-1">score</span>
             </div>
           </div>
         </div>
@@ -104,27 +104,27 @@ export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
         {/* Stats and Message */}
         <div className="flex-1 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
-            <Shield className="h-5 w-5 text-primary-600" />
-            <h2 className="text-lg font-semibold text-neutral-900">
+            <Shield className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">
               Protection Progress
             </h2>
           </div>
 
-          <p className="text-neutral-600 mb-4">
+          <p className="text-foreground-muted mb-4">
             {getEncouragementMessage(score)}
           </p>
 
           {/* Progress Bar */}
           <div className="mb-4">
             <div className="flex items-center justify-between text-sm mb-1">
-              <span className="text-neutral-600">
+              <span className="text-foreground-muted">
                 {stats.completed} of {activeItems} tasks completed
               </span>
               <span className={cn('font-medium', getScoreColor(score))}>
                 {completionPercentage}%
               </span>
             </div>
-            <div className="h-2 bg-primary-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-primary-muted rounded-full overflow-hidden">
               <div
                 className={cn('h-full rounded-full transition-all duration-500', getProgressColor(score))}
                 style={{ width: `${completionPercentage}%` }}
@@ -135,18 +135,18 @@ export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
           {/* Stats Pills */}
           <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
             {stats.inProgress > 0 && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700">
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-info-subtle text-info">
                 <TrendingUp className="h-3 w-3" />
                 {stats.inProgress} in progress
               </span>
             )}
             {stats.pending > 0 && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-600">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-muted text-foreground-muted">
                 {stats.pending} pending
               </span>
             )}
             {stats.skipped > 0 && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-500">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-muted text-foreground-subtle">
                 {stats.skipped} skipped
               </span>
             )}

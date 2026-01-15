@@ -57,7 +57,7 @@ export function ProcessingAnimation({ isVisible }: ProcessingAnimationProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm"
         >
           <div className="flex flex-col items-center px-6 text-center">
             {/* Animated icon container */}
@@ -69,7 +69,7 @@ export function ProcessingAnimation({ isVisible }: ProcessingAnimationProps) {
             >
               {/* Pulsing ring */}
               <motion.div
-                className="absolute inset-0 rounded-full bg-primary-200"
+                className="absolute inset-0 rounded-full bg-primary-muted"
                 animate={{
                   scale: [1, 1.3, 1],
                   opacity: [0.6, 0.2, 0.6],
@@ -83,7 +83,7 @@ export function ProcessingAnimation({ isVisible }: ProcessingAnimationProps) {
 
               {/* Second pulsing ring (offset) */}
               <motion.div
-                className="absolute inset-0 rounded-full bg-primary-100"
+                className="absolute inset-0 rounded-full bg-primary-subtle"
                 animate={{
                   scale: [1, 1.5, 1],
                   opacity: [0.4, 0, 0.4],
@@ -98,7 +98,7 @@ export function ProcessingAnimation({ isVisible }: ProcessingAnimationProps) {
 
               {/* Icon container */}
               <motion.div
-                className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary-100"
+                className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary-subtle"
                 animate={{ rotate: [0, 5, -5, 0] }}
                 transition={{
                   duration: 4,
@@ -114,7 +114,7 @@ export function ProcessingAnimation({ isVisible }: ProcessingAnimationProps) {
                     exit={{ scale: 0.5, opacity: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Icon className="h-10 w-10 text-primary-600" />
+                    <Icon className="h-10 w-10 text-primary" />
                   </motion.div>
                 </AnimatePresence>
               </motion.div>
@@ -129,7 +129,7 @@ export function ProcessingAnimation({ isVisible }: ProcessingAnimationProps) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
-                  className="text-lg font-medium text-neutral-700"
+                  className="text-lg font-medium text-foreground"
                 >
                   {currentMessage.text}
                 </motion.p>
@@ -143,8 +143,8 @@ export function ProcessingAnimation({ isVisible }: ProcessingAnimationProps) {
                   key={index}
                   className={`h-2 w-2 rounded-full ${
                     index === messageIndex
-                      ? 'bg-primary-600'
-                      : 'bg-neutral-300'
+                      ? 'bg-primary'
+                      : 'bg-border-strong'
                   }`}
                   animate={
                     index === messageIndex
@@ -164,7 +164,7 @@ export function ProcessingAnimation({ isVisible }: ProcessingAnimationProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mt-8 text-sm text-neutral-500"
+              className="mt-8 text-sm text-foreground-muted"
             >
               This only takes a moment
             </motion.p>

@@ -97,7 +97,7 @@ export function ProtectionPlan() {
       onSuccess: () => {
         toast.success('Protection plan refreshed with new recommendations!', {
           duration: 3000,
-          icon: <Sparkles className="h-5 w-5 text-primary-500" />,
+          icon: <Sparkles className="h-5 w-5 text-primary" />,
         });
       },
       onError: (err) => {
@@ -112,13 +112,13 @@ export function ProtectionPlan() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Protection Plan</h1>
-            <p className="mt-1 text-neutral-600">Loading your personalized safety roadmap...</p>
+            <h1 className="text-2xl font-bold text-foreground">Protection Plan</h1>
+            <p className="mt-1 text-foreground-muted">Loading your personalized safety roadmap...</p>
           </div>
-          <Shield className="h-8 w-8 text-primary-500" />
+          <Shield className="h-8 w-8 text-primary" />
         </div>
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
     );
@@ -130,14 +130,14 @@ export function ProtectionPlan() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Protection Plan</h1>
-            <p className="mt-1 text-neutral-600">Your personalized safety roadmap</p>
+            <h1 className="text-2xl font-bold text-foreground">Protection Plan</h1>
+            <p className="mt-1 text-foreground-muted">Your personalized safety roadmap</p>
           </div>
-          <Shield className="h-8 w-8 text-primary-500" />
+          <Shield className="h-8 w-8 text-primary" />
         </div>
-        <div className="rounded-xl bg-rose-50 border border-rose-200 p-6 text-center">
-          <AlertCircle className="h-8 w-8 text-rose-500 mx-auto mb-2" />
-          <p className="text-rose-700">Unable to load your protection plan. Please try again.</p>
+        <div className="rounded-xl bg-destructive-subtle border border-destructive p-6 text-center">
+          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+          <p className="text-destructive-foreground-subtle">Unable to load your protection plan. Please try again.</p>
           <Button variant="secondary" size="sm" className="mt-4" onClick={() => window.location.reload()}>
             Refresh Page
           </Button>
@@ -152,20 +152,20 @@ export function ProtectionPlan() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Protection Plan</h1>
-            <p className="mt-1 text-neutral-600">Your personalized safety roadmap</p>
+            <h1 className="text-2xl font-bold text-foreground">Protection Plan</h1>
+            <p className="mt-1 text-foreground-muted">Your personalized safety roadmap</p>
           </div>
-          <Shield className="h-8 w-8 text-primary-500" />
+          <Shield className="h-8 w-8 text-primary" />
         </div>
 
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-100">
-            <Target className="h-10 w-10 text-primary-600" />
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-subtle">
+            <Target className="h-10 w-10 text-primary" />
           </div>
-          <h2 className="mt-6 text-xl font-semibold text-neutral-900">
+          <h2 className="mt-6 text-xl font-semibold text-foreground">
             Your Plan is Ready to Start
           </h2>
-          <p className="mt-3 max-w-md text-neutral-600">
+          <p className="mt-3 max-w-md text-foreground-muted">
             We'll generate personalized protection tasks based on your profile and activity.
             Click below to create your first action items.
           </p>
@@ -191,8 +191,8 @@ export function ProtectionPlan() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Protection Plan</h1>
-          <p className="mt-1 text-neutral-600">
+          <h1 className="text-2xl font-bold text-foreground">Protection Plan</h1>
+          <p className="mt-1 text-foreground-muted">
             Your personalized roadmap to stronger digital safety
           </p>
         </div>
@@ -210,7 +210,7 @@ export function ProtectionPlan() {
             )}
             <span className="ml-1 hidden sm:inline">Refresh</span>
           </Button>
-          <Shield className="h-8 w-8 text-primary-500" />
+          <Shield className="h-8 w-8 text-primary" />
         </div>
       </div>
 
@@ -219,16 +219,16 @@ export function ProtectionPlan() {
 
       {/* All Completed Celebration */}
       {allCompleted && (
-        <div className="rounded-xl bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 p-6 text-center">
+        <div className="rounded-xl bg-gradient-to-r from-success-subtle to-mint-100 border border-success p-6 text-center">
           <div className="flex justify-center mb-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-subtle">
+              <CheckCircle2 className="h-6 w-6 text-success" />
             </div>
           </div>
-          <h2 className="text-lg font-semibold text-green-800">
+          <h2 className="text-lg font-semibold text-success-foreground-subtle">
             Amazing Work!
           </h2>
-          <p className="mt-1 text-green-700 max-w-md mx-auto">
+          <p className="mt-1 text-success-foreground-subtle max-w-md mx-auto">
             You've completed all your protection tasks. Your digital safety is looking strong.
             Keep monitoring and we'll add new recommendations as needed.
           </p>
@@ -259,22 +259,22 @@ export function ProtectionPlan() {
             <section key={category} className="space-y-3">
               {/* Category Header */}
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-neutral-800">
+                <h2 className="text-lg font-semibold text-foreground">
                   {category}
                 </h2>
-                <span className="text-sm text-neutral-500">
+                <span className="text-sm text-foreground-subtle">
                   {completedInCategory} of {activeInCategory} completed
                 </span>
               </div>
 
               {/* Category Progress Bar */}
-              <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
                   className={cn(
                     'h-full rounded-full transition-all duration-500',
                     completedInCategory === activeInCategory
-                      ? 'bg-green-500'
-                      : 'bg-primary-500'
+                      ? 'bg-success'
+                      : 'bg-primary'
                   )}
                   style={{
                     width: `${activeInCategory > 0 ? (completedInCategory / activeInCategory) * 100 : 0}%`,
@@ -302,12 +302,12 @@ export function ProtectionPlan() {
       </div>
 
       {/* Info Footer */}
-      <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4">
+      <div className="rounded-xl bg-muted border border-border p-4">
         <div className="flex items-start gap-3">
-          <Sparkles className="h-5 w-5 text-primary-500 mt-0.5 flex-shrink-0" />
+          <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm text-neutral-600">
-              <strong className="text-neutral-700">How your plan works:</strong> We analyze your
+            <p className="text-sm text-foreground-muted">
+              <strong className="text-foreground">How your plan works:</strong> We analyze your
               risk profile, connected accounts, and protected images to create personalized action
               items. Complete tasks at your own pace - every step strengthens your digital safety.
               Your plan updates automatically as your situation changes.

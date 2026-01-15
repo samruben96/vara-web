@@ -1,0 +1,422 @@
+/**
+ * Vara Color System
+ *
+ * A calming, supportive color palette designed for women's digital safety.
+ * Based on: Cream, Lavender, Mint, Coral, and Dark Charcoal
+ *
+ * Design Philosophy:
+ * - Calming and empowering, never alarming
+ * - Soft, approachable colors that feel safe
+ * - WCAG AA compliant contrast ratios
+ * - Seamless light/dark mode transitions
+ */
+
+@layer base {
+  :root {
+    /* ═══════════════════════════════════════════════════════════════════════
+       BASE COLOR PALETTE
+       These are the raw color values from which all tokens are derived
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    /* Cream - Background warmth */
+    --color-cream-50: 255 251 245;   /* #FFFBF5 - Lightest */
+    --color-cream-100: 254 250 241;  /* #FEFAF1 - Primary background */
+    --color-cream-200: 252 245 232;  /* #FCF5E8 */
+    --color-cream-300: 248 238 220;  /* #F8EEDC */
+    --color-cream-400: 242 228 204;  /* #F2E4CC */
+    --color-cream-500: 235 217 187;  /* #EBD9BB */
+
+    /* Lavender - Calming accent */
+    --color-lavender-50: 250 247 253;   /* #FAF7FD */
+    --color-lavender-100: 244 238 250;  /* #F4EEFA */
+    --color-lavender-200: 235 224 244;  /* #EBE0F4 */
+    --color-lavender-300: 215 202 230;  /* #D7CAE6 - Primary lavender */
+    --color-lavender-400: 191 172 214;  /* #BFACD6 */
+    --color-lavender-500: 167 143 198;  /* #A78FC6 */
+    --color-lavender-600: 139 110 175;  /* #8B6EAF */
+    --color-lavender-700: 111 82 147;   /* #6F5293 */
+    --color-lavender-800: 85 60 115;    /* #553C73 */
+    --color-lavender-900: 62 42 85;     /* #3E2A55 */
+
+    /* Mint - Safety & success */
+    --color-mint-50: 245 253 251;    /* #F5FDFB */
+    --color-mint-100: 235 250 246;   /* #EBFAF6 */
+    --color-mint-200: 208 245 235;   /* #D0F5EB */
+    --color-mint-300: 177 239 227;   /* #B1EFE3 - Primary mint */
+    --color-mint-400: 140 225 208;   /* #8CE1D0 */
+    --color-mint-500: 102 207 187;   /* #66CFBB */
+    --color-mint-600: 71 180 160;    /* #47B4A0 */
+    --color-mint-700: 52 145 128;    /* #349180 */
+    --color-mint-800: 40 115 102;    /* #287366 */
+    --color-mint-900: 32 90 80;      /* #205A50 */
+
+    /* Coral - Warm attention (non-alarming warnings/errors) */
+    --color-coral-50: 255 248 245;   /* #FFF8F5 */
+    --color-coral-100: 255 240 234;  /* #FFF0EA */
+    --color-coral-200: 255 224 211;  /* #FFE0D3 */
+    --color-coral-300: 255 206 185;  /* #FFCEB9 */
+    --color-coral-400: 255 171 145;  /* #FFAB91 - Primary coral */
+    --color-coral-500: 250 140 110;  /* #FA8C6E */
+    --color-coral-600: 235 110 80;   /* #EB6E50 */
+    --color-coral-700: 210 85 60;    /* #D2553C */
+    --color-coral-800: 175 68 48;    /* #AF4430 */
+    --color-coral-900: 140 52 38;    /* #8C3426 */
+
+    /* Charcoal - Text & dark mode */
+    --color-charcoal-50: 250 250 250;   /* #FAFAFA */
+    --color-charcoal-100: 240 240 240;  /* #F0F0F0 */
+    --color-charcoal-200: 220 220 220;  /* #DCDCDC */
+    --color-charcoal-300: 180 180 180;  /* #B4B4B4 */
+    --color-charcoal-400: 130 130 130;  /* #828282 */
+    --color-charcoal-500: 90 90 90;     /* #5A5A5A */
+    --color-charcoal-600: 60 60 60;     /* #3C3C3C */
+    --color-charcoal-700: 45 45 45;     /* #2D2D2D */
+    --color-charcoal-800: 30 30 30;     /* #1E1E1E - Primary charcoal */
+    --color-charcoal-900: 18 18 18;     /* #121212 */
+    --color-charcoal-950: 10 10 10;     /* #0A0A0A */
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       SEMANTIC COLOR TOKENS - LIGHT MODE
+       These map intentions to colors for consistent meaning across the UI
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    /* Background colors */
+    --background: var(--color-cream-100);
+    --background-subtle: var(--color-cream-50);
+    --background-muted: var(--color-cream-200);
+    --background-elevated: 255 255 255; /* Pure white for cards/modals */
+
+    /* Foreground (text) colors */
+    --foreground: var(--color-charcoal-800);
+    --foreground-muted: var(--color-charcoal-500);
+    --foreground-subtle: var(--color-charcoal-400);
+    --foreground-inverse: 255 255 255;
+
+    /* Primary - Main brand actions (lavender-based) */
+    --primary: var(--color-lavender-600);
+    --primary-hover: var(--color-lavender-700);
+    --primary-active: var(--color-lavender-800);
+    --primary-subtle: var(--color-lavender-100);
+    --primary-muted: var(--color-lavender-200);
+    --primary-foreground: 255 255 255;
+
+    /* Secondary - Supporting actions */
+    --secondary: var(--color-lavender-300);
+    --secondary-hover: var(--color-lavender-400);
+    --secondary-active: var(--color-lavender-500);
+    --secondary-subtle: var(--color-lavender-50);
+    --secondary-foreground: var(--color-lavender-800);
+
+    /* Accent - Highlights and emphasis */
+    --accent: var(--color-lavender-300);
+    --accent-hover: var(--color-lavender-400);
+    --accent-subtle: var(--color-lavender-100);
+    --accent-foreground: var(--color-lavender-900);
+
+    /* Muted - Subtle backgrounds and disabled states */
+    --muted: var(--color-cream-300);
+    --muted-hover: var(--color-cream-400);
+    --muted-foreground: var(--color-charcoal-500);
+
+    /* Card surfaces */
+    --card: 255 255 255;
+    --card-hover: var(--color-cream-50);
+    --card-foreground: var(--color-charcoal-800);
+
+    /* Popover/Dropdown surfaces */
+    --popover: 255 255 255;
+    --popover-foreground: var(--color-charcoal-800);
+
+    /* Border colors */
+    --border: var(--color-cream-400);
+    --border-subtle: var(--color-cream-300);
+    --border-strong: var(--color-charcoal-200);
+    --border-focus: var(--color-lavender-500);
+
+    /* Ring (focus) colors */
+    --ring: var(--color-lavender-500);
+    --ring-offset: var(--color-cream-100);
+
+    /* Input elements */
+    --input: var(--color-cream-300);
+    --input-focus: var(--color-lavender-300);
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       STATUS COLORS
+       Designed to be calming and supportive, not alarming
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    /* Success - Safety, positive, protected (mint-based) */
+    --success: var(--color-mint-600);
+    --success-hover: var(--color-mint-700);
+    --success-subtle: var(--color-mint-100);
+    --success-muted: var(--color-mint-200);
+    --success-foreground: 255 255 255;
+    --success-foreground-subtle: var(--color-mint-800);
+
+    /* Warning - Attention needed, but not scary (coral-based, lighter) */
+    --warning: var(--color-coral-500);
+    --warning-hover: var(--color-coral-600);
+    --warning-subtle: var(--color-coral-100);
+    --warning-muted: var(--color-coral-200);
+    --warning-foreground: 255 255 255;
+    --warning-foreground-subtle: var(--color-coral-800);
+
+    /* Destructive - Soft approach to "errors" (coral-based, warmer) */
+    --destructive: var(--color-coral-600);
+    --destructive-hover: var(--color-coral-700);
+    --destructive-subtle: var(--color-coral-100);
+    --destructive-muted: var(--color-coral-200);
+    --destructive-foreground: 255 255 255;
+    --destructive-foreground-subtle: var(--color-coral-800);
+
+    /* Info - Informational, neutral attention (lavender-based) */
+    --info: var(--color-lavender-500);
+    --info-hover: var(--color-lavender-600);
+    --info-subtle: var(--color-lavender-100);
+    --info-muted: var(--color-lavender-200);
+    --info-foreground: 255 255 255;
+    --info-foreground-subtle: var(--color-lavender-800);
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       ALERT SEVERITY LEVELS
+       Progressive intensity from calm info to elevated concern
+       Never uses harsh red - coral tones throughout
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    /* INFO - Neutral, informational */
+    --alert-info: var(--color-lavender-500);
+    --alert-info-bg: var(--color-lavender-100);
+    --alert-info-border: var(--color-lavender-300);
+    --alert-info-text: var(--color-lavender-800);
+    --alert-info-icon: var(--color-lavender-600);
+
+    /* LOW - Minor awareness */
+    --alert-low: var(--color-mint-500);
+    --alert-low-bg: var(--color-mint-100);
+    --alert-low-border: var(--color-mint-300);
+    --alert-low-text: var(--color-mint-800);
+    --alert-low-icon: var(--color-mint-600);
+
+    /* MEDIUM - Attention warranted */
+    --alert-medium: var(--color-coral-400);
+    --alert-medium-bg: var(--color-coral-100);
+    --alert-medium-border: var(--color-coral-300);
+    --alert-medium-text: var(--color-coral-800);
+    --alert-medium-icon: var(--color-coral-500);
+
+    /* HIGH - Prompt action recommended */
+    --alert-high: var(--color-coral-600);
+    --alert-high-bg: var(--color-coral-200);
+    --alert-high-border: var(--color-coral-400);
+    --alert-high-text: var(--color-coral-900);
+    --alert-high-icon: var(--color-coral-700);
+
+    /* CRITICAL - Immediate attention (still coral, just deeper) */
+    --alert-critical: var(--color-coral-700);
+    --alert-critical-bg: var(--color-coral-200);
+    --alert-critical-border: var(--color-coral-500);
+    --alert-critical-text: var(--color-coral-900);
+    --alert-critical-icon: var(--color-coral-800);
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       COMPONENT-SPECIFIC TOKENS
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    /* Navigation */
+    --nav-background: 255 255 255;
+    --nav-foreground: var(--color-charcoal-700);
+    --nav-active: var(--color-lavender-600);
+    --nav-active-bg: var(--color-lavender-100);
+    --nav-hover: var(--color-lavender-500);
+    --nav-hover-bg: var(--color-cream-200);
+    --nav-border: var(--color-cream-300);
+
+    /* Sidebar */
+    --sidebar-background: var(--color-cream-50);
+    --sidebar-foreground: var(--color-charcoal-700);
+    --sidebar-border: var(--color-cream-300);
+
+    /* Charts/Data visualization */
+    --chart-1: var(--color-lavender-500);
+    --chart-2: var(--color-mint-500);
+    --chart-3: var(--color-coral-400);
+    --chart-4: var(--color-lavender-300);
+    --chart-5: var(--color-mint-300);
+
+    /* Skeleton/Loading states */
+    --skeleton: var(--color-cream-300);
+    --skeleton-shimmer: var(--color-cream-200);
+
+    /* Selection highlight */
+    --selection: var(--color-lavender-200);
+    --selection-foreground: var(--color-lavender-900);
+
+    /* Scrollbar (optional styling) */
+    --scrollbar-track: var(--color-cream-200);
+    --scrollbar-thumb: var(--color-cream-400);
+    --scrollbar-thumb-hover: var(--color-lavender-300);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     DARK MODE
+     Inverted palette with charcoal backgrounds and softer accents
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  .dark {
+    /* Background colors - charcoal base */
+    --background: var(--color-charcoal-800);
+    --background-subtle: var(--color-charcoal-900);
+    --background-muted: var(--color-charcoal-700);
+    --background-elevated: var(--color-charcoal-700);
+
+    /* Foreground (text) colors - cream/light tones */
+    --foreground: var(--color-cream-100);
+    --foreground-muted: var(--color-charcoal-300);
+    --foreground-subtle: var(--color-charcoal-400);
+    --foreground-inverse: var(--color-charcoal-900);
+
+    /* Primary - Lighter lavender for dark mode */
+    --primary: var(--color-lavender-400);
+    --primary-hover: var(--color-lavender-300);
+    --primary-active: var(--color-lavender-500);
+    --primary-subtle: var(--color-lavender-900);
+    --primary-muted: var(--color-lavender-800);
+    --primary-foreground: var(--color-charcoal-900);
+
+    /* Secondary */
+    --secondary: var(--color-lavender-500);
+    --secondary-hover: var(--color-lavender-400);
+    --secondary-active: var(--color-lavender-600);
+    --secondary-subtle: var(--color-lavender-900);
+    --secondary-foreground: var(--color-cream-100);
+
+    /* Accent */
+    --accent: var(--color-lavender-400);
+    --accent-hover: var(--color-lavender-300);
+    --accent-subtle: var(--color-lavender-900);
+    --accent-foreground: var(--color-charcoal-900);
+
+    /* Muted */
+    --muted: var(--color-charcoal-600);
+    --muted-hover: var(--color-charcoal-500);
+    --muted-foreground: var(--color-charcoal-300);
+
+    /* Card surfaces - elevated from background */
+    --card: var(--color-charcoal-700);
+    --card-hover: var(--color-charcoal-600);
+    --card-foreground: var(--color-cream-100);
+
+    /* Popover */
+    --popover: var(--color-charcoal-700);
+    --popover-foreground: var(--color-cream-100);
+
+    /* Borders - subtle in dark mode */
+    --border: var(--color-charcoal-600);
+    --border-subtle: var(--color-charcoal-700);
+    --border-strong: var(--color-charcoal-500);
+    --border-focus: var(--color-lavender-400);
+
+    /* Ring */
+    --ring: var(--color-lavender-400);
+    --ring-offset: var(--color-charcoal-800);
+
+    /* Input */
+    --input: var(--color-charcoal-600);
+    --input-focus: var(--color-lavender-400);
+
+    /* Status colors - adjusted for dark backgrounds */
+    --success: var(--color-mint-400);
+    --success-hover: var(--color-mint-300);
+    --success-subtle: var(--color-mint-900);
+    --success-muted: var(--color-mint-800);
+    --success-foreground: var(--color-charcoal-900);
+    --success-foreground-subtle: var(--color-mint-200);
+
+    --warning: var(--color-coral-400);
+    --warning-hover: var(--color-coral-300);
+    --warning-subtle: var(--color-coral-900);
+    --warning-muted: var(--color-coral-800);
+    --warning-foreground: var(--color-charcoal-900);
+    --warning-foreground-subtle: var(--color-coral-200);
+
+    --destructive: var(--color-coral-500);
+    --destructive-hover: var(--color-coral-400);
+    --destructive-subtle: var(--color-coral-900);
+    --destructive-muted: var(--color-coral-800);
+    --destructive-foreground: var(--color-charcoal-900);
+    --destructive-foreground-subtle: var(--color-coral-200);
+
+    --info: var(--color-lavender-400);
+    --info-hover: var(--color-lavender-300);
+    --info-subtle: var(--color-lavender-900);
+    --info-muted: var(--color-lavender-800);
+    --info-foreground: var(--color-charcoal-900);
+    --info-foreground-subtle: var(--color-lavender-200);
+
+    /* Alert severity - dark mode */
+    --alert-info: var(--color-lavender-400);
+    --alert-info-bg: var(--color-lavender-900);
+    --alert-info-border: var(--color-lavender-700);
+    --alert-info-text: var(--color-lavender-200);
+    --alert-info-icon: var(--color-lavender-400);
+
+    --alert-low: var(--color-mint-400);
+    --alert-low-bg: var(--color-mint-900);
+    --alert-low-border: var(--color-mint-700);
+    --alert-low-text: var(--color-mint-200);
+    --alert-low-icon: var(--color-mint-400);
+
+    --alert-medium: var(--color-coral-400);
+    --alert-medium-bg: var(--color-coral-900);
+    --alert-medium-border: var(--color-coral-700);
+    --alert-medium-text: var(--color-coral-200);
+    --alert-medium-icon: var(--color-coral-400);
+
+    --alert-high: var(--color-coral-400);
+    --alert-high-bg: var(--color-coral-900);
+    --alert-high-border: var(--color-coral-600);
+    --alert-high-text: var(--color-coral-100);
+    --alert-high-icon: var(--color-coral-400);
+
+    --alert-critical: var(--color-coral-400);
+    --alert-critical-bg: var(--color-coral-900);
+    --alert-critical-border: var(--color-coral-500);
+    --alert-critical-text: var(--color-coral-100);
+    --alert-critical-icon: var(--color-coral-300);
+
+    /* Navigation - dark */
+    --nav-background: var(--color-charcoal-800);
+    --nav-foreground: var(--color-cream-200);
+    --nav-active: var(--color-lavender-400);
+    --nav-active-bg: var(--color-lavender-900);
+    --nav-hover: var(--color-lavender-300);
+    --nav-hover-bg: var(--color-charcoal-700);
+    --nav-border: var(--color-charcoal-600);
+
+    /* Sidebar - dark */
+    --sidebar-background: var(--color-charcoal-900);
+    --sidebar-foreground: var(--color-cream-200);
+    --sidebar-border: var(--color-charcoal-700);
+
+    /* Charts - adjusted for dark */
+    --chart-1: var(--color-lavender-400);
+    --chart-2: var(--color-mint-400);
+    --chart-3: var(--color-coral-400);
+    --chart-4: var(--color-lavender-300);
+    --chart-5: var(--color-mint-300);
+
+    /* Skeleton - dark */
+    --skeleton: var(--color-charcoal-600);
+    --skeleton-shimmer: var(--color-charcoal-700);
+
+    /* Selection - dark */
+    --selection: var(--color-lavender-800);
+    --selection-foreground: var(--color-lavender-100);
+
+    /* Scrollbar - dark */
+    --scrollbar-track: var(--color-charcoal-700);
+    --scrollbar-thumb: var(--color-charcoal-500);
+    --scrollbar-thumb-hover: var(--color-lavender-600);
+  }
+}

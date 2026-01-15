@@ -35,7 +35,7 @@ export function ForgotPassword() {
 
       toast.success('Check your email for reset instructions', {
         duration: 3000,
-        style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+        className: 'bg-success-subtle text-success-foreground-subtle border border-success-muted',
       });
       setSuccess(true);
     } catch {
@@ -46,9 +46,9 @@ export function ForgotPassword() {
   if (success) {
     return (
       <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-100">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-subtle">
           <svg
-            className="h-8 w-8 text-success-600"
+            className="h-8 w-8 text-success"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -56,8 +56,8 @@ export function ForgotPassword() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-neutral-900">Check your email</h1>
-        <p className="mt-2 text-neutral-600">
+        <h1 className="mt-6 text-2xl font-bold text-foreground">Check your email</h1>
+        <p className="mt-2 text-foreground-muted">
           If an account exists with that email, we've sent you a password reset link.
         </p>
         <div className="mt-8">
@@ -76,19 +76,19 @@ export function ForgotPassword() {
     <div>
       <Link
         to="/login"
-        className="inline-flex items-center gap-1 text-sm text-neutral-600 hover:text-neutral-900"
+        className="inline-flex items-center gap-1 text-sm text-foreground-muted hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to sign in
       </Link>
 
-      <h1 className="mt-6 text-2xl font-bold text-neutral-900">Reset your password</h1>
-      <p className="mt-2 text-neutral-600">
+      <h1 className="mt-6 text-2xl font-bold text-foreground">Reset your password</h1>
+      <p className="mt-2 text-foreground-muted">
         Enter your email address and we'll send you a link to reset your password.
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg bg-alert-50 p-4 text-sm text-alert-700">
+        <div className="mt-6 rounded-lg bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
           {error}
         </div>
       )}
