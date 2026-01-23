@@ -39,7 +39,9 @@ export async function scanRoutes(app: FastifyInstance) {
 
   // Trigger a new scan
   app.post('/trigger', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { type, targetId } = triggerScanSchema.parse(request.body);
+    // Handle empty body gracefully - default to {} if body is null/undefined
+    const body = request.body ?? {};
+    const { type, targetId } = triggerScanSchema.parse(body);
     const userId = request.user!.id;
 
     // Check for existing pending/running scan of same type

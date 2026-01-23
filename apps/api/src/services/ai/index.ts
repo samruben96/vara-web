@@ -6,6 +6,7 @@
  * - Perceptual hashing for visual fingerprinting
  * - Reverse image search for finding image matches across the web
  * - Deepfake detection for identifying synthetic/manipulated images
+ * - Face embedding extraction and comparison for identity verification
  *
  * All services support mock mode for development when API keys are not configured.
  * Set the corresponding environment variables to enable real API integrations:
@@ -13,6 +14,7 @@
  * - TINEYE_API_KEY: Enables TinEye reverse image search
  * - GOOGLE_VISION_API_KEY: Enables Google Vision reverse image search
  * - DEEPFAKE_API_KEY: Enables real deepfake detection
+ * - DEEPFACE_SERVICE_URL: URL of DeepFace Python microservice (default: http://localhost:8000)
  */
 
 // CLIP Embedding Service
@@ -45,3 +47,11 @@ export {
   type DeepfakeAnalysisDetails,
   type DeepfakeAnalysisResult,
 } from './deepfake.service';
+
+// Face Embedding Service (DeepFace)
+export {
+  faceEmbeddingService,
+  FaceEmbeddingService,
+  type FaceEmbeddingResult,
+  type FaceComparisonResult,
+} from './face-embedding.service';

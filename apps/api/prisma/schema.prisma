@@ -108,6 +108,12 @@ model ProtectedImage {
   scanCount   Int                         @default(0) // Total number of scans performed
   matchCount  Int                         @default(0) // Total number of matches found
 
+  // Face detection fields
+  faceEmbedding  Unsupported("vector(512)")? // Face embedding vector for similarity search
+  faceDetected   Boolean                     @default(false) // Whether a face was detected in the image
+  faceConfidence Float?                      // Face detection confidence score (0.0-1.0)
+  faceMetadata   Json?                       // Bounding box, landmarks, model info
+
   // Relations
   user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   matches  ImageMatch[]
@@ -116,6 +122,7 @@ model ProtectedImage {
   @@index([userId, status])
   @@index([userId, status, lastScanned])
   @@index([hash])
+  @@index([userId, faceDetected]) // Index for filtering images with faces
   @@map("protected_images")
 }
 
@@ -132,6 +139,16 @@ model ImageMatch {
   firstSeenAt      DateTime         @default(now()) // First time this match was detected
   lastSeenAt       DateTime         @default(now()) // Last time this match was confirmed
 
+  // Confidence and verification fields
+  confidence     String? // HIGH, MEDIUM_HIGH, MEDIUM, LOW - overall confidence tier
+  clipSimilarity Float?  // CLIP cosine similarity score (0.0-1.0)
+  faceVerified   String? // VERIFIED, NO_FACE_DETECTED, MISMATCH, null
+
+  // Review workflow fields
+  reviewStatus String    @default("ACTIVE") // ACTIVE, FLAGGED_FOR_REVIEW, CONFIRMED, DISMISSED
+  reviewedAt   DateTime?
+  reviewedBy   String? // userId who reviewed (UUID as string)
+
   // Relations
   protectedImage ProtectedImage @relation(fields: [protectedImageId], references: [id], onDelete: Cascade)
   scanJob        ScanJob?       @relation(fields: [scanJobId], references: [id], onDelete: SetNull)
@@ -139,6 +156,7 @@ model ImageMatch {
   @@unique([protectedImageId, sourceUrl])
   @@index([protectedImageId, status])
   @@index([scanJobId])
+  @@index([reviewStatus])
   @@map("image_matches")
 }
 
@@ -263,6 +281,7 @@ enum AlertType {
   BEHAVIORAL_CHANGE
   DEEPFAKE_DETECTED
   PROFILE_IMPERSONATION
+  FACE_MATCH // Face match found online - verified identity match
 }
 
 enum AlertSeverity {
@@ -292,6 +311,7 @@ enum ImageMatchStatus {
   REVIEWED
   ACTIONED
   DISMISSED
+  FLAGGED_FOR_REVIEW
 }
 
 enum ImageStatus {

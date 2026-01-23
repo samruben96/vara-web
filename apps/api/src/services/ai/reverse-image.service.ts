@@ -9,6 +9,7 @@ export interface ReverseImageMatch {
   similarity: number;
   pageTitle?: string;
   isMock?: boolean; // Indicates this is test data, not a real match
+  matchSourceType?: 'fullMatchingImages' | 'partialMatchingImages' | 'pagesWithMatchingImages' | 'visuallySimilarImages';
 }
 
 /**
@@ -389,6 +390,7 @@ class ReverseImageService {
     const addMatch = (
       url: string,
       similarity: number,
+      matchSourceType: ReverseImageMatch['matchSourceType'],
       pageTitle?: string
     ): void => {
       if (seenUrls.has(url)) {
@@ -402,6 +404,7 @@ class ReverseImageService {
         similarity: Math.round(similarity * 100) / 100,
         pageTitle,
         isMock: false,
+        matchSourceType,
       });
     };
 
@@ -411,18 +414,7 @@ class ReverseImageService {
         if (image.url) {
           // Full matches get 0.95-1.0 similarity
           const similarity = image.score ?? 0.98;
-          addMatch(image.url, similarity);
-        }
-      }
-    }
-
-    // Process pages with matching images (includes page titles)
-    if (webDetection.pagesWithMatchingImages) {
-      for (const page of webDetection.pagesWithMatchingImages) {
-        if (page.url) {
-          // Pages with matching images typically have high similarity
-          const similarity = page.score ?? 0.92;
-          addMatch(page.url, similarity, page.pageTitle);
+          addMatch(image.url, similarity, 'fullMatchingImages');
         }
       }
     }
@@ -433,20 +425,30 @@ class ReverseImageService {
         if (image.url) {
           // Partial matches get slightly lower similarity
           const similarity = image.score ?? 0.85;
-          addMatch(image.url, similarity);
+          addMatch(image.url, similarity, 'partialMatchingImages');
+        }
+      }
+    }
+
+    // Process pages with matching images (includes page titles)
+    if (webDetection.pagesWithMatchingImages) {
+      for (const page of webDetection.pagesWithMatchingImages) {
+        if (page.url) {
+          // Pages with matching images typically have high similarity
+          const similarity = page.score ?? 0.92;
+          addMatch(page.url, similarity, 'pagesWithMatchingImages', page.pageTitle);
         }
       }
     }
 
     // Process visually similar images
-    // Note: These are still valuable for detecting unauthorized image use,
-    // so we use 0.86 as default (above MIN_SIMILARITY_THRESHOLD of 0.85)
+    // Note: These have the highest false positive rate and should be treated with more scrutiny
     if (webDetection.visuallySimilarImages) {
       for (const image of webDetection.visuallySimilarImages) {
         if (image.url) {
           // Use provided score, or default to 0.86 to pass threshold
           const similarity = image.score ?? 0.86;
-          addMatch(image.url, similarity);
+          addMatch(image.url, similarity, 'visuallySimilarImages');
         }
       }
     }

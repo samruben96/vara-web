@@ -8,6 +8,7 @@ import { ImageUpload, EmptyImagesState } from '../components/ImageUpload';
 import { ScanStatus } from '../components/ScanStatus';
 import { useImages, useDeleteImage } from '../hooks/useImages';
 import { useActiveScan, useTriggerScan, useTriggerImageScan } from '../hooks/useScans';
+import { ApiRequestError } from '../lib/api';
 import type { ProtectedImage } from '@vara/shared';
 
 type ImageFilter = 'all' | 'scanned' | 'not_scanned' | 'archived';
@@ -82,17 +83,29 @@ export function ProtectedImages() {
         },
       });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Unable to start scan. Please try again.',
-        {
-          duration: 4000,
+      // Handle 409 "scan already in progress" with helpful guidance
+      if (error instanceof ApiRequestError && error.status === 409) {
+        toast.error('A scan is already in progress. Check the status above.', {
+          duration: 5000,
           style: {
             background: '#fef2f2',
             color: '#991b1b',
             border: '1px solid #fecaca',
           },
-        }
-      );
+        });
+      } else {
+        toast.error(
+          error instanceof Error ? error.message : 'Unable to start scan. Please try again.',
+          {
+            duration: 4000,
+            style: {
+              background: '#fef2f2',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+            },
+          }
+        );
+      }
     }
   }, [triggerScan]);
 
@@ -112,17 +125,29 @@ export function ProtectedImages() {
       });
     } catch (error) {
       setScanningImageId(null);
-      toast.error(
-        error instanceof Error ? error.message : 'Unable to start scan. Please try again.',
-        {
-          duration: 4000,
+      // Handle 409 "scan already in progress" with helpful guidance
+      if (error instanceof ApiRequestError && error.status === 409) {
+        toast.error('A scan is already in progress. Check the status above.', {
+          duration: 5000,
           style: {
             background: '#fef2f2',
             color: '#991b1b',
             border: '1px solid #fecaca',
           },
-        }
-      );
+        });
+      } else {
+        toast.error(
+          error instanceof Error ? error.message : 'Unable to start scan. Please try again.',
+          {
+            duration: 4000,
+            style: {
+              background: '#fef2f2',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+            },
+          }
+        );
+      }
     }
   }, [triggerImageScan]);
 

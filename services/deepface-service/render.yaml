@@ -1,0 +1,27 @@
+# Render Deployment Configuration for DeepFace Face Recognition Service
+# https://docs.render.com/blueprint-spec
+
+services:
+  - type: web
+    name: vara-deepface
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: oregon  # Match API region for lower latency
+    plan: standard  # Requires more memory for ML models (2GB RAM minimum)
+    numInstances: 1
+    healthCheckPath: /api/v1/health
+    buildFilter:
+      paths:
+        - services/deepface-service/**
+    envVars:
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PORT
+        value: 8001
+      - key: HOST
+        value: 0.0.0.0
+      - key: PRELOAD_MODELS
+        value: "true"
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port 8001
+    autoDeploy: true

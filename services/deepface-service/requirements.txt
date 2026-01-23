@@ -1,0 +1,22 @@
+# DeepFace Face Recognition Service Dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+deepface==0.0.93
+tensorflow>=2.15.0
+tf-keras>=2.15.0  # Required for TensorFlow 2.16+ compatibility with retinaface
+numpy>=1.24.0
+scipy>=1.11.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+requests>=2.31.0
+Pillow>=10.0.0
+opencv-python-headless>=4.8.0
+httpx>=0.25.0
+
+# CLIP Embedding Dependencies
+sentence-transformers>=2.2.0  # For CLIP model (clip-ViT-B-32)
+torch>=2.0.0  # Required by sentence-transformers
+
+# Perceptual Hashing Dependencies
+imagehash>=4.3.0  # For pHash, dHash, wHash
+PyWavelets>=1.4.0  # Required by imagehash for wavelet hash

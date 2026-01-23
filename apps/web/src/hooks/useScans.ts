@@ -156,6 +156,10 @@ export function useTriggerScan() {
       // Also invalidate images as scan status may update them
       queryClient.invalidateQueries({ queryKey: imageKeys.lists() });
     },
+    onError: () => {
+      // On 409 or any error, refetch active scans to show current status
+      queryClient.invalidateQueries({ queryKey: scanKeys.active() });
+    },
   });
 }
 
@@ -175,6 +179,10 @@ export function useTriggerImageScan() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scanKeys.all });
       queryClient.invalidateQueries({ queryKey: imageKeys.lists() });
+    },
+    onError: () => {
+      // On 409 or any error, refetch active scans to show current status
+      queryClient.invalidateQueries({ queryKey: scanKeys.active() });
     },
   });
 }

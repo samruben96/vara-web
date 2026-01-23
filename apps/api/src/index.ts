@@ -13,6 +13,7 @@ import { imageRoutes } from './routes/images';
 import { alertRoutes } from './routes/alerts';
 import { protectionPlanRoutes } from './routes/protection-plan';
 import { scanRoutes } from './routes/scans';
+import { matchRoutes } from './routes/matches';
 import { errorHandler } from './middleware/error-handler';
 import { env } from './config/env';
 import { closeQueues } from './queues';
@@ -32,6 +33,18 @@ const app = Fastify({
           }
         : undefined,
   },
+});
+
+// Custom JSON body parser that handles empty bodies gracefully
+// Fixes: FST_ERR_CTP_EMPTY_JSON_BODY - Body cannot be empty when content-type is set to 'application/json'
+app.addContentTypeParser('application/json', { parseAs: 'string' }, (_req, body, done) => {
+  try {
+    // If body is empty string or null/undefined, default to empty object
+    const parsedBody = body && typeof body === 'string' && body.trim() ? JSON.parse(body) : {};
+    done(null, parsedBody);
+  } catch (err) {
+    done(err as Error, undefined);
+  }
 });
 
 async function start() {
@@ -72,6 +85,7 @@ async function start() {
   await app.register(alertRoutes, { prefix: '/api/v1/alerts' });
   await app.register(protectionPlanRoutes, { prefix: '/api/v1/protection-plan' });
   await app.register(scanRoutes, { prefix: '/api/v1/scans' });
+  await app.register(matchRoutes, { prefix: '/api/v1/matches' });
 
   // Initialize workers if Redis is configured
   if (env.REDIS_URL) {

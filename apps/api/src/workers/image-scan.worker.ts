@@ -6,20 +6,57 @@ import { createWorkerConnectionOptions } from '../config/redis';
 import { QUEUE_NAMES, ImageScanJobData } from '../queues';
 import {
   clipService,
+  ClipService,
   perceptualHashService,
   reverseImageService,
   deepfakeService,
+  faceEmbeddingService,
 } from '../services/ai';
 import { createAlertFromMatch } from '../utils/alert-creator';
 
 // Supabase Storage bucket name
 const STORAGE_BUCKET = 'protected-images';
 
-// Minimum similarity threshold for creating matches
-const MIN_SIMILARITY_THRESHOLD = 0.85;
-
 // Deepfake confidence threshold
 const DEEPFAKE_CONFIDENCE_THRESHOLD = 0.7;
+
+/**
+ * Match type configuration for tiered confidence filtering.
+ * Google Vision returns 4 match types with different reliability levels.
+ * This config determines how strictly each type is filtered.
+ */
+const MATCH_TYPE_CONFIG = {
+  fullMatchingImages: {
+    confidence: 'HIGH' as const,
+    requireFaceVerification: false, // Trust exact matches
+    requireClipVerification: false,
+    minSimilarityThreshold: 0.7,
+    autoCreateAlert: true,
+  },
+  partialMatchingImages: {
+    confidence: 'MEDIUM_HIGH' as const,
+    requireFaceVerification: true,
+    requireClipVerification: false,
+    minSimilarityThreshold: 0.75,
+    autoCreateAlert: true,
+  },
+  pagesWithMatchingImages: {
+    confidence: 'MEDIUM' as const,
+    requireFaceVerification: true,
+    requireClipVerification: true,
+    minSimilarityThreshold: 0.8,
+    autoCreateAlert: true,
+  },
+  visuallySimilarImages: {
+    confidence: 'LOW' as const,
+    requireFaceVerification: true,
+    requireClipVerification: true,
+    minSimilarityThreshold: 0.85,
+    autoCreateAlert: false, // Flag for review instead
+  },
+} as const;
+
+type MatchTypeKey = keyof typeof MATCH_TYPE_CONFIG;
 
 /**
  * Formats an embedding array as a PostgreSQL vector literal.
@@ -47,6 +84,8 @@ interface ImageScanResult {
     similarityCheck: boolean;
     embeddingsGenerated: number;
     hashesGenerated: number;
+    faceEmbeddingsGenerated: number;
+    faceVerifiedMatches: number;
   };
   errors: string[];
 }
@@ -58,6 +97,30 @@ interface ImageRecord {
   id: string;
   storageUrl: string;
   hash: string | null;
+  faceEmbedding?: number[] | null;
+  faceDetected?: boolean;
+}
+
+/**
+ * Face verification status enum values.
+ */
+type FaceVerificationStatus = 'VERIFIED' | 'NO_FACE_DETECTED' | 'MISMATCH';
+
+/**
+ * Represents an extended match with face and CLIP verification data.
+ */
+interface ExtendedMatch {
+  domain: string;
+  sourceUrl: string;
+  similarity: number;
+  isMock?: boolean;
+  matchSourceType?: MatchTypeKey;
+  faceVerified?: FaceVerificationStatus;
+  faceSimilarity?: number;
+  faceConfidence?: 'high' | 'medium' | 'low';
+  clipVerified?: boolean;
+  clipSimilarity?: number;
+  confidenceTier?: typeof MATCH_TYPE_CONFIG[MatchTypeKey]['confidence'];
 }
 
 /**
@@ -94,6 +157,59 @@ async function downloadImage(storageUrl: string): Promise<Buffer | null> {
   // Convert Blob to Buffer
   const arrayBuffer = await data.arrayBuffer();
   return Buffer.from(arrayBuffer);
+}
+
+/**
+ * Downloads an image from an external URL for face verification.
+ *
+ * @param url - The external URL of the image to download
+ * @returns The image data as a Buffer, or null if download fails
+ */
+async function downloadMatchedImage(url: string): Promise<Buffer | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Vara-Safety-Scanner/1.0',
+        Accept: 'image/*',
+      },
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.warn(`[ImageScanWorker] Failed to download matched image: HTTP ${response.status}`);
+      return null;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.startsWith('image/')) {
+      console.warn(`[ImageScanWorker] Invalid content type for matched image: ${contentType}`);
+      return null;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+
+    // Limit image size to 10MB
+    if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
+      console.warn(`[ImageScanWorker] Matched image too large: ${arrayBuffer.byteLength} bytes`);
+      return null;
+    }
+
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn(`[ImageScanWorker] Timeout downloading matched image: ${url}`);
+    } else {
+      console.warn(
+        `[ImageScanWorker] Error downloading matched image: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+    return null;
+  }
 }
 
 /**
@@ -160,6 +276,8 @@ async function processImage(
   alertsCreated: number;
   embeddingGenerated: boolean;
   hashGenerated: boolean;
+  faceEmbeddingGenerated: boolean;
+  faceVerifiedMatches: number;
   error?: string;
 }> {
   const result = {
@@ -167,6 +285,8 @@ async function processImage(
     alertsCreated: 0,
     embeddingGenerated: false,
     hashGenerated: false,
+    faceEmbeddingGenerated: false,
+    faceVerifiedMatches: 0,
     error: undefined as string | undefined,
   };
 
@@ -180,7 +300,7 @@ async function processImage(
 
     // Generate CLIP embedding
     console.log(`[ImageScanWorker] Generating CLIP embedding for image ${image.id}`);
-    const clipResult = await clipService.generateEmbedding(imageBuffer);
+    const clipResult = await clipService.generateEmbeddingFromBase64(imageBuffer.toString('base64'));
     const embeddingVector = formatForPgVector(clipResult.embedding);
     result.embeddingGenerated = true;
 
@@ -189,15 +309,49 @@ async function processImage(
     const hashResult = await perceptualHashService.generateHash(imageBuffer);
     result.hashGenerated = true;
 
-    // Update protected_images with embedding and hash using raw SQL for pgvector
-    await prisma.$executeRaw`
-      UPDATE "protected_images"
-      SET embedding = ${embeddingVector}::vector,
+    // Extract face embedding for identity verification
+    console.log(`[ImageScanWorker] Extracting face embedding for image ${image.id}`);
+    const faceResult = await faceEmbeddingService.extractEmbedding(imageBuffer);
+
+    // Store the user's face embedding for later verification
+    let userFaceEmbedding: number[] | null = null;
+
+    if (faceResult.embedding) {
+      // Face detected - store embedding
+      userFaceEmbedding = faceResult.embedding;
+      const faceEmbeddingForPg = formatForPgVector(faceResult.embedding);
+      await prisma.$executeRaw`
+        UPDATE "protected_images"
+        SET
+          embedding = ${embeddingVector}::vector,
           hash = ${hashResult.hash},
+          "faceEmbedding" = ${faceEmbeddingForPg}::vector,
+          "faceDetected" = true,
+          "faceConfidence" = ${faceResult.faceConfidence},
+          "faceMetadata" = ${JSON.stringify({
+            facialArea: faceResult.facialArea,
+            processingTimeMs: faceResult.processingTimeMs
+          })}::jsonb,
           "lastScanned" = NOW(),
           "scanCount" = COALESCE("scanCount", 0) + 1
-      WHERE id = ${image.id}
-    `;
+        WHERE id = ${image.id}
+      `;
+      result.faceEmbeddingGenerated = true;
+      console.log(`[ImageScanWorker] Face detected in image ${image.id} with confidence ${faceResult.faceConfidence}`);
+    } else {
+      // No face detected - update other fields
+      await prisma.$executeRaw`
+        UPDATE "protected_images"
+        SET
+          embedding = ${embeddingVector}::vector,
+          hash = ${hashResult.hash},
+          "faceDetected" = false,
+          "lastScanned" = NOW(),
+          "scanCount" = COALESCE("scanCount", 0) + 1
+        WHERE id = ${image.id}
+      `;
+      console.log(`[ImageScanWorker] No face detected in image ${image.id}`);
+    }
 
     // Perform reverse image search
     console.log(`[ImageScanWorker] Running reverse image search for image ${image.id}`);
@@ -211,69 +365,249 @@ async function processImage(
     console.log(`[ImageScanWorker] Processing ${searchResult.matches.length} matches from ${searchResult.provider}`);
 
     let skippedBelowThreshold = 0;
+    let skippedFaceMismatch = 0;
+    let skippedClipMismatch = 0;
+    let flaggedForReview = 0;
+
     for (const match of searchResult.matches) {
-      // Skip matches below threshold
-      if (match.similarity < MIN_SIMILARITY_THRESHOLD) {
+      // Get match type config for tiered filtering
+      const matchSourceType = match.matchSourceType || 'visuallySimilarImages'; // Default to most restrictive
+      const matchConfig = MATCH_TYPE_CONFIG[matchSourceType];
+
+      // Skip matches below type-specific threshold
+      if (match.similarity < matchConfig.minSimilarityThreshold) {
+        console.log(
+          `[ImageScanWorker] Skipping ${matchSourceType} - below threshold: ${match.similarity} < ${matchConfig.minSimilarityThreshold}`
+        );
         skippedBelowThreshold++;
         continue;
       }
 
-      console.log(`[ImageScanWorker] Match: ${match.domain} - similarity: ${match.similarity}`);
+      console.log(
+        `[ImageScanWorker] Match [${matchSourceType}/${matchConfig.confidence}]: ${match.domain} - similarity: ${match.similarity}`
+      );
+
+      // Extended match data for verification
+      const extendedMatch: ExtendedMatch = {
+        domain: match.domain,
+        sourceUrl: match.sourceUrl,
+        similarity: match.similarity,
+        isMock: match.isMock,
+        matchSourceType,
+        confidenceTier: matchConfig.confidence,
+      };
+
+      // Face verification: If required by config and user's image has a face
+      if (matchConfig.requireFaceVerification && userFaceEmbedding && match.sourceUrl) {
+        try {
+          // Download the matched image and extract its face
+          console.log(`[ImageScanWorker] Verifying face in matched image: ${match.sourceUrl}`);
+          const matchedImageBuffer = await downloadMatchedImage(match.sourceUrl);
+
+          if (matchedImageBuffer) {
+            const matchFaceResult = await faceEmbeddingService.extractEmbedding(matchedImageBuffer);
+
+            if (matchFaceResult.embedding) {
+              // Compare faces
+              const comparison = await faceEmbeddingService.compareFaces(
+                userFaceEmbedding,
+                matchFaceResult.embedding
+              );
+
+              if (comparison.isSamePerson) {
+                // Face matches - this is a verified identity match
+                extendedMatch.faceVerified = 'VERIFIED';
+                extendedMatch.faceSimilarity = comparison.similarity;
+                extendedMatch.faceConfidence = comparison.confidence;
+                result.faceVerifiedMatches++;
+                console.log(
+                  `[ImageScanWorker] Face VERIFIED for ${match.sourceUrl}: ` +
+                  `similarity=${comparison.similarity}, confidence=${comparison.confidence}`
+                );
+              } else {
+                // Face doesn't match - this is a false positive, skip it
+                console.log(
+                  `[ImageScanWorker] Skipping ${matchSourceType} - face mismatch: ` +
+                  `similarity=${comparison.similarity}, distance=${comparison.distance}`
+                );
+                skippedFaceMismatch++;
+                continue; // Skip this match entirely
+              }
+            } else {
+              // No face in matched image - for types requiring face verification, this is suspicious
+              console.log(`[ImageScanWorker] No face detected in matched image ${match.sourceUrl}`);
+              // Allow to proceed but mark as not face verified
+              extendedMatch.faceVerified = 'NO_FACE_DETECTED';
+            }
+          }
+        } catch (err) {
+          // Failed to verify face, proceed with original match logic
+          console.log(
+            `[ImageScanWorker] Could not verify face for ${match.sourceUrl}: ` +
+            `${err instanceof Error ? err.message : 'Unknown error'}`
+          );
+        }
+      }
+
+      // CLIP verification: If required by config, compare image embeddings
+      if (matchConfig.requireClipVerification && match.sourceUrl) {
+        try {
+          console.log(`[ImageScanWorker] Verifying CLIP similarity for ${match.sourceUrl}`);
+          const matchedImageBuffer = await downloadMatchedImage(match.sourceUrl);
+
+          if (matchedImageBuffer) {
+            const matchClipResult = await clipService.generateEmbeddingFromBase64(matchedImageBuffer.toString('base64'));
+
+            // Get the protected image's CLIP embedding (use the one we just generated)
+            const protectedClipResult = await clipService.generateEmbeddingFromBase64(imageBuffer.toString('base64'));
+
+            // Compare CLIP embeddings using static method
+            const clipSimilarity = ClipService.cosineSimilarity(
+              protectedClipResult.embedding,
+              matchClipResult.embedding
+            );
+
+            extendedMatch.clipSimilarity = clipSimilarity;
+
+            // CLIP similarity threshold (0.8 = strong visual similarity)
+            const clipThreshold = 0.8;
+            if (clipSimilarity >= clipThreshold) {
+              extendedMatch.clipVerified = true;
+              console.log(
+                `[ImageScanWorker] CLIP VERIFIED for ${match.sourceUrl}: similarity=${clipSimilarity.toFixed(3)}`
+              );
+            } else {
+              // CLIP similarity too low - skip for low confidence match types
+              console.log(
+                `[ImageScanWorker] Skipping ${matchSourceType} - CLIP similarity too low: ${clipSimilarity.toFixed(3)} < ${clipThreshold}`
+              );
+              skippedClipMismatch++;
+              continue;
+            }
+          }
+        } catch (err) {
+          console.log(
+            `[ImageScanWorker] Could not verify CLIP for ${match.sourceUrl}: ` +
+            `${err instanceof Error ? err.message : 'Unknown error'}`
+          );
+          // For types requiring CLIP verification, skip if we can't verify
+          if (matchConfig.requireClipVerification) {
+            console.log(`[ImageScanWorker] Skipping ${matchSourceType} - CLIP verification required but failed`);
+            skippedClipMismatch++;
+            continue;
+          }
+        }
+      }
 
       const platform = identifyPlatform(match.domain);
       const isDeepfake =
         deepfakeResult.isDeepfake && deepfakeResult.confidence >= DEEPFAKE_CONFIDENCE_THRESHOLD;
       const matchType = determineMatchType(match.similarity, isDeepfake);
 
-      // Create ImageMatch record
-      const imageMatch = await prisma.imageMatch.create({
-        data: {
+      // Check if this match already exists (to avoid duplicate alerts on re-scans)
+      const existingMatch = await prisma.imageMatch.findUnique({
+        where: {
+          protectedImageId_sourceUrl: {
+            protectedImageId: image.id,
+            sourceUrl: match.sourceUrl,
+          },
+        },
+      });
+
+      const isNewMatch = !existingMatch;
+
+      // Determine status based on autoCreateAlert config
+      const matchStatus = matchConfig.autoCreateAlert ? 'NEW' : 'FLAGGED_FOR_REVIEW';
+
+      // Create or update ImageMatch record (upsert to handle duplicates from re-scans)
+      const imageMatch = await prisma.imageMatch.upsert({
+        where: {
+          protectedImageId_sourceUrl: {
+            protectedImageId: image.id,
+            sourceUrl: match.sourceUrl,
+          },
+        },
+        create: {
           protectedImageId: image.id,
           scanJobId,
           sourceUrl: match.sourceUrl,
           platform,
           similarity: match.similarity,
           matchType,
-          status: 'NEW',
+          status: matchStatus,
+        },
+        update: {
+          // Update fields for re-detected matches
+          scanJobId,
+          similarity: match.similarity,
+          matchType,
+          lastSeenAt: new Date(),
         },
       });
 
-      result.matchesCreated++;
+      if (isNewMatch) {
+        result.matchesCreated++;
+        if (!matchConfig.autoCreateAlert) {
+          flaggedForReview++;
+          console.log(
+            `[ImageScanWorker] Flagging ${matchSourceType} for review - low confidence: ${match.sourceUrl}`
+          );
+        } else {
+          console.log(`[ImageScanWorker] New match created: ${match.sourceUrl}`);
+        }
+      } else {
+        console.log(`[ImageScanWorker] Existing match updated: ${match.sourceUrl}`);
+      }
 
-      // Create alert for this match
-      try {
-        await createAlertFromMatch(
-          userId,
-          {
-            id: imageMatch.id,
-            protectedImageId: image.id,
-            sourceUrl: match.sourceUrl,
-            platform,
-            similarity: match.similarity,
-            matchType,
-            isMock: match.isMock,
-          },
-          isDeepfake
-            ? {
-                isDeepfake: true,
-                confidence: deepfakeResult.confidence,
-                analysisMethod: deepfakeResult.analysisDetails.modelVersion,
-                details: deepfakeResult.analysisDetails as unknown as Record<string, unknown>,
-              }
-            : undefined
-        );
-        result.alertsCreated++;
-      } catch (alertError) {
-        console.error(
-          `[ImageScanWorker] Failed to create alert for match ${imageMatch.id}:`,
-          alertError
-        );
-        // Continue processing - don't fail the entire scan for an alert creation failure
+      // Only create alert for NEW matches with autoCreateAlert=true
+      if (isNewMatch && matchConfig.autoCreateAlert) {
+        try {
+          await createAlertFromMatch(
+            userId,
+            {
+              id: imageMatch.id,
+              protectedImageId: image.id,
+              sourceUrl: match.sourceUrl,
+              platform,
+              similarity: match.similarity,
+              matchType,
+              isMock: match.isMock,
+              faceVerified: extendedMatch.faceVerified,
+              faceSimilarity: extendedMatch.faceSimilarity,
+              faceConfidence: extendedMatch.faceConfidence,
+            },
+            isDeepfake
+              ? {
+                  isDeepfake: true,
+                  confidence: deepfakeResult.confidence,
+                  analysisMethod: deepfakeResult.analysisDetails.modelVersion,
+                  details: deepfakeResult.analysisDetails as unknown as Record<string, unknown>,
+                }
+              : undefined
+          );
+          result.alertsCreated++;
+        } catch (alertError) {
+          console.error(
+            `[ImageScanWorker] Failed to create alert for match ${imageMatch.id}:`,
+            alertError
+          );
+          // Continue processing - don't fail the entire scan for an alert creation failure
+        }
       }
     }
 
+    // Log summary of skipped matches
     if (skippedBelowThreshold > 0) {
-      console.log(`[ImageScanWorker] Skipped ${skippedBelowThreshold} matches below ${MIN_SIMILARITY_THRESHOLD} threshold`);
+      console.log(`[ImageScanWorker] Skipped ${skippedBelowThreshold} matches below similarity threshold`);
+    }
+    if (skippedFaceMismatch > 0) {
+      console.log(`[ImageScanWorker] Skipped ${skippedFaceMismatch} matches due to face mismatch`);
+    }
+    if (skippedClipMismatch > 0) {
+      console.log(`[ImageScanWorker] Skipped ${skippedClipMismatch} matches due to low CLIP similarity`);
+    }
+    if (flaggedForReview > 0) {
+      console.log(`[ImageScanWorker] Flagged ${flaggedForReview} low-confidence matches for review`);
     }
 
     // If deepfake detected but no matches found, still create an alert for the original
@@ -352,6 +686,8 @@ async function processImageScan(job: Job<ImageScanJobData>): Promise<ImageScanRe
     let totalAlerts = 0;
     let embeddingsGenerated = 0;
     let hashesGenerated = 0;
+    let faceEmbeddingsGenerated = 0;
+    let faceVerifiedMatches = 0;
 
     // Calculate progress increments per image
     // Progress: 10% (start) -> 90% (processing) -> 100% (complete)
@@ -375,6 +711,10 @@ async function processImageScan(job: Job<ImageScanJobData>): Promise<ImageScanRe
       if (imageResult.hashGenerated) {
         hashesGenerated++;
       }
+      if (imageResult.faceEmbeddingGenerated) {
+        faceEmbeddingsGenerated++;
+      }
+      faceVerifiedMatches += imageResult.faceVerifiedMatches;
       if (imageResult.error) {
         errors.push(`Image ${image.id}: ${imageResult.error}`);
       }
@@ -402,6 +742,8 @@ async function processImageScan(job: Job<ImageScanJobData>): Promise<ImageScanRe
         similarityCheck: true,
         embeddingsGenerated,
         hashesGenerated,
+        faceEmbeddingsGenerated,
+        faceVerifiedMatches,
       },
       errors,
     };

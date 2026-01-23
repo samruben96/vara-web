@@ -1,3 +1,10 @@
+/**
+ * CLIP embedding service for generating image embeddings.
+ *
+ * Calls the Python DeepFace service CLIP endpoints for real embeddings.
+ * Falls back to mock mode if the service is unavailable.
+ */
+
 import crypto from 'crypto';
 
 /**
@@ -10,11 +17,36 @@ export interface ClipEmbeddingResult {
 }
 
 /**
- * Environment variable for OpenAI API key.
- * When present, real CLIP API will be used.
- * When absent, mock embeddings are generated.
+ * Response from the DeepFace CLIP embed endpoint.
  */
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+interface ClipEmbedResponse {
+  embedding: number[];
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Response from the DeepFace CLIP compare endpoint.
+ */
+interface ClipCompareResponse {
+  similarity: number;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Health check response from the DeepFace service.
+ */
+interface HealthResponse {
+  status: string;
+  model_loaded?: boolean;
+  clip_loaded?: boolean;
+}
+
+/**
+ * Environment variable for DeepFace service URL.
+ */
+const DEEPFACE_SERVICE_URL = process.env.DEEPFACE_SERVICE_URL || 'http://localhost:8001';
 
 /**
  * CLIP embeddings are 512-dimensional vectors.
@@ -22,63 +54,45 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const EMBEDDING_DIMENSION = 512;
 
 /**
- * Model version identifier for mock implementation.
+ * Model version identifier for CLIP embeddings.
  */
-const MOCK_MODEL_VERSION = 'clip-vit-base-patch32-mock';
+const MODEL_VERSION = 'clip-vit-base-patch32';
 
 /**
- * Simulates processing delay between min and max milliseconds.
+ * Duration to cache health check results (30 seconds).
  */
-async function simulateLatency(minMs: number, maxMs: number): Promise<number> {
-  const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
-  await new Promise((resolve) => setTimeout(resolve, delay));
-  return delay;
-}
-
-/**
- * Generates a deterministic normalized vector based on image buffer.
- * Uses buffer hash as seed for reproducible results.
- */
-function generateMockEmbedding(imageBuffer: Buffer): number[] {
-  // Create deterministic seed from buffer hash
-  const hash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
-
-  // Use hash to seed the random number generator
-  const embedding: number[] = [];
-
-  for (let i = 0; i < EMBEDDING_DIMENSION; i++) {
-    // Use different parts of the hash for each dimension
-    const hashPart = hash.substring((i * 2) % 60, ((i * 2) % 60) + 4);
-    const value = parseInt(hashPart, 16) / 0xffff;
-    // Map to range [-1, 1]
-    embedding.push((value * 2) - 1);
-  }
-
-  // Normalize the vector to unit length (L2 normalization)
-  const magnitude = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
-  return embedding.map((val) => val / magnitude);
-}
+const HEALTH_CACHE_DURATION_MS = 30_000;
 
 /**
  * CLIP embedding service for generating image embeddings.
  *
- * Uses OpenAI CLIP when OPENAI_API_KEY is configured,
- * otherwise falls back to deterministic mock embeddings.
- *
- * Mock mode simulates 100-300ms latency to mimic real API behavior.
+ * Calls the Python DeepFace service for CLIP embeddings when available.
+ * Falls back to mock mode if the service is unavailable.
  */
 class ClipService {
   private static instance: ClipService;
-  private readonly isMockMode: boolean;
+  private isMockMode: boolean;
+  private healthCache: { available: boolean; timestamp: number } | null = null;
 
   private constructor() {
-    this.isMockMode = !OPENAI_API_KEY;
+    // Start assuming mock mode, will be updated on first health check
+    this.isMockMode = true;
 
-    if (this.isMockMode) {
-      console.log('[ClipService] Running in mock mode - OPENAI_API_KEY not configured');
-    } else {
-      console.log('[ClipService] Running with real OpenAI CLIP API');
-    }
+    console.log(
+      `[ClipService] Initializing with DeepFace service URL: ${DEEPFACE_SERVICE_URL}`
+    );
+
+    // Perform initial health check asynchronously
+    this.isServiceAvailable().then((available) => {
+      if (available) {
+        console.log('[ClipService] DeepFace CLIP service is available');
+        this.isMockMode = false;
+      } else {
+        console.log(
+          '[ClipService] Running in mock mode - DeepFace service unavailable'
+        );
+      }
+    });
   }
 
   /**
@@ -99,62 +113,339 @@ class ClipService {
   }
 
   /**
-   * Generates a CLIP embedding for the given image buffer.
+   * Checks if the DeepFace CLIP service is available.
+   * Results are cached for 30 seconds.
    *
-   * @param imageBuffer - The image data as a Buffer
-   * @returns Promise resolving to embedding result with 512-dimensional vector and metadata
+   * @returns Promise resolving to true if service is available
+   */
+  public async isServiceAvailable(): Promise<boolean> {
+    // Check cache first
+    if (this.healthCache) {
+      const cacheAge = Date.now() - this.healthCache.timestamp;
+      if (cacheAge < HEALTH_CACHE_DURATION_MS) {
+        return this.healthCache.available;
+      }
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/health`, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const data = (await response.json()) as HealthResponse;
+        // Check if CLIP is loaded (if the service exposes this info)
+        const available = data.status === 'healthy';
+
+        this.healthCache = { available, timestamp: Date.now() };
+        this.isMockMode = !available;
+
+        return available;
+      }
+
+      this.healthCache = { available: false, timestamp: Date.now() };
+      return false;
+    } catch (error) {
+      console.warn(
+        `[ClipService] Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      this.healthCache = { available: false, timestamp: Date.now() };
+      return false;
+    }
+  }
+
+  /**
+   * Generates a CLIP embedding for the given image.
+   *
+   * @param imageUrl - The URL of the image to embed
+   * @returns Promise resolving to embedding result with 512-dimensional vector
    *
    * @example
-   * const result = await clipService.generateEmbedding(imageBuffer);
+   * const result = await clipService.generateEmbedding('https://example.com/image.jpg');
    * console.log(result.embedding.length); // 512
-   * console.log(result.processingTimeMs); // ~100-300ms in mock mode
    */
-  public async generateEmbedding(imageBuffer: Buffer): Promise<ClipEmbeddingResult> {
-    if (!imageBuffer || imageBuffer.length === 0) {
-      throw new Error('Image buffer cannot be empty');
+  public async generateEmbedding(imageUrl: string): Promise<ClipEmbeddingResult> {
+    if (!imageUrl || imageUrl.trim() === '') {
+      throw new Error('Image URL cannot be empty');
     }
 
-    if (this.isMockMode) {
-      return this.generateMockEmbeddingResult(imageBuffer);
+    // Check service availability
+    const available = await this.isServiceAvailable();
+
+    if (!available || this.isMockMode) {
+      return this.generateMockEmbedding(imageUrl);
     }
 
-    return this.generateRealEmbedding(imageBuffer);
+    return this.generateRealEmbedding(imageUrl);
+  }
+
+  /**
+   * Generates a CLIP embedding from a base64-encoded image.
+   *
+   * @param imageBase64 - The base64-encoded image data
+   * @returns Promise resolving to embedding result with 512-dimensional vector
+   */
+  public async generateEmbeddingFromBase64(imageBase64: string): Promise<ClipEmbeddingResult> {
+    if (!imageBase64 || imageBase64.trim() === '') {
+      throw new Error('Image base64 data cannot be empty');
+    }
+
+    // Check service availability
+    const available = await this.isServiceAvailable();
+
+    if (!available || this.isMockMode) {
+      return this.generateMockEmbeddingFromBase64(imageBase64);
+    }
+
+    return this.generateRealEmbeddingFromBase64(imageBase64);
+  }
+
+  /**
+   * Compares two images and returns their similarity score.
+   *
+   * @param image1Url - URL of the first image
+   * @param image2Url - URL of the second image
+   * @returns Promise resolving to similarity score (0.0 - 1.0)
+   *
+   * @example
+   * const similarity = await clipService.compareImages(url1, url2);
+   * if (similarity > 0.9) {
+   *   console.log('Images are very similar');
+   * }
+   */
+  public async compareImages(image1Url: string, image2Url: string): Promise<number> {
+    if (!image1Url || image1Url.trim() === '') {
+      throw new Error('First image URL cannot be empty');
+    }
+    if (!image2Url || image2Url.trim() === '') {
+      throw new Error('Second image URL cannot be empty');
+    }
+
+    // Check service availability
+    const available = await this.isServiceAvailable();
+
+    if (!available || this.isMockMode) {
+      return this.compareMockImages(image1Url, image2Url);
+    }
+
+    return this.compareRealImages(image1Url, image2Url);
+  }
+
+  /**
+   * Generates a real embedding using the DeepFace CLIP service.
+   */
+  private async generateRealEmbedding(imageUrl: string): Promise<ClipEmbeddingResult> {
+    const startTime = Date.now();
+
+    try {
+      const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/clip/embed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_url: imageUrl,
+        }),
+      });
+
+      const processingTimeMs = Date.now() - startTime;
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ClipEmbedResponse;
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = (await response.json()) as ClipEmbedResponse;
+
+      if (!data.success || !data.embedding) {
+        throw new Error(data.error || 'Failed to generate embedding');
+      }
+
+      return {
+        embedding: data.embedding,
+        modelVersion: MODEL_VERSION,
+        processingTimeMs,
+      };
+    } catch (error) {
+      console.error(
+        `[ClipService] Embedding generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+
+      // Fall back to mock on error
+      console.warn('[ClipService] Falling back to mock mode');
+      this.isMockMode = true;
+      return this.generateMockEmbedding(imageUrl);
+    }
+  }
+
+  /**
+   * Generates a real embedding from base64 using the DeepFace CLIP service.
+   */
+  private async generateRealEmbeddingFromBase64(imageBase64: string): Promise<ClipEmbeddingResult> {
+    const startTime = Date.now();
+
+    try {
+      const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/clip/embed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_base64: imageBase64,
+        }),
+      });
+
+      const processingTimeMs = Date.now() - startTime;
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ClipEmbedResponse;
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = (await response.json()) as ClipEmbedResponse;
+
+      if (!data.success || !data.embedding) {
+        throw new Error(data.error || 'Failed to generate embedding');
+      }
+
+      return {
+        embedding: data.embedding,
+        modelVersion: MODEL_VERSION,
+        processingTimeMs,
+      };
+    } catch (error) {
+      console.error(
+        `[ClipService] Embedding generation from base64 failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+
+      // Fall back to mock on error
+      console.warn('[ClipService] Falling back to mock mode');
+      this.isMockMode = true;
+      return this.generateMockEmbeddingFromBase64(imageBase64);
+    }
+  }
+
+  /**
+   * Compares two images using the DeepFace CLIP service.
+   */
+  private async compareRealImages(image1Url: string, image2Url: string): Promise<number> {
+    try {
+      const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/clip/compare`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image1_url: image1Url,
+          image2_url: image2Url,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as ClipCompareResponse;
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = (await response.json()) as ClipCompareResponse;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to compare images');
+      }
+
+      return data.similarity;
+    } catch (error) {
+      console.error(
+        `[ClipService] Image comparison failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+
+      // Fall back to mock on error
+      console.warn('[ClipService] Falling back to mock mode for comparison');
+      this.isMockMode = true;
+      return this.compareMockImages(image1Url, image2Url);
+    }
   }
 
   /**
    * Generates a mock embedding for development/testing.
-   * Simulates 100-300ms latency.
+   * Uses URL hash for deterministic results.
    */
-  private async generateMockEmbeddingResult(imageBuffer: Buffer): Promise<ClipEmbeddingResult> {
-    const processingTimeMs = await simulateLatency(100, 300);
-    const embedding = generateMockEmbedding(imageBuffer);
+  private async generateMockEmbedding(imageUrl: string): Promise<ClipEmbeddingResult> {
+    const startTime = Date.now();
+
+    // Simulate API latency (50-150ms)
+    const delay = Math.floor(Math.random() * 100) + 50;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    const embedding = this.generateDeterministicEmbedding(imageUrl);
+    const processingTimeMs = Date.now() - startTime;
 
     return {
       embedding,
-      modelVersion: MOCK_MODEL_VERSION,
+      modelVersion: `${MODEL_VERSION}-mock`,
       processingTimeMs,
     };
   }
 
   /**
-   * Generates a real embedding using OpenAI CLIP API.
-   * TODO: Implement actual API call when ready.
+   * Generates a mock embedding from base64 for development/testing.
    */
-  private async generateRealEmbedding(imageBuffer: Buffer): Promise<ClipEmbeddingResult> {
+  private async generateMockEmbeddingFromBase64(imageBase64: string): Promise<ClipEmbeddingResult> {
     const startTime = Date.now();
 
-    // TODO: Implement actual OpenAI CLIP API call
-    // For now, fall back to mock to allow testing
-    console.warn('[ClipService] Real CLIP API not yet implemented, using mock');
+    // Simulate API latency (50-150ms)
+    const delay = Math.floor(Math.random() * 100) + 50;
+    await new Promise((resolve) => setTimeout(resolve, delay));
 
-    const embedding = generateMockEmbedding(imageBuffer);
+    const embedding = this.generateDeterministicEmbedding(imageBase64);
     const processingTimeMs = Date.now() - startTime;
 
     return {
       embedding,
-      modelVersion: 'clip-vit-base-patch32',
+      modelVersion: `${MODEL_VERSION}-mock`,
       processingTimeMs,
     };
+  }
+
+  /**
+   * Compares two mock images using their embeddings.
+   */
+  private async compareMockImages(image1Url: string, image2Url: string): Promise<number> {
+    // Simulate API latency (30-80ms)
+    const delay = Math.floor(Math.random() * 50) + 30;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    const embedding1 = this.generateDeterministicEmbedding(image1Url);
+    const embedding2 = this.generateDeterministicEmbedding(image2Url);
+
+    return ClipService.cosineSimilarity(embedding1, embedding2);
+  }
+
+  /**
+   * Generates a deterministic normalized vector based on input string.
+   * Uses hash as seed for reproducible results.
+   */
+  private generateDeterministicEmbedding(input: string): number[] {
+    const hash = crypto.createHash('sha256').update(input).digest('hex');
+
+    const embedding: number[] = [];
+
+    for (let i = 0; i < EMBEDDING_DIMENSION; i++) {
+      // Use different parts of the hash for each dimension
+      const hashPart = hash.substring((i * 2) % 60, ((i * 2) % 60) + 4);
+      const value = parseInt(hashPart, 16) / 0xffff;
+      // Map to range [-1, 1]
+      embedding.push((value * 2) - 1);
+    }
+
+    // Normalize the vector to unit length (L2 normalization)
+    const magnitude = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
+    return embedding.map((val) => val / magnitude);
   }
 
   /**

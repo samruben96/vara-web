@@ -10,6 +10,17 @@ import { prisma } from '../config/prisma';
 import type { AlertType, AlertSeverity, ImageMatchType } from '@prisma/client';
 
 /**
+ * Confidence tier for image matches.
+ * Set by the image scan worker based on match quality.
+ */
+export type ConfidenceTier = 'HIGH' | 'MEDIUM_HIGH' | 'MEDIUM' | 'LOW';
+
+/**
+ * Face verification status from the scan worker.
+ */
+export type FaceVerificationStatus = 'VERIFIED' | 'NO_FACE_DETECTED' | 'MISMATCH';
+
+/**
  * Represents an image match detected during scanning.
  */
 export interface ImageMatch {
@@ -20,6 +31,10 @@ export interface ImageMatch {
   similarity: number;
   matchType: ImageMatchType;
   isMock?: boolean; // Indicates this is test data
+  confidence?: ConfidenceTier; // Overall confidence tier from scan worker
+  faceVerified?: FaceVerificationStatus; // Face verification status
+  faceSimilarity?: number; // Face similarity score (0.0-1.0)
+  faceConfidence?: 'high' | 'medium' | 'low'; // Confidence of face match
 }
 
 /**
@@ -45,18 +60,28 @@ interface ImageAlertMetadata {
   deepfakeConfidence?: number;
   analysisMethod?: string;
   isMock?: boolean; // Indicates this is test/demo data
+  confidence?: ConfidenceTier; // Overall confidence tier
+  faceVerified?: FaceVerificationStatus; // Face verification status
+  faceSimilarity?: number; // Face similarity score
+  faceConfidence?: 'high' | 'medium' | 'low'; // Confidence of face match
 }
 
 /**
- * Determines the alert type based on the match type and deepfake analysis.
+ * Determines the alert type based on the match type, deepfake analysis, and face verification.
  */
 function determineAlertType(
   matchType: ImageMatchType,
-  deepfakeAnalysis?: DeepfakeAnalysisResult
+  deepfakeAnalysis?: DeepfakeAnalysisResult,
+  faceVerified?: FaceVerificationStatus
 ): AlertType {
   // Deepfake takes priority if detected
   if (deepfakeAnalysis?.isDeepfake && deepfakeAnalysis.confidence > 0.7) {
     return 'DEEPFAKE_DETECTED';
+  }
+
+  // Face-verified matches are higher confidence identity matches
+  if (faceVerified === 'VERIFIED') {
+    return 'FACE_MATCH';
   }
 
   // Otherwise, classify based on match type
@@ -74,17 +99,21 @@ function determineAlertType(
 /**
  * Determines alert severity based on match characteristics.
  *
- * Severity levels:
- * - CRITICAL: High confidence deepfakes or exact matches on high-risk platforms
- * - HIGH: Deepfakes with lower confidence, or modified images
- * - MEDIUM: Similar images found on social platforms
- * - LOW: Low similarity matches that may need review
- * - INFO: Informational only, very low risk
+ * Severity mapping based on confidence tiers from scan worker:
+ * - HIGH confidence: CRITICAL - Exact match found online, immediate action needed
+ * - MEDIUM_HIGH confidence: HIGH if face verified, MEDIUM otherwise
+ * - MEDIUM confidence: MEDIUM - Moderate confidence match
+ * - LOW confidence: LOW - May need manual review
+ *
+ * Deepfake detection takes priority over confidence tiers.
  */
 function determineSeverity(
   matchType: ImageMatchType,
   similarity: number,
-  deepfakeAnalysis?: DeepfakeAnalysisResult
+  deepfakeAnalysis?: DeepfakeAnalysisResult,
+  faceVerified?: FaceVerificationStatus,
+  faceConfidence?: 'high' | 'medium' | 'low',
+  confidence?: ConfidenceTier
 ): AlertSeverity {
   // Deepfake detection takes priority
   if (deepfakeAnalysis?.isDeepfake) {
@@ -97,7 +126,39 @@ function determineSeverity(
     return 'MEDIUM';
   }
 
-  // Match type based severity
+  // Use confidence tier as primary driver if available
+  if (confidence) {
+    switch (confidence) {
+      case 'HIGH':
+        // Full matching images (exact match found online)
+        return 'CRITICAL';
+
+      case 'MEDIUM_HIGH':
+        // Partial matches - higher if face was verified
+        return faceVerified === 'VERIFIED' ? 'HIGH' : 'MEDIUM';
+
+      case 'MEDIUM':
+        return 'MEDIUM';
+
+      case 'LOW':
+        // Low confidence (visuallySimilarImages that passed all filters)
+        return 'LOW';
+    }
+  }
+
+  // Fallback to legacy logic for backward compatibility
+  // Face-verified matches are high severity - confirmed identity match
+  if (faceVerified === 'VERIFIED') {
+    if (faceConfidence === 'high') {
+      return 'CRITICAL';
+    }
+    if (faceConfidence === 'medium') {
+      return 'HIGH';
+    }
+    return 'MEDIUM';
+  }
+
+  // Match type based severity (legacy fallback)
   switch (matchType) {
     case 'DEEPFAKE':
       return 'CRITICAL';
@@ -146,6 +207,9 @@ function generateTitle(
     case 'DEEPFAKE_DETECTED':
       return `Potential AI-generated image found${platformText}`;
 
+    case 'FACE_MATCH':
+      return `Your face was detected in an image${platformText}`;
+
     case 'IMAGE_MISUSE':
       switch (matchType) {
         case 'EXACT':
@@ -171,7 +235,10 @@ function generateDescription(
   alertType: AlertType,
   matchType: ImageMatchType,
   similarity: number,
-  deepfakeAnalysis?: DeepfakeAnalysisResult
+  deepfakeAnalysis?: DeepfakeAnalysisResult,
+  _faceVerified?: FaceVerificationStatus, // Used to determine alertType upstream
+  faceSimilarity?: number,
+  faceConfidence?: 'high' | 'medium' | 'low'
 ): string {
   const similarityPercent = Math.round(similarity * 100);
 
@@ -185,6 +252,23 @@ function generateDescription(
       `based on one of your protected photos. The analysis shows ${confidence}% confidence ` +
       `that this image was artificially created or manipulated. ` +
       `We recommend reviewing this finding and taking action if needed.`
+    );
+  }
+
+  if (alertType === 'FACE_MATCH') {
+    const facePercent = faceSimilarity ? Math.round(faceSimilarity * 100) : similarityPercent;
+    const confidenceText =
+      faceConfidence === 'high'
+        ? 'with high confidence'
+        : faceConfidence === 'medium'
+          ? 'with moderate confidence'
+          : 'with some uncertainty';
+
+    return (
+      `Our facial recognition system detected your face in an image found online ` +
+      `${confidenceText} (${facePercent}% facial match). ` +
+      `This means an image containing your likeness may be in use without your knowledge. ` +
+      `We recommend reviewing this match and taking action if this use is unauthorized.`
     );
   }
 
@@ -241,7 +325,7 @@ function formatPlatformName(platform: string): string {
  * Creates an alert from an image match detection.
  *
  * This function:
- * 1. Determines the appropriate alert type (DEEPFAKE_DETECTED or IMAGE_MISUSE)
+ * 1. Determines the appropriate alert type (DEEPFAKE_DETECTED, FACE_MATCH, or IMAGE_MISUSE)
  * 2. Calculates severity based on match characteristics
  * 3. Generates user-friendly title and description
  * 4. Stores all relevant metadata for later reference
@@ -258,7 +342,11 @@ function formatPlatformName(platform: string): string {
  *   sourceUrl: 'https://example.com/stolen-image.jpg',
  *   platform: 'instagram',
  *   similarity: 0.92,
- *   matchType: 'EXACT'
+ *   matchType: 'EXACT',
+ *   confidence: 'HIGH',
+ *   faceVerified: 'VERIFIED',
+ *   faceSimilarity: 0.95,
+ *   faceConfidence: 'high'
  * });
  * ```
  */
@@ -267,18 +355,24 @@ export async function createAlertFromMatch(
   match: ImageMatch,
   deepfakeAnalysis?: DeepfakeAnalysisResult
 ): Promise<void> {
-  const alertType = determineAlertType(match.matchType, deepfakeAnalysis);
+  const alertType = determineAlertType(match.matchType, deepfakeAnalysis, match.faceVerified);
   const severity = determineSeverity(
     match.matchType,
     match.similarity,
-    deepfakeAnalysis
+    deepfakeAnalysis,
+    match.faceVerified,
+    match.faceConfidence,
+    match.confidence
   );
   const title = generateTitle(alertType, match.matchType, match.platform);
   const description = generateDescription(
     alertType,
     match.matchType,
     match.similarity,
-    deepfakeAnalysis
+    deepfakeAnalysis,
+    match.faceVerified,
+    match.faceSimilarity,
+    match.faceConfidence
   );
 
   const metadata: ImageAlertMetadata = {
@@ -289,12 +383,20 @@ export async function createAlertFromMatch(
     matchType: match.matchType,
     platform: match.platform,
     isMock: match.isMock,
+    confidence: match.confidence,
   };
 
   // Add deepfake-specific metadata if present
   if (deepfakeAnalysis) {
     metadata.deepfakeConfidence = deepfakeAnalysis.confidence;
     metadata.analysisMethod = deepfakeAnalysis.analysisMethod;
+  }
+
+  // Add face verification metadata if present
+  if (match.faceVerified !== undefined) {
+    metadata.faceVerified = match.faceVerified;
+    metadata.faceSimilarity = match.faceSimilarity;
+    metadata.faceConfidence = match.faceConfidence;
   }
 
   try {

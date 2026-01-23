@@ -21,6 +21,8 @@ vara-web/
 ├── apps/
 │   ├── web/                 # React web application (Vite)
 │   └── api/                 # Fastify API server
+├── services/
+│   └── deepface-service/    # Python face recognition microservice
 ├── packages/
 │   ├── shared/              # Shared types, utilities, constants
 │   ├── ui/                  # Shared UI components (future)
@@ -53,6 +55,7 @@ vara-web/
 
 #### AI/ML Integrations
 - **Image Embeddings**: OpenAI CLIP
+- **Face Recognition**: DeepFace (self-hosted Python microservice)
 - **Deepfake Detection**: Third-party API (TBD)
 - **Reverse Image Search**: TinEye, Google Vision APIs
 - **Breach Detection**: Have I Been Pwned API
@@ -73,6 +76,7 @@ vara-web/
 |---------|-----|----------|
 | **Frontend** | https://vara-web-eta.vercel.app | Vercel |
 | **Backend API** | https://vara-api-yaqq.onrender.com | Render |
+| **DeepFace Service** | https://vara-deepface.onrender.com | Render |
 | **Database** | PostgreSQL via Supabase | Supabase |
 
 ### Vercel Configuration (Frontend)
@@ -122,6 +126,7 @@ vercel env ls
 | `SUPABASE_JWT_SECRET` | Supabase JWT secret | Keep secret! |
 | `OPENAI_API_KEY` | OpenAI API key | For CLIP embeddings |
 | `GOOGLE_VISION_API_KEY` | Google Cloud API key | For reverse image search |
+| `DEEPFACE_SERVICE_URL` | `https://vara-deepface.onrender.com` | Face recognition microservice URL |
 
 **Build & Start Commands:**
 - Build: `pnpm install && pnpm build --filter=@vara/api`
@@ -139,6 +144,61 @@ vercel env ls
 **Connection Strings:**
 - Pooler (for API): Use port `6543` with `?pgbouncer=true`
 - Direct (for migrations): Use port `5432`
+
+### DeepFace Service Configuration (Face Recognition)
+
+**Service:** `vara-deepface` (Docker Web Service on Render)
+
+The DeepFace service is a Python microservice that provides face recognition capabilities for detecting face matches in protected images.
+
+**Technology Stack:**
+- Python 3.10 with FastAPI/Uvicorn
+- DeepFace library with ArcFace model
+- Multi-stage Docker build for optimized image size
+- Health check endpoint for monitoring
+
+**Environment Variables:**
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `LOG_LEVEL` | `INFO` | Logging verbosity (DEBUG, INFO, WARNING, ERROR) |
+| `PORT` | `8001` | Service port |
+| `HOST` | `0.0.0.0` | Bind address |
+| `PRELOAD_MODELS` | `true` | Pre-download models during build (recommended for production) |
+
+**Render Deployment:**
+```bash
+# Deploy from services/deepface-service directory
+# Uses render.yaml blueprint configuration
+
+# Service plan: Standard (minimum 2GB RAM for ML models)
+# Health check: /api/v1/health
+```
+
+**API Endpoints:**
+- `GET /api/v1/health` - Health check with model status
+- `POST /api/v1/faces/verify` - Verify if two faces match
+- `POST /api/v1/faces/represent` - Generate face embedding from image
+- `POST /api/v1/faces/analyze` - Analyze face attributes (age, gender, emotion)
+
+**Local Development:**
+```bash
+# Start with Docker Compose (includes all services)
+docker-compose up deepface-service
+
+# Or run standalone
+cd services/deepface-service
+docker build -t vara-deepface .
+docker run -p 8001:8001 vara-deepface
+
+# Test health endpoint
+curl http://localhost:8001/api/v1/health
+```
+
+**Memory Requirements:**
+- Minimum: 2GB RAM
+- Recommended: 4GB RAM (for model caching)
+- First request may take 10-30s for model loading
 
 ### Deployment Checklist
 
@@ -165,6 +225,12 @@ When deploying changes:
    - Vercel: `vercel env add <NAME> production`
    - Render: Update in dashboard → Environment → Redeploy
 
+5. **DeepFace service changes:**
+   - Push to `main` branch (auto-deploys via Render GitHub integration)
+   - Or trigger manual deploy in Render dashboard
+   - Monitor first deployment - model download can take 5-10 minutes
+   - Verify health: `curl https://vara-deepface.onrender.com/api/v1/health`
+
 ### Troubleshooting
 
 #### CORS Errors
@@ -190,6 +256,27 @@ curl -I -X OPTIONS https://vara-api-yaqq.onrender.com/api/v1/auth/login \
 1. Verify Supabase keys match between frontend (anon) and backend (service role)
 2. Check `SUPABASE_JWT_SECRET` is set correctly on Render
 3. Ensure Supabase project URL is consistent across all configs
+
+#### DeepFace Service Issues
+1. **Slow first request**: Model loading takes 10-30s on first request. Use `PRELOAD_MODELS=true` in production.
+2. **Out of memory**: Service requires minimum 2GB RAM. Use Standard plan on Render.
+3. **Health check failing**: Check logs for model download errors. May need to redeploy.
+4. **Face not detected**: Image may be too small, blurry, or face not clearly visible.
+5. **Connection refused from API**: Verify `DEEPFACE_SERVICE_URL` is set correctly on backend.
+
+**Test DeepFace locally:**
+```bash
+# Start service
+docker-compose up deepface-service
+
+# Test health
+curl http://localhost:8001/api/v1/health
+
+# Test face verification (requires two images)
+curl -X POST http://localhost:8001/api/v1/faces/verify \
+  -F "image1=@path/to/image1.jpg" \
+  -F "image2=@path/to/image2.jpg"
+```
 
 ---
 
