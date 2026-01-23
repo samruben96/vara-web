@@ -14,11 +14,13 @@ import { alertRoutes } from './routes/alerts';
 import { protectionPlanRoutes } from './routes/protection-plan';
 import { scanRoutes } from './routes/scans';
 import { matchRoutes } from './routes/matches';
+import { proxyRoutes } from './routes/proxy';
 import { errorHandler } from './middleware/error-handler';
 import { env } from './config/env';
 import { closeQueues } from './queues';
 import { initializeWorkers, shutdownWorkers } from './workers/init';
 import { closeRedisConnection } from './config/redis';
+import { imageProxyService } from './services/proxy';
 
 const app = Fastify({
   logger: {
@@ -87,6 +89,27 @@ async function start() {
   await app.register(scanRoutes, { prefix: '/api/v1/scans' });
   await app.register(matchRoutes, { prefix: '/api/v1/matches' });
 
+  // Proxy routes (PUBLIC - no auth required for external services like SerpAPI)
+  // Register with a custom CORS configuration to allow any origin
+  await app.register(
+    async (proxyApp) => {
+      // Override CORS for proxy routes to allow any origin
+      proxyApp.addHook('onRequest', async (request, reply) => {
+        reply.header('Access-Control-Allow-Origin', '*');
+        reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        reply.header('Access-Control-Allow-Headers', 'Content-Type');
+
+        // Handle preflight
+        if (request.method === 'OPTIONS') {
+          return reply.status(204).send();
+        }
+      });
+
+      await proxyApp.register(proxyRoutes);
+    },
+    { prefix: '/api/v1/proxy' }
+  );
+
   // Initialize workers if Redis is configured
   if (env.REDIS_URL) {
     initializeWorkers();
@@ -128,6 +151,10 @@ async function shutdown(signal: string): Promise<void> {
     // 4. Close Redis connection
     await closeRedisConnection();
     console.log('[Server] Redis connection closed');
+
+    // 5. Stop image proxy cleanup interval
+    imageProxyService.stopCleanup();
+    console.log('[Server] Image proxy service stopped');
 
     console.log('[Server] Graceful shutdown complete');
     process.exit(0);

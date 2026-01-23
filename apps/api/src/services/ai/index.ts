@@ -38,6 +38,9 @@ export {
   ReverseImageService,
   type ReverseImageMatch,
   type ReverseImageSearchResult,
+  type PersonDiscoveryScanOptions,
+  type PersonDiscoveryScanResult,
+  type ExpandedCandidate,
 } from './reverse-image.service';
 
 // Deepfake Detection Service
@@ -55,3 +58,7 @@ export {
   type FaceEmbeddingResult,
   type FaceComparisonResult,
 } from './face-embedding.service';
+
+// Scan Services (TinEye, etc.)
+// Re-exported for convenience - can also import directly from '../scan'
+export * from '../scan';

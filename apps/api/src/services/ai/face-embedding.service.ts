@@ -87,9 +87,15 @@ const EMBEDDING_DIMENSION = 512;
 const DEFAULT_COMPARISON_THRESHOLD = 0.68;
 
 /**
- * Health check cache duration in milliseconds (30 seconds).
+ * Duration to cache SUCCESSFUL health check results (60 seconds).
  */
-const HEALTH_CACHE_DURATION_MS = 30000;
+const HEALTH_CACHE_SUCCESS_MS = 60000;
+
+/**
+ * Duration to cache FAILED health check results (5 seconds).
+ * Short duration to quickly retry after transient startup failures.
+ */
+const HEALTH_CACHE_FAILURE_MS = 5000;
 
 /**
  * Generates a deterministic random number from a seed string.
@@ -213,44 +219,109 @@ class FaceEmbeddingService {
    * @returns Promise resolving to true if service is available
    */
   public async isServiceAvailable(): Promise<boolean> {
-    // Check cache first
+    // Check cache first - use different TTLs for success vs failure
     if (this.healthCache) {
       const cacheAge = Date.now() - this.healthCache.timestamp;
-      if (cacheAge < HEALTH_CACHE_DURATION_MS) {
+      const cacheDuration = this.healthCache.available
+        ? HEALTH_CACHE_SUCCESS_MS
+        : HEALTH_CACHE_FAILURE_MS;
+      if (cacheAge < cacheDuration) {
         return this.healthCache.available;
       }
     }
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+    // Try health check with retry for transient failures
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/health`, {
-        method: 'GET',
-        signal: controller.signal,
-      });
+        const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/health`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeout);
+        clearTimeout(timeout);
 
-      if (response.ok) {
-        const data = (await response.json()) as HealthResponse;
-        const available = data.status === 'healthy' && data.model_loaded;
+        if (response.ok) {
+          const data = (await response.json()) as HealthResponse;
+          // Consider service available if healthy, even if model not loaded yet
+          // The model will load on first real request
+          const isHealthy = data.status === 'healthy';
+          const modelReady = data.model_loaded === true;
 
-        this.healthCache = { available, timestamp: Date.now() };
-        this.isMockMode = !available;
+          if (isHealthy) {
+            if (!modelReady) {
+              console.log(
+                `[FaceEmbeddingService] Service healthy but model not loaded yet - will load on first request`
+              );
+            }
+            this.healthCache = { available: true, timestamp: Date.now() };
+            this.isMockMode = false;
+            return true;
+          }
+        }
 
-        return available;
+        // Non-200 response - don't retry
+        break;
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        if (attempt < 2) {
+          console.log(
+            `[FaceEmbeddingService] Health check attempt ${attempt} failed: ${errorMsg}. Retrying...`
+          );
+          // Brief delay before retry
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } else {
+          console.warn(
+            `[FaceEmbeddingService] Health check failed for ${DEEPFACE_SERVICE_URL}: ${errorMsg}. ` +
+              `Falling back to mock mode (will retry in ${HEALTH_CACHE_FAILURE_MS / 1000}s).`
+          );
+        }
       }
-
-      this.healthCache = { available: false, timestamp: Date.now() };
-      return false;
-    } catch (error) {
-      console.warn(
-        `[FaceEmbeddingService] Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-      this.healthCache = { available: false, timestamp: Date.now() };
-      return false;
     }
+
+    this.healthCache = { available: false, timestamp: Date.now() };
+    this.isMockMode = true;
+    return false;
+  }
+
+
+  /**
+   * Detects image format from magic bytes for debug logging.
+   * @param magicBytes - First 8 bytes of image as hex string
+   * @returns Detected format or 'unknown'
+   */
+  private detectImageFormat(magicBytes: string): string {
+    // JPEG: starts with FFD8FF
+    if (magicBytes.startsWith('ffd8ff')) {
+      return 'JPEG';
+    }
+    // PNG: starts with 89504E47 (‰PNG)
+    if (magicBytes.startsWith('89504e47')) {
+      return 'PNG';
+    }
+    // GIF: starts with 47494638 (GIF8)
+    if (magicBytes.startsWith('47494638')) {
+      return 'GIF';
+    }
+    // WebP: starts with 52494646 (RIFF) and contains WEBP
+    if (magicBytes.startsWith('52494646')) {
+      return 'WebP';
+    }
+    // BMP: starts with 424D (BM)
+    if (magicBytes.startsWith('424d')) {
+      return 'BMP';
+    }
+    // TIFF: starts with 49492A00 (little endian) or 4D4D002A (big endian)
+    if (magicBytes.startsWith('49492a00') || magicBytes.startsWith('4d4d002a')) {
+      return 'TIFF';
+    }
+    // HTML: starts with 3C21444F (<!DO) or 3C68746D (<htm) or 3C48544D (<HTM)
+    if (magicBytes.startsWith('3c21444f') || magicBytes.startsWith('3c68746d') || magicBytes.startsWith('3c48544d')) {
+      return 'HTML (not an image!)';
+    }
+    return 'unknown';
   }
 
   /**
@@ -273,10 +344,25 @@ class FaceEmbeddingService {
       throw new Error('Image buffer cannot be empty');
     }
 
+    // DEBUG: Log image buffer details before face detection
+    const magicBytes = imageBuffer.slice(0, 8).toString('hex');
+    const imageFormat = this.detectImageFormat(magicBytes);
+    console.log('[FaceDetection] Debug - Processing image for face extraction:', {
+      byteLength: imageBuffer.byteLength,
+      magicBytes,
+      detectedFormat: imageFormat,
+    });
+
     // Check service availability before attempting real call
     const available = await this.isServiceAvailable();
+    console.log(`[FaceEmbeddingService] Service check: available=${available}, mockMode=${this.isMockMode}`);
 
     if (!available || this.isMockMode) {
+      console.warn(
+        `[FaceEmbeddingService] ⚠️ Using MOCK face detection (DeepFace unavailable at ${DEEPFACE_SERVICE_URL}). ` +
+          `Mock mode only detects faces 15% of the time. ` +
+          `Start DeepFace service with: docker-compose up deepface-service`
+      );
       return this.extractMockEmbedding(imageBuffer);
     }
 
@@ -389,17 +475,21 @@ class FaceEmbeddingService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          image_base64: base64Image,
+          image: base64Image,
+          image_type: 'base64',
+          enforce_detection: false,  // Allow returning null instead of error
+          align: true,
         }),
       });
 
       const processingTimeMs = Date.now() - startTime;
 
       if (!response.ok) {
-        const errorData = (await response.json()) as ErrorResponse;
+        const errorData = (await response.json()) as { error?: { code?: string; message?: string } };
 
-        // Handle NO_FACE_DETECTED gracefully
-        if (errorData.code === 'NO_FACE_DETECTED') {
+        // Handle NO_FACE_DETECTED gracefully - check nested error structure
+        const errorCode = errorData.error?.code;
+        if (errorCode === 'NO_FACE_DETECTED') {
           console.log('[FaceEmbeddingService] No face detected in image');
           return {
             embedding: null,
@@ -410,7 +500,7 @@ class FaceEmbeddingService {
           };
         }
 
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
       }
 
       const data = (await response.json()) as ExtractEmbeddingResponse;

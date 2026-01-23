@@ -125,7 +125,9 @@ vercel env ls
 | `SUPABASE_SERVICE_KEY` | Supabase service role key | Keep secret! |
 | `SUPABASE_JWT_SECRET` | Supabase JWT secret | Keep secret! |
 | `OPENAI_API_KEY` | OpenAI API key | For CLIP embeddings |
-| `GOOGLE_VISION_API_KEY` | Google Cloud API key | For reverse image search |
+| `TINEYE_API_KEY` | TinEye API key | **Primary** reverse image search engine |
+| `GOOGLE_VISION_API_KEY` | Google Cloud API key | Fallback reverse image search |
+| `SCAN_ENGINE` | `auto` | Options: `tineye`, `google-vision`, `auto` |
 | `DEEPFACE_SERVICE_URL` | `https://vara-deepface.onrender.com` | Face recognition microservice URL |
 
 **Build & Start Commands:**
@@ -199,6 +201,50 @@ curl http://localhost:8001/api/v1/health
 - Minimum: 2GB RAM
 - Recommended: 4GB RAM (for model caching)
 - First request may take 10-30s for model loading
+
+### TinEye Configuration (Reverse Image Search)
+
+TinEye is the **primary** reverse image search engine for detecting unauthorized use of protected images across the web.
+
+**API Access:**
+- Sign up at: https://services.tineye.com/
+- Plans: Pay-per-search or subscription bundles
+- Free tier: Limited searches for testing
+
+**Environment Variables:**
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `TINEYE_API_KEY` | Your TinEye API key | Required for TinEye engine |
+| `SCAN_ENGINE` | `auto` | `tineye`, `google-vision`, or `auto` |
+
+**Scan Engine Selection:**
+- `tineye` - Always use TinEye (fails if no API key)
+- `google-vision` - Always use Google Vision Web Detection
+- `auto` (default) - Uses TinEye if `TINEYE_API_KEY` is set, otherwise falls back to Google Vision
+
+**Recommended Configuration:**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `limit` | 50 | Max results per search (1-100) |
+| `backlink_limit` | 10 | Max backlinks per match result |
+
+**Rate Limiting:**
+- TinEye API returns HTTP 429 when rate limited
+- The scan service implements exponential backoff (1s, 2s, 4s, max 3 retries)
+- Monitor your API quota in the TinEye dashboard
+
+**Response Handling:**
+- Matches are deduplicated by domain
+- Results include: source URL, domain, match score, crawl date, dimensions
+- Backlinks provide additional URLs where the image appears
+
+**Fallback Behavior:**
+When TinEye is unavailable (rate limited, API error, or no key):
+1. If `SCAN_ENGINE=auto`: Falls back to Google Vision
+2. If `SCAN_ENGINE=tineye`: Fails with error (no fallback)
+3. Failed scans are retried via BullMQ with exponential backoff
 
 ### Deployment Checklist
 
@@ -276,6 +322,22 @@ curl http://localhost:8001/api/v1/health
 curl -X POST http://localhost:8001/api/v1/faces/verify \
   -F "image1=@path/to/image1.jpg" \
   -F "image2=@path/to/image2.jpg"
+```
+
+#### TinEye / Image Scanning Issues
+1. **No results returned**: Image may be too new (not yet indexed by TinEye), or genuinely not found online.
+2. **Rate limited (429)**: Check your TinEye quota. The service auto-retries with backoff.
+3. **API key invalid**: Verify `TINEYE_API_KEY` is set correctly on Render.
+4. **Fallback to Google Vision**: If TinEye fails and `SCAN_ENGINE=auto`, check logs for Google Vision results.
+5. **Scan stuck in pending**: Check Redis connection and BullMQ worker status.
+
+**Test image scanning:**
+```bash
+# Check which engine is configured
+curl https://vara-api-yaqq.onrender.com/api/v1/health
+
+# Trigger a scan via the API (requires auth)
+# Scans are processed asynchronously via BullMQ
 ```
 
 ---

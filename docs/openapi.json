@@ -1,0 +1,750 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TinEye API",
+    "version": "",
+    "description": "# What is the TinEye API\n\n\n## Introduction\n\nThe TinEye API provides a programmatic interface\nto search the [TinEye](https://tineye.com/) index.\nSearch results include the following details:\n\n- a count of the total number of matches\n- a direct URL to each matching image\n- the URL of the page where each match was found\n- if the source is a [collection](https://help.tineye.com/article/251-what-are-image-collections) or [stock](https://help.tineye.com/article/252-what-are-stock-images) site\n- the [score](#tag--Search-the-TinEye-index--score) for the individual match\n- a link to the \u2018compare images\u2019 [overlay image](#tag--Search-the-TinEye-index--image-overlays)\n\n\nIf you don\u2019t need to build a custom application,\nyou can use the TinEye API web interface\nat [tineye.com/api-search](https://tineye.com/api-search).\nFor more information, check out our guide to\n[using the TinEye API without writing any code.](https://help.tineye.com/article/188-using-the-tineye-api-without-writing-any-code)\n\n\n## Examples\n\nThe TinEye API can find versions of images even if they've been modified. For example, here\nis the \"melon cat\" image we use in our API [sandbox](#overview--api-sandbox):\n\n![meloncat](https://api.tineye.com/rest/docs/img/meloncat.jpg)\n\nAnd here are some matches that the TinEye API returns when you search for that image:\n\n![example1](https://api.tineye.com/rest/docs/img/meloncat-result-b43aa925.jpg)\n![example2](https://api.tineye.com/rest/docs/img/meloncat-result-73b78db1.jpg)\n![example3](https://api.tineye.com/rest/docs/img/meloncat-result-37261ee0.jpg)\n![example4](https://api.tineye.com/rest/docs/img/meloncat-result-240948fe.jpg)\n\n## API Description\n\nThe service is delivered over HTTP or HTTPS as a\n[REST](http://en.wikipedia.org/wiki/Representational_state_transfer)\nAPI, with responses delivered in\n[JSON](http://json.org/) format.\n\nThe API is entirely independent of your operating system, database system or development \nlanguage.\n\n## Libraries\n\nLibraries for the TinEye API are available in the following languages and frameworks:\n\n- [Node.js](https://www.npmjs.com/package/tineye-api)\n- [PHP](https://packagist.org/packages/tineye/tineye-api)\n- [Python](https://github.com/TinEye/pytineye)\n- [Ruby](https://rubygems.org/gems/tinplate/) (unofficial library by [Unsplash](https://unsplash.com/))\n\nIf you have comments, recommendations, bug reports\nor a library that you would like featured here, please contact us.\nIf you find a bug with a third-party library,\nplease contact the developer directly.\n\n\n## Support\n\nIf you require assistance or have questions,\nplease [get in touch](https://services.tineye.com/support)\nor email us at [support<span>@</span>tineye<span>.</span>com](mailto:support%40tineye.com)\nYou can also explore our [Help Centre](https://help.tineye.com/category/168-getting-started)\nfor additional guidance on working with the TinEye API.\n\n\n# Getting started\n\nThis guide will help you through the steps to integrate the TinEye API with your\ncode:\n\n- [Sign up](#overview--signing-up) for a TinEye API account\n  and purchase a search bundle\n\n- [Get your API key](#overview--getting-your-api-key)\n  to connect your code to your TinEye API account\n\n- [Perform a test search](#tag--Search-the-TinEye-index)\n  to make sure everything is working properly\n\nIf you plan on using TinEye to identify stock photos,\nyou may also want to check out our\n[article](https://help.tineye.com/article/182-using-the-tineye-api-to-determine-if-an-image-is-a-stock-photo)\non Identifying stock photos.\n\n## Signing up\n\nBefore you can search with the TinEye API, you must\n[sign up for an account](https://services.tineye.com/TinEyeAPI#plans-and-pricing)\nand buy your first search bundle.\n\nYou can still test your code without signing up\nby using our [API sandbox](#overview--api-sandbox).\nThe sandbox lets you try the code without using searches,\nbut it will return fake results.\n\n## Getting your API key\n\nOnce you've signed up for an account,\nyou can get your API key by signing in to your TinEye API account\nand going to the [Getting started](https://tineye.com/getting-started) page.\n\nYour key is used to authenticate your API requests and should always be kept secret.\n\n## Writing code to call the API\n\nNow that you've signed up and purchased a bundle, it's time to write some code!\nEnsure your code calls our API from a server-side script, as client-side\nrequests expose your key to the end-user.\n\n\n\n# API Sandbox\n\nThe sandbox is a testing environment that you can use\nto aid your integration of the TinEye API.\nWe recommend testing your requests\nand whether your code handles responses correctly before using the production API.\nSearches done using the sandbox will not count toward your search limit.\n\n## Authentication\n\nEach request to the TinEye API must be authenticated.\nAdd the custom header `X-API-KEY` to your request with your API key as the value.\nThe sandbox can be used with:\n\n- URL: [https://api.tineye.com/rest/](https://api.tineye.com/rest)\n- Sandbox API key: `6mm60lsCNIBqFwOWjJqA80QZHh9BMwc-ber4u=t^`\n\n\n## Differences between the sandbox and production environments\n\n### `/search/`\n\nThe search method will only return results for the \"melon cat\" image,\nno matter what image URL or image data you supply.\n\n![meloncat](https://api.tineye.com/rest/docs/img/meloncat.jpg)\n\nThe melon cat results are not static; you will be able to try out other arguments to the\nsearch such as `offset`, `limit`, etc. However, the sandbox cannot\nreproduce all the errors that can be returned by the TinEye API, since\nit is forced to use a good image.\n\n"
+  },
+  "servers": [
+    {
+      "url": "https://api.tineye.com/rest"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "Validation Error"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "searchResponse": {
+        "title": "Response",
+        "description": "The results of a search.",
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "const": 200
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/200Response"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "stats": {
+                "$ref": "#/components/schemas/searchStats"
+              },
+              "results": {
+                "type": "object",
+                "properties": {
+                  "matches": {
+                    "type": "array",
+                    "description": "Images that matched the query image",
+                    "items": {
+                      "$ref": "#/components/schemas/searchMatch"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "backlink": {
+        "title": "BackLink",
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "url",
+            "description": "URL of the image."
+          },
+          "backlink": {
+            "type": "string",
+            "description": "Webpage URL where the match was found.",
+            "format": "url"
+          },
+          "crawl_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the image was crawled."
+          }
+        }
+      },
+      "searchMatch": {
+        "title": "Match",
+        "type": "object",
+        "properties": {
+          "image_url": {
+            "type": "string",
+            "description": "Link to the result image.",
+            "value": "https://api.tineye.com/rest/docs/img/meloncat.jpg"
+          },
+          "backlinks": {
+            "type": "array",
+            "description": "Links to the original website and image URL.",
+            "items": {
+              "$ref": "#/components/schemas/backlink"
+            }
+          },
+          "score": {
+            "type": "number",
+            "description": "A [match score](#tag--Search-the-TinEye-index--score).\n",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 90
+          },
+          "query_match_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "The [percentage](#tag--Search-the-TinEye-index--query_match_percent) \nof the query image that matches the result image.\n"
+          },
+          "overlay": {
+            "type": "string",
+            "format": "url",
+            "description": "Url for an [image overlay](#tag--Search-the-TinEye-index--image-overlays).\n"
+          },
+          "format": {
+            "type": "string",
+            "description": "Image format.",
+            "examples": [
+              "JPEG"
+            ]
+          },
+          "filesize": {
+            "type": "integer",
+            "description": "Image size in bytes.",
+            "minimum": 0,
+            "example": 10000
+          },
+          "width": {
+            "type": "integer",
+            "description": "Image width in pixels.",
+            "minimum": 0,
+            "example": 100
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Image height in pixels.",
+            "example": 100
+          },
+          "size": {
+            "type": "integer",
+            "description": "Total pixels (width \u00d7 height).",
+            "minimum": 0,
+            "example": 10000
+          },
+          "domain": {
+            "type": "string",
+            "format": "hostname",
+            "description": "Domain this result was found on."
+          },
+          "tags": {
+            "type": "array",
+            "description": "Indicates [collection](https://help.tineye.com/article/251-what-are-image-collections).\nand [stock](https://help.tineye.com/article/252-what-are-stock-images) images.\n",
+            "items": {
+              "type": "string",
+              "enum": [
+                "stock",
+                "collection"
+              ]
+            }
+          }
+        }
+      },
+      "searchStats": {
+        "title": "Stats",
+        "type": "object",
+        "properties": {
+          "total_backlinks": {
+            "type": "number",
+            "description": "Total number of backlinks returned."
+          },
+          "total_collection": {
+            "type": "number",
+            "description": "Number of domains tagged as [collection](https://help.tineye.com/article/251-what-are-image-collections)."
+          },
+          "total_stock": {
+            "type": "number",
+            "description": "Number of domains tagged as [stock](https://help.tineye.com/article/252-what-are-stock-images)."
+          },
+          "total_filtered_results": {
+            "type": "number",
+            "description": "Number of results after applying domain and tag filters."
+          },
+          "total_results": {
+            "type": "number",
+            "description": "Number of results."
+          }
+        }
+      },
+      "remainingSearchesResponse": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "const": 200
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/200Response"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "object",
+                "properties": {
+                  "bundles": {
+                    "type": "array",
+                    "description": "List of non-expired bundles with remaining searches.",
+                    "items": {
+                      "$ref": "#/components/schemas/remainingSearchesBundle"
+                    }
+                  },
+                  "total_remaining_searches": {
+                    "type": "integer",
+                    "description": "Total number of searches remaining across all non-expired bundles."
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "remainingSearchesBundle": {
+        "type": "object",
+        "description": "A bundle with non-expred searches",
+        "properties": {
+          "remaining_searches": {
+            "type": "integer",
+            "description": "Number of remaining searches available in this bundle."
+          },
+          "start_date": {
+            "type": "string",
+            "pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{:2} UTC",
+            "description": "Start date of this bundle."
+          },
+          "end_date": {
+            "type": "string",
+            "pattern": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{:2} UTC",
+            "description": "End date of this bundle, when it will deactivate."
+          }
+        }
+      },
+      "imageCountResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/200Response"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "integer",
+                "description": "Number of images indexed by TinEye."
+              }
+            }
+          }
+        ]
+      },
+      "baseResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "HTTP Status Code"
+          },
+          "messages": {
+            "type": "array",
+            "description": "Warning or error messages.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "stats": {
+            "type": "object",
+            "description": "Request statistics."
+          }
+        }
+      },
+      "200Response": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "const": 200
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/baseResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "stats": {
+                "type": "object",
+                "description": "Request statistics.",
+                "properties": {
+                  "timestamp": {
+                    "type": "number",
+                    "description": "Unix timestamp of when the query took place."
+                  },
+                  "query_time": {
+                    "type": "number",
+                    "description": "Time it took to run this query in milliseconds."
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "400Response": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "const": 400
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/baseResponse"
+          }
+        ]
+      },
+      "429Response": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "const": 429
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/baseResponse"
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "X-API-KEY": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY",
+        "description": "All API requests must be authenticated by including the `X-API-KEY` header with your API key. Your API key can be found by logging in to your account and visiting the Getting started page.\n"
+      }
+    },
+    "parameters": {
+      "pretty": {
+        "name": "pretty",
+        "in": "query",
+        "description": "When \"true\", the response json is returned with line-breaks\nand indentation for easier reading.\n",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "true",
+            "false"
+          ],
+          "default": "false"
+        }
+      },
+      "offset": {
+        "name": "offset",
+        "in": "query",
+        "description": "Offset from the beginning of the results.\nThis can be used with `limit` to page through results.\n",
+        "schema": {
+          "type": "integer",
+          "title": "Offset",
+          "default": 0
+        }
+      },
+      "limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "Maximum number of results to return. A value of 0 removes the limit.\n",
+        "schema": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "backlink_limit": {
+        "name": "backlink_limit",
+        "in": "query",
+        "description": "Maximum number of backlinks to return per match.  A value of 0 removes the limit. Use caution when removing the limit, as some matches may have a huge number of backlinks.\n",
+        "schema": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "sort": {
+        "name": "sort",
+        "in": "query",
+        "description": "Sort by score, file size (width x height), or the date the image was added to the index.\n",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "score",
+            "size",
+            "crawl_date"
+          ],
+          "default": "score"
+        },
+        "examples": {
+          "score": {
+            "value": "score"
+          }
+        }
+      },
+      "order": {
+        "name": "order",
+        "in": "query",
+        "description": "Sort results in ascending (\"asc\") or descending (\"desc\") order.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "default": "desc"
+        }
+      },
+      "domain": {
+        "name": "domain",
+        "in": "query",
+        "description": "Only show results from the specified domain. Accepted values must be at least 5 characters and must be a complete domain name (e.g., amazon.com, not amazon).\n",
+        "schema": {
+          "format": "hostname",
+          "type": "string",
+          "minLength": 5
+        }
+      },
+      "tags": {
+        "name": "tags",
+        "in": "query",
+        "description": "Only show [stock](https://help.tineye.com/article/252-what-are-stock-images) image and/or [collection](https://help.tineye.com/article/251-what-are-image-collections) results.\n",
+        "style": "form",
+        "explode": false,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "stock",
+              "collection"
+            ]
+          }
+        },
+        "examples": {
+          "stock": {
+            "value": "stock"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Search the TinEye index",
+      "description": "## Image formats and sizes\n\nSearch images must be in JPEG, PNG, WebP, GIF, BMP, AVIF, or TIFF format.\nWe do not support animations.\nImages that are too small or have very little visual detail\nwill not return any search results.\n\nFor optimal performance, uploaded images should be 300px in size in the smallest dimension.\nFor example, 600\u00d7400 pixels is larger than required and will be resized by our servers.\nIt will take longer to transfer this file to the TinEye API.\nIt would be more efficient to resize this image to be 450\u00d7300 before sending it to the API.\n\n## API rate limiting\n\nDepending on the load being experienced by the TinEye servers,\nyou may receive a \u201c429 Too many requests\u201d error when making many simultaneous searches. \nPlease ensure that your code can either handle that error,\nor that it waits for the current search to complete before performing the next search.\nIf you regularly need to perform a high number of concurrent searches,\nplease contact us with details about your requirements.\n\n## Result fields\n\n### score\n\nEach result includes a score from 0 to 100,\nindicating how closely the result image matches the query image.\nBy default, results are sorted in descending order,\nwith the strongest match appearing first.\n\nWeaker scores can result from partial matches,\nwhere only a logo, text, or background aligns rather than the full image.\nThey can also result from changes in size,\nsuch as an otherwise identical image that has been resized or cropped.\nA low score does not necessarily mean the match is irrelevant;\nit may simply indicate a difference in image size.\n\nWe generally recommend against using a score threshold to filter results\nbecause this can remove good matches.\nAn exact image resized into a thumbnail may have a lower score\nthan a heavily modified version at its original size.\nWhile high-volume users may choose to set a score cutoff,\nthis approach is not always recommended if detecting small or altered images is important.\n\nFor example, here is an original image:\n\n![original_citrus](https://api.tineye.com/rest/docs/img/citrus_original.jpg)\n\nWhen searching for this image, you may find matches where the image is cropped or resized:\n\n![citrus_matches](https://api.tineye.com/rest/docs/img/citrus_crop_and_thumb.jpg)\n\nThese are valid matches, but their scores are only 22.4 and 24.7, respectively.\n\nOn the other hand, consider the following matching images:\n\n![humingbird](https://api.tineye.com/rest/docs/img/hummingbird.jpg)\n\n\nThese are clearly two different images, yet the match score is 51.4\u2014significantly\nhigher than the legitimate matches shown above.\n\n### query_match_percent\n\nEach result includes a query_match_percent with a value between 0 and 100,\nrepresenting the percentage of the query image that matches the result image.\nDue to how matching regions are identified and compared,\nthis is usually less than 100, even for visually identical images.\nIf the query_match_percent is very low,\nit means that only a small portion of the query image matches the result.\nIn use cases where small matches,\nsuch as logos or tiny details,\nare not relevant,\na low query_match_percent can be safely interpreted as an insignificant match.\nYou can find more guidance on using the query_match_percent in this [article](https://help.tineye.com/article/289-tineye-api-results-querymatchpercent).\n\n### Image overlays\n\nEach result will include a URL to generate an overlay image on the API server\nthat aligns the search and result images,\nadjusting for crops, flips, translations and rotation so that they match.\n\nTo view the overlay,\nbrowse the URL (e.g. `https://api.tineye.com/rest/<overlay_path>`).\nYou can use this URL to link to the overlay image\ndirectly in the src attribute of an HTML img tag.\n\n![sample_overlay](https://api.tineye.com/rest/docs/img/sample_overlay.jpg)\n\nThe left side of the overlay is the matched image. The right side is the search image.\n\nUsing JavaScript and CSS, you can use the overlay image\nto easily see how the two images differ.\n\n<div style=\"background-image: url('https://api.tineye.com/rest/docs/img/sample_overlay.jpg'); width: 400px; height: 286px; background-position: 0px center;\"\n   onmouseover=\"this.style.backgroundPosition='-400px center'\"\n   onmouseout=\"this.style.backgroundPosition='0px center'\">\n</div>\n\nExample code:\n\n```html\n<div style=\"background-image: url('<overlay URL>'); width: <image width>px; height: <image height>px; background-position: 0px center;\"\n   onmouseover=\"this.style.backgroundPosition='-<image width>px center'\"\n   onmouseout=\"this.style.backgroundPosition='0px center'\">\n</div>\n```\n\nThe example code above shows the left half of the overlay image to start (i.e., the matched image)\nand then switches to the right half when you mouseover the image (i.e., the search image).\n"
+    },
+    {
+      "name": "Other Methods"
+    },
+    {
+      "name": "Release Notes",
+      "description": "#### August 26, 2021\n- New authorization scheme using header instead of signature.\n\n#### August 15, 2019\n- Updated documentation site with an entirely new design.\n\n#### October 23, 2018\n- Some matches may return an extremely large number of backlinks. We have added a default limit of 100 backlinks per match to keep results manageable. This limit can be modified or removed using the backlink_limit argument to the search call.\n- Results to the [search call](#tag--Search-the-TinEye-index) can now be restricted to only [stock](https://help.tineye.com/article/252-what-are-stock-images) sites or [collection](https://help.tineye.com/article/251-what-are-image-collections) sites using the `tags` filter argument, or to a single domain using the `domain` filter argument.\n\n#### March 19th, 2017\n- Moved to the HMAC-SHA256 algorithm for API request signing. \n- If a match result comes from a domain associated with [stock](https://help.tineye.com/article/252-what-are-stock-images) or [collection](https://help.tineye.com/article/251-what-are-image-collections) images, this is shown in the `tags` list returned from the [search call](#tag--Search-the-TinEye-index). This replaces the contributor flag which was less specific and less flexible.\n- The `stats` object has been updated with more data about the search response. The `total_backlinks`, `total_contributors` and `total_results` fields were moved to the `stats` section and the `total_contributors` field was split into `total_collection` and `total_stock`.\n- The (remaining_searches)[https://services.tineye.com/developers/tineyeapi/#get-/remaining_searches/] method now returns information on all non-expired search bundles with remaining searches instead of only the active bundle. The `total_remaining_searches` field counts all the searches you have remaining.\n- Added the `domain` field to the search results.\n- Added the `match_score` field to the search results.\n\n#### June 10th, 2015\n- New TinEye API design.\n- Search page updated with image collection domain filter.\n\n#### May 11th, 2015\n- Changed TinEye API search page to return the same sorting order as TinEye.com.\n\n#### October 7th, 2014\n- Added TinEye API Release notes page. The API Sandbox endpoint was moved from https://api.tineye.com/sandbox/ to https://api.tineye.com/rest/.\n\n#### September 23th, 2014\n- Changed HTTP status codes from 500 to 400 for requests that are either missing parameters or are erroneous (e.g. Query image is too simple, or a string is provided instead of an integer).\n\n"
+    }
+  ],
+  "paths": {
+    "/search/": {
+      "get": {
+        "summary": "Search by URL",
+        "description": "Search against an image given as a URL.",
+        "operationId": "search_get",
+        "responses": {
+          "200": {
+            "description": "## Successful search\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/searchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "## Bad Request\n\nThis usually occurs because the image file cannot be used with the TinEye\nAPI, either because:\n- the URL does not exist\n- the image is corrupted or is not an image file\n- the image is visually too simple or is too small in size\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "## Too Many Requests\n\nYou may make multiple concurrent requests to the TinEye API.\nHowever, depending on the load being experienced by the TinEye servers,\nyou may receive a \u201c429 Too many requests\u201d error\nwhen making many simultaneous searches.\nPlease ensure that your code can either handle that error,\nor that it waits for the current search to complete\nbefore performing the next search.\nIf you regularly need to perform a high number of concurrent searches\nplease contact us with details about your requirements.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/429Response"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Search the TinEye index"
+        ],
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "image_url",
+            "required": true,
+            "in": "query",
+            "description": "The publicly-accessible URL  at which the API can find the image  with which to search TinEye.\n",
+            "schema": {
+              "type": "string",
+              "format": "url",
+              "title": "Image Url",
+              "examples": {
+                "meloncat": {
+                  "value": "https://api.tineye.com/rest/docs/img/meloncat.jpg"
+                }
+              }
+            }
+          },
+          {
+            "$ref": "#/components/parameters/domain"
+          },
+          {
+            "$ref": "#/components/parameters/tags"
+          },
+          {
+            "$ref": "#/components/parameters/sort"
+          },
+          {
+            "$ref": "#/components/parameters/order"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/backlink_limit"
+          },
+          {
+            "$ref": "#/components/parameters/pretty"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "search_post",
+        "summary": "Search uploaded image",
+        "description": "The search image uploaded must be in either JPEG, PNG, WebP, GIF, BMP, AVIF, or TIFF format.\nWe do not support animations (such as animated GIFs, PNGs and WEBPs).\n\nFor optimal performance,\nuploaded images should be at most 300px in size in the smallest dimension.\nImages with both dimensions larger than 300px will be resized by the API.\nFor example, an image 800x600px in size will be resized to 400x300px.\n",
+        "responses": {
+          "200": {
+            "description": "## Successful search\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/searchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "## Bad Request\n\nThis usually occurs because the image file cannot be used with the TinEye\nAPI, either because:\n- the URL does not exist\n- the image is corrupted or is not an image file\n- the image is visually too simple or is too small in size\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Response"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "## Too Many Requests\n\nYou may make multiple concurrent requests to the TinEye API.\nHowever, depending on the load being experienced by the TinEye servers,\nyou may receive a \u201c429 Too many requests\u201d error\nwhen making many simultaneous searches.\nPlease ensure that your code can either handle that error,\nor that it waits for the current search to complete\nbefore performing the next search.\nIf you regularly need to perform a high number of concurrent searches\nplease contact us with details about your requirements.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/429Response"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Search the TinEye index"
+        ],
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/domain"
+          },
+          {
+            "$ref": "#/components/parameters/tags"
+          },
+          {
+            "$ref": "#/components/parameters/sort"
+          },
+          {
+            "$ref": "#/components/parameters/order"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/backlink_limit"
+          },
+          {
+            "$ref": "#/components/parameters/pretty"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "title": "Upload an image to search",
+                "type": "object",
+                "required": [
+                  "image_upload"
+                ],
+                "properties": {
+                  "image_upload": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The image file with which to search TinEye."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/remaining_searches/": {
+      "get": {
+        "summary": "Remaining searches",
+        "description": "Lists the number of searches you have left in your non-expired bundles.",
+        "operationId": "remaining_searches_get",
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "tags": [
+          "Other Methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/remainingSearchesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/image_count/": {
+      "get": {
+        "summary": "Image count",
+        "description": "Get the number of images indexed by TinEye.",
+        "operationId": "image_count_get",
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "tags": [
+          "Other Methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/imageCountResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

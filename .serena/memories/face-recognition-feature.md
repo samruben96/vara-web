@@ -114,9 +114,33 @@ curl -X POST http://localhost:8001/api/v1/faces/verify \
 
 ### Face Not Detected
 
-- Image may be too small, blurry, or face not clearly visible
-- Minimum recommended face size: 80x80 pixels
-- Face should be at least 10% of image area
+The face detection pipeline has been optimized for better detection rates:
+
+**Image Preprocessing (Node.js)**:
+- EXIF orientation is automatically normalized before detection
+- Images are upscaled if smallest dimension < 480px
+- Images are downscaled if largest dimension > 2048px
+- See `apps/api/src/utils/image-preprocessing.ts`
+
+**Detection Thresholds (Python DeepFace)**:
+- Confidence threshold lowered from 0.8 to 0.5 for relaxed detection
+- Multi-backend fallback: retinaface -> mtcnn -> opencv
+- Minimum face size: 5% of image dimension (down from 10%)
+
+**Environment Variables** (set in .env or Render):
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FACE_MIN_IMAGE_DIMENSION` | 480 | Upscale images smaller than this |
+| `FACE_MAX_IMAGE_DIMENSION` | 2048 | Downscale images larger than this |
+| `FACE_NORMALIZE_EXIF` | true | Auto-rotate based on EXIF |
+| `FACE_MIN_CONFIDENCE` | 0.5 | Detection confidence threshold |
+| `FACE_MIN_SIZE_PERCENT` | 0.05 | Min face size as % of image |
+
+**Common causes of detection failure**:
+- Image may be blurry or low resolution
+- Face may be obscured, at extreme angle, or partially cropped
+- Lighting conditions may be poor
+- For profile shots, try `mtcnn` or `opencv` backends directly
 
 ### Connection Refused from API
 
