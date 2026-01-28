@@ -1,5 +1,4 @@
 import { Outlet, Link } from 'react-router-dom';
-import { Shield } from 'lucide-react';
 
 export function AuthLayout() {
   return (
@@ -7,8 +6,7 @@ export function AuthLayout() {
       {/* Header */}
       <header className="flex items-center justify-center px-4 py-8">
         <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-          <Shield className="h-8 w-8 text-primary" />
-          <span className="text-xl font-serif text-foreground">vara</span>
+          <img src="/vara-logo.png" alt="vara" className="h-10" />
         </Link>
       </header>
 

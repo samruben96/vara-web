@@ -1,5 +1,4 @@
 import { Outlet, Link } from 'react-router-dom';
-import { Shield } from 'lucide-react';
 
 /**
  * Layout wrapper for onboarding flow
@@ -14,8 +13,7 @@ export function OnboardingLayout() {
           to="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
-          <Shield className="h-8 w-8 text-primary" />
-          <span className="text-xl font-serif text-foreground">vara</span>
+          <img src="/vara-logo.png" alt="vara" className="h-10" />
         </Link>
       </header>
 

@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Shield, Bell, User, LogOut, Menu, X, HelpCircle } from 'lucide-react';
+import { Bell, User, LogOut, Menu, X, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../stores/authStore';
@@ -55,8 +55,7 @@ export function MainLayout() {
         <div className="container flex h-14 items-center justify-between md:h-16">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 tap-highlight-none">
-            <Shield className="h-7 w-7 text-primary md:h-8 md:w-8" />
-            <span className="text-lg font-serif text-foreground md:text-xl">vara</span>
+            <img src="/vara-logo.png" alt="vara" className="h-8 md:h-10" />
           </Link>
 
           {/* Desktop Navigation */}

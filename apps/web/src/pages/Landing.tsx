@@ -45,8 +45,7 @@ export function Landing() {
       <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <span className="text-xl font-semibold text-foreground">Vara</span>
+            <img src="/vara-logo.png" alt="vara" className="h-10" />
           </Link>
 
           <nav className="hidden items-center gap-6 md:flex">
@@ -228,8 +227,7 @@ export function Landing() {
         <div className="container">
           <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
             <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-primary" />
-              <span className="font-semibold text-foreground">Vara</span>
+              <img src="/vara-logo.png" alt="vara" className="h-8" />
             </div>
             <nav className="flex flex-wrap justify-center gap-6">
               <Link to="/privacy" className="text-sm text-foreground-muted hover:text-foreground">
