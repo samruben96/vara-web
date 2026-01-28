@@ -84,7 +84,7 @@
     --background: var(--color-cream-100);
     --background-subtle: var(--color-cream-50);
     --background-muted: var(--color-cream-200);
-    --background-elevated: 255 255 255; /* Pure white for cards/modals */
+    --background-elevated: 254 252 248; /* Warm white instead of pure white */
 
     /* Foreground (text) colors */
     --foreground: var(--color-charcoal-800);
@@ -119,7 +119,7 @@
     --muted-foreground: var(--color-charcoal-500);
 
     /* Card surfaces */
-    --card: 255 255 255;
+    --card: 254 252 248; /* Warm white, not pure #FFFFFF */
     --card-hover: var(--color-cream-50);
     --card-foreground: var(--color-charcoal-800);
 

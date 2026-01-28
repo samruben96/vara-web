@@ -197,7 +197,7 @@ export function ProtectedImages() {
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Protected Images</h1>
+            <h1 className="text-xl sm:text-2xl font-serif font-bold text-foreground">Protected Images</h1>
             <p className="mt-1 text-sm sm:text-base text-foreground-muted">
               Upload and manage photos you want monitored.
             </p>
@@ -232,7 +232,7 @@ export function ProtectedImages() {
 
       {/* Upload Section */}
       <div className="card">
-        <h2 className="text-base sm:text-lg font-semibold text-foreground">
+        <h2 className="text-base sm:text-lg font-serif font-semibold text-foreground">
           Upload New Images
         </h2>
         <p className="mt-1 text-xs sm:text-sm text-foreground-muted">
@@ -407,9 +407,9 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-lg sm:rounded-xl border bg-card transition-all',
+        'group relative overflow-hidden rounded-2xl border bg-card transition-all',
         'hover:shadow-md active:scale-[0.98] touch-manipulation',
-        isArchived ? 'border-border opacity-75' : 'border-border'
+        isArchived ? 'border-border/40 opacity-75' : 'border-border/40'
       )}
     >
       {/* Image */}
@@ -561,7 +561,7 @@ function DeleteConfirmationModal({
 
         <h2
           id="delete-dialog-title"
-          className="text-base sm:text-lg font-semibold text-foreground"
+          className="text-base sm:text-lg font-serif font-semibold text-foreground"
         >
           Remove Protected Image?
         </h2>

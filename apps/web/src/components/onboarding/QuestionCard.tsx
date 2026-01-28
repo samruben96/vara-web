@@ -50,7 +50,7 @@ export function QuestionCard({
       <div className="space-y-2">
         <h2
           id={`question-${question.id}`}
-          className="text-xl font-semibold text-foreground sm:text-2xl"
+          className="text-2xl font-serif font-semibold text-foreground sm:text-3xl"
         >
           {question.question}
         </h2>

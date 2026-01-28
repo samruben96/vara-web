@@ -134,10 +134,10 @@ export function NotificationSettings() {
   return (
     <div className="space-y-6">
       {/* Email Notifications Section */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
           <Mail className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Email Notifications</h3>
+          <h3 className="font-serif font-semibold text-foreground">Email Notifications</h3>
         </div>
         <p className="text-sm text-foreground-muted mb-4">
           Control which emails you receive from Vara
@@ -177,10 +177,10 @@ export function NotificationSettings() {
       </div>
 
       {/* Alert Types Section */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
           <AlertTriangle className="h-5 w-5 text-warning" />
-          <h3 className="font-semibold text-foreground">Alert Types</h3>
+          <h3 className="font-serif font-semibold text-foreground">Alert Types</h3>
         </div>
         <p className="text-sm text-foreground-muted mb-4">
           Choose which types of alerts you want to receive

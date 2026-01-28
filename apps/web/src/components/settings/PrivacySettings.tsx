@@ -55,10 +55,10 @@ export function PrivacySettings() {
   return (
     <div className="space-y-6">
       {/* Data We Collect Section */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
           <Database className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Data We Collect</h3>
+          <h3 className="font-serif font-semibold text-foreground">Data We Collect</h3>
         </div>
 
         <p className="text-sm text-foreground-muted mb-4">
@@ -99,10 +99,10 @@ export function PrivacySettings() {
       </div>
 
       {/* How We Use Your Data */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
           <Shield className="h-5 w-5 text-success" />
-          <h3 className="font-semibold text-foreground">How We Use Your Data</h3>
+          <h3 className="font-serif font-semibold text-foreground">How We Use Your Data</h3>
         </div>
 
         <ul className="space-y-3">
@@ -137,7 +137,7 @@ export function PrivacySettings() {
 
         {/* Privacy Commitment */}
         <div className="mt-4 p-4 rounded-lg bg-success-subtle border border-success-muted">
-          <h4 className="font-medium text-success-foreground-subtle text-sm mb-2">Our Privacy Commitment</h4>
+          <h4 className="font-serif font-medium text-success-foreground-subtle text-sm mb-2">Our Privacy Commitment</h4>
           <ul className="space-y-1 text-sm text-success">
             <li>- We never sell your personal data</li>
             <li>- We never share your images with third parties</li>
@@ -148,10 +148,10 @@ export function PrivacySettings() {
       </div>
 
       {/* Export Your Data */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
           <Download className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Export Your Data</h3>
+          <h3 className="font-serif font-semibold text-foreground">Export Your Data</h3>
         </div>
 
         <p className="text-sm text-foreground-muted mb-4">
@@ -191,8 +191,8 @@ export function PrivacySettings() {
       </div>
 
       {/* Legal Links */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
-        <h3 className="font-semibold text-foreground mb-4">Legal Documents</h3>
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
+        <h3 className="font-serif font-semibold text-foreground mb-4">Legal Documents</h3>
 
         <div className="space-y-3">
           <a

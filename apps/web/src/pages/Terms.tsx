@@ -25,12 +25,12 @@ export function Terms() {
         </Link>
 
         <div className="mx-auto max-w-3xl">
-          <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Terms of Service</h1>
+          <h1 className="text-3xl font-serif font-bold text-foreground sm:text-4xl">Terms of Service</h1>
           <p className="mt-4 text-foreground-muted">Last updated: January 2026</p>
 
           <div className="mt-8 space-y-8 text-foreground">
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Welcome to Vara</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Welcome to Vara</h2>
               <p className="mt-3">
                 These Terms of Service govern your use of Vara's digital safety platform. By using
                 our services, you agree to these terms. Please read them carefully.
@@ -38,7 +38,7 @@ export function Terms() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Our Services</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Our Services</h2>
               <p className="mt-3">
                 Vara provides digital safety tools designed to help protect you from online
                 harassment, image misuse, and privacy violations. Our services include:
@@ -53,7 +53,7 @@ export function Terms() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Your Account</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Your Account</h2>
               <p className="mt-3">
                 You are responsible for maintaining the security of your account and password.
                 Vara cannot and will not be liable for any loss or damage from your failure to
@@ -62,7 +62,7 @@ export function Terms() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Acceptable Use</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Acceptable Use</h2>
               <p className="mt-3">You agree to use Vara only for lawful purposes. You may not:</p>
               <ul className="mt-3 list-disc space-y-2 pl-6">
                 <li>Use the service to harass, abuse, or harm others</li>
@@ -73,7 +73,7 @@ export function Terms() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Your Content</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Your Content</h2>
               <p className="mt-3">
                 You retain ownership of any photos and content you upload to Vara. By uploading
                 content, you grant us a limited license to process and scan your content solely
@@ -82,7 +82,7 @@ export function Terms() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Limitations</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Limitations</h2>
               <p className="mt-3">
                 While we strive to provide comprehensive protection, we cannot guarantee the
                 detection of all threats. Our service is a tool to help enhance your digital
@@ -91,7 +91,7 @@ export function Terms() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Termination</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Termination</h2>
               <p className="mt-3">
                 You may terminate your account at any time. Upon termination, we will delete your
                 personal data in accordance with our Privacy Policy. We reserve the right to
@@ -100,7 +100,7 @@ export function Terms() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Changes to Terms</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Changes to Terms</h2>
               <p className="mt-3">
                 We may update these terms from time to time. We will notify you of significant
                 changes via email or through the service. Continued use after changes constitutes
@@ -109,7 +109,7 @@ export function Terms() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Contact Us</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Contact Us</h2>
               <p className="mt-3">
                 If you have any questions about these Terms of Service, please contact us at{' '}
                 <a

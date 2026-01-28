@@ -51,12 +51,12 @@ export function MainLayout() {
       <OfflineIndicator />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-card/95 backdrop-blur-sm">
         <div className="container flex h-14 items-center justify-between md:h-16">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 tap-highlight-none">
             <Shield className="h-7 w-7 text-primary md:h-8 md:w-8" />
-            <span className="text-lg font-semibold text-foreground md:text-xl">Vara</span>
+            <span className="text-lg font-serif text-foreground md:text-xl">vara</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -68,7 +68,7 @@ export function MainLayout() {
                   key={item.href}
                   to={item.href}
                   className={cn(
-                    'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'rounded-xl px-3 py-2 text-sm font-medium transition-colors',
                     'hover:bg-muted hover:text-foreground',
                     'min-h-touch flex items-center',
                     isActive
@@ -88,7 +88,7 @@ export function MainLayout() {
             <Link
               to="/alerts"
               className={cn(
-                'relative rounded-lg p-2.5 text-foreground-muted transition-colors',
+                'relative rounded-xl p-2.5 text-foreground-muted transition-colors',
                 'hover:bg-muted hover:text-foreground',
                 'min-h-touch min-w-touch flex items-center justify-center',
                 'tap-highlight-none active-scale'
@@ -107,7 +107,7 @@ export function MainLayout() {
             <Link
               to="/help"
               className={cn(
-                'hidden md:flex rounded-lg p-2.5 text-foreground-muted transition-colors',
+                'hidden md:flex rounded-xl p-2.5 text-foreground-muted transition-colors',
                 'hover:bg-muted hover:text-foreground',
                 'min-h-touch min-w-touch items-center justify-center'
               )}
@@ -117,11 +117,11 @@ export function MainLayout() {
             </Link>
 
             {/* Desktop-only user section */}
-            <div className="hidden items-center gap-2 border-l border-border pl-3 md:flex">
+            <div className="hidden items-center gap-2 border-l border-border/40 pl-3 md:flex">
               <Link
                 to="/settings"
                 className={cn(
-                  'flex items-center gap-2 rounded-lg p-2 text-foreground-muted transition-colors',
+                  'flex items-center gap-2 rounded-xl p-2 text-foreground-muted transition-colors',
                   'hover:bg-muted hover:text-foreground',
                   'min-h-touch'
                 )}
@@ -134,7 +134,7 @@ export function MainLayout() {
               <button
                 onClick={handleLogout}
                 className={cn(
-                  'rounded-lg p-2 text-foreground-muted transition-colors',
+                  'rounded-xl p-2 text-foreground-muted transition-colors',
                   'hover:bg-muted hover:text-foreground',
                   'min-h-touch min-w-touch flex items-center justify-center'
                 )}
@@ -147,7 +147,7 @@ export function MainLayout() {
             {/* Mobile menu button - only show on tablet, hide on phone (we have bottom nav) */}
             <button
               className={cn(
-                'rounded-lg p-2.5 text-foreground-muted transition-colors',
+                'rounded-xl p-2.5 text-foreground-muted transition-colors',
                 'hover:bg-muted',
                 'min-h-touch min-w-touch flex items-center justify-center',
                 'tap-highlight-none active-scale',
@@ -182,7 +182,7 @@ export function MainLayout() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="absolute left-0 right-0 top-full z-50 border-t border-border bg-card shadow-lg md:hidden"
+                className="absolute left-0 right-0 top-full z-50 border-t border-border/40 bg-card shadow-lg md:hidden"
               >
                 <nav className="container py-2">
                   {navItems.map((item) => {
@@ -192,7 +192,7 @@ export function MainLayout() {
                         key={item.href}
                         to={item.href}
                         className={cn(
-                          'flex items-center rounded-lg px-4 py-3 text-base font-medium transition-colors',
+                          'flex items-center rounded-xl px-4 py-3 text-base font-medium transition-colors',
                           'hover:bg-muted',
                           'min-h-touch',
                           isActive
@@ -207,7 +207,7 @@ export function MainLayout() {
                   })}
 
                   {/* User info and logout in mobile menu */}
-                  <div className="mt-2 border-t border-border pt-2">
+                  <div className="mt-2 border-t border-border/40 pt-2">
                     <div className="flex items-center gap-3 px-4 py-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
                         <User className="h-5 w-5 text-primary" />
@@ -224,7 +224,7 @@ export function MainLayout() {
                     <button
                       onClick={handleLogout}
                       className={cn(
-                        'flex w-full items-center gap-3 rounded-lg px-4 py-3',
+                        'flex w-full items-center gap-3 rounded-xl px-4 py-3',
                         'text-base font-medium text-foreground-muted transition-colors',
                         'hover:bg-muted',
                         'min-h-touch'

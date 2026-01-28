@@ -103,7 +103,7 @@ export function ScanStatus({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border border-primary-muted bg-primary-subtle p-3 sm:p-4',
+          'flex items-center gap-3 rounded-2xl border border-primary-muted bg-primary-subtle p-3 sm:p-4',
           className
         )}
         role="status"
@@ -142,7 +142,7 @@ export function ScanStatus({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border p-3 sm:p-4',
+          'flex items-center gap-3 rounded-2xl border p-3 sm:p-4',
           hasMatches
             ? 'border-warning-muted bg-warning-subtle'
             : 'border-success-muted bg-success-subtle',
@@ -206,7 +206,7 @@ export function ScanStatus({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border border-success-muted bg-success-subtle p-3 sm:p-4',
+          'flex items-center gap-3 rounded-2xl border border-success-muted bg-success-subtle p-3 sm:p-4',
           className
         )}
         role="status"

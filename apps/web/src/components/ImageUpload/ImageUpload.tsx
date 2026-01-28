@@ -223,10 +223,10 @@ export function ImageUpload({
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={cn(
-          'relative cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all',
+          'relative cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all',
           isDragging
             ? 'border-primary bg-primary-subtle'
-            : 'border-border bg-card hover:border-primary/60 hover:bg-primary-subtle/50',
+            : 'border-border/40 bg-card hover:border-primary/60 hover:bg-primary-subtle/50',
           'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2'
         )}
         role="button"
@@ -365,7 +365,7 @@ function FilePreviewCard({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-lg border bg-card transition-all',
+        'relative overflow-hidden rounded-2xl border bg-card transition-all',
         isSuccess && 'border-success ring-2 ring-success-subtle',
         isError && 'border-destructive ring-2 ring-destructive-subtle',
         !isSuccess && !isError && 'border-border-subtle'

@@ -190,7 +190,7 @@ function FAQAccordion({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boole
   const Icon = item.icon;
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
       <button
         onClick={onToggle}
         className={cn(
@@ -246,7 +246,7 @@ export function Help() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Help & Resources</h1>
+          <h1 className="text-2xl font-serif font-bold text-foreground">Help & Resources</h1>
           <p className="mt-1 text-foreground-muted">
             Find answers, resources, and support when you need it
           </p>
@@ -263,7 +263,7 @@ export function Help() {
             <Heart className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-primary">
+            <h2 className="text-lg font-serif font-semibold text-primary">
               You Are Not Alone
             </h2>
             <p className="mt-1 text-primary">
@@ -276,7 +276,7 @@ export function Help() {
           {EMERGENCY_CONTACTS.map((contact) => (
             <div
               key={contact.name}
-              className="rounded-xl bg-card/80 p-4 border border-lavender-100"
+              className="rounded-2xl bg-card/80 p-4 border border-lavender-100"
             >
               <div className="flex items-start gap-3">
                 <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
@@ -312,7 +312,7 @@ export function Help() {
             <HelpCircle className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Frequently Asked Questions</h2>
+            <h2 className="text-xl font-serif font-semibold text-foreground">Frequently Asked Questions</h2>
             <p className="text-sm text-foreground-muted">Quick answers to common questions</p>
           </div>
         </div>
@@ -336,7 +336,7 @@ export function Help() {
             <Shield className="h-5 w-5 text-success" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Safety Resources</h2>
+            <h2 className="text-xl font-serif font-semibold text-foreground">Safety Resources</h2>
             <p className="text-sm text-foreground-muted">Expert organizations and support services</p>
           </div>
         </div>
@@ -345,7 +345,7 @@ export function Help() {
           {SAFETY_RESOURCES.map((category) => (
             <div
               key={category.title}
-              className="rounded-xl border border-border bg-card p-5"
+              className="rounded-2xl border border-border/40 bg-card p-5"
             >
               <h3 className="font-semibold text-foreground">{category.title}</h3>
               <p className="mt-1 text-sm text-foreground-muted">{category.description}</p>
@@ -379,19 +379,19 @@ export function Help() {
       </section>
 
       {/* Contact Us Section */}
-      <section className="rounded-2xl bg-muted border border-border p-6">
+      <section className="rounded-2xl bg-muted border border-border/40 p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-card">
             <MessageCircle className="h-5 w-5 text-foreground-muted" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Contact Us</h2>
+            <h2 className="text-xl font-serif font-semibold text-foreground">Contact Us</h2>
             <p className="text-sm text-foreground-muted">Our support team is here to help</p>
           </div>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
-          <div className="rounded-xl bg-card border border-border p-5">
+          <div className="rounded-2xl bg-card border border-border/40 p-5">
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-subtle">
                 <Mail className="h-5 w-5 text-primary" />
@@ -411,7 +411,7 @@ export function Help() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-card border border-border p-5">
+          <div className="rounded-2xl bg-card border border-border/40 p-5">
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning-subtle">
                 <AlertTriangle className="h-5 w-5 text-warning" />
@@ -432,7 +432,7 @@ export function Help() {
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-border">
+        <div className="mt-6 pt-4 border-t border-border/40">
           <p className="text-sm text-foreground-subtle">
             Before contacting support, please check our FAQ section above - you might find your answer there.
             When reaching out, include as much detail as possible about your issue so we can help you faster.

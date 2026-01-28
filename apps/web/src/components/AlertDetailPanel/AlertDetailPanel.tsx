@@ -320,7 +320,7 @@ export function AlertDetailPanel({
         aria-modal="true"
         aria-labelledby="alert-detail-title"
         className={cn(
-          'fixed inset-y-0 right-0 z-50 w-full max-w-lg transform bg-white shadow-xl transition-transform duration-300 ease-out',
+          'fixed inset-y-0 right-0 z-50 w-full max-w-lg transform bg-card shadow-xl transition-transform duration-300 ease-out',
           'flex flex-col',
           alertId ? 'translate-x-0' : 'translate-x-full'
         )}
@@ -368,7 +368,7 @@ export function AlertDetailPanel({
                     </span>
                   )}
                 </div>
-                <h2 id="alert-detail-title" className="text-lg font-semibold text-foreground leading-tight">
+                <h2 id="alert-detail-title" className="text-lg font-semibold font-serif text-foreground leading-tight">
                   {alert.title}
                 </h2>
                 <p className="mt-1 text-sm text-foreground-muted flex items-center gap-1">
@@ -396,13 +396,13 @@ export function AlertDetailPanel({
 
               {/* Alert Description */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground-muted mb-2">What We Found</h3>
+                <h3 className="font-serif text-base font-semibold text-foreground-muted mb-2">What we noticed</h3>
                 <p className="text-foreground-muted leading-relaxed">{alert.description}</p>
               </div>
 
               {/* Source Information */}
               {metadata?.sourceUrl && (
-                <div className="rounded-lg bg-muted border border-border p-4">
+                <div className="rounded-xl bg-background-subtle border border-border/40 p-4">
                   <h3 className="text-sm font-semibold text-foreground-muted mb-2 flex items-center gap-2">
                     <Link2 className="h-4 w-4" />
                     Source Location
@@ -435,7 +435,7 @@ export function AlertDetailPanel({
 
               {/* Breach Details */}
               {metadata?.breaches && metadata.breaches.length > 0 && (
-                <div className="rounded-lg bg-muted border border-border p-4">
+                <div className="rounded-xl bg-background-subtle border border-border/40 p-4">
                   <h3 className="text-sm font-semibold text-foreground-muted mb-3 flex items-center gap-2">
                     <Database className="h-4 w-4" />
                     Affected Services ({metadata.breaches.length})
@@ -469,13 +469,13 @@ export function AlertDetailPanel({
 
               {/* What This Means */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground-muted mb-2">What This Means</h3>
+                <h3 className="font-serif text-base font-semibold text-foreground-muted mb-2">What This Means</h3>
                 <p className="text-foreground-muted leading-relaxed text-sm">{alertType.explanation}</p>
               </div>
 
               {/* Next Steps */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground-muted mb-3">Next Steps</h3>
+                <h3 className="font-serif text-base font-semibold text-foreground-muted mb-3">What to do next</h3>
                 <ol className="space-y-2">
                   {alertType.nextSteps.map((step, index) => (
                     <li key={index} className="flex items-start gap-3">
@@ -503,7 +503,7 @@ export function AlertDetailPanel({
                         target="_blank"
                         rel="noopener noreferrer"
                         className={cn(
-                          'flex items-center justify-between p-3 rounded-lg border border-border',
+                          'flex items-center justify-between p-3 rounded-xl border border-border/40',
                           'bg-card hover:bg-muted transition-colors group'
                         )}
                       >
@@ -531,7 +531,7 @@ export function AlertDetailPanel({
                     {metadata.relatedAlerts.map((related) => (
                       <button
                         key={related.id}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted transition-colors text-left"
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-card hover:bg-muted transition-colors text-left"
                       >
                         <AlertTriangle className="h-4 w-4 text-foreground-subtle shrink-0" />
                         <span className="text-sm text-foreground-muted truncate">{related.title}</span>
@@ -554,70 +554,81 @@ export function AlertDetailPanel({
             </div>
 
             {/* Footer Actions */}
-            <div className="border-t border-border p-4 bg-muted">
-              <div className="flex flex-wrap gap-2">
-                {!metadata?.isMock && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleSaveEvidence}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <Download className="h-4 w-4 mr-1" />
-                    Save as Evidence
-                  </Button>
-                )}
+            <div className="border-t border-border/40 p-4 bg-background-subtle">
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-wrap gap-2 w-full">
+                  {!metadata?.isMock && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleSaveEvidence}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Save as Evidence
+                    </Button>
+                  )}
 
-                {alert.status !== 'ACTIONED' && !metadata?.isMock && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => onMarkActioned(alert.id)}
-                    disabled={isUpdating}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Mark as Handled
-                  </Button>
-                )}
+                  {alert.status !== 'ACTIONED' && !metadata?.isMock && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => onMarkActioned(alert.id)}
+                      disabled={isUpdating}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Mark as Handled
+                    </Button>
+                  )}
 
-                {alert.status !== 'DISMISSED' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      onDismiss(alert.id);
-                      onClose();
-                    }}
-                    disabled={isUpdating}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <Archive className="h-4 w-4 mr-1" />
-                    Archive
-                  </Button>
-                )}
-              </div>
+                  {alert.status !== 'DISMISSED' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        onDismiss(alert.id);
+                        onClose();
+                      }}
+                      disabled={isUpdating}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <Archive className="h-4 w-4 mr-1" />
+                      Archive
+                    </Button>
+                  )}
+                </div>
 
-              {/* Status indicator */}
-              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-foreground-muted">
-                {alert.status === 'ACTIONED' && (
-                  <>
-                    <CheckCircle className="h-3 w-3 text-success" />
-                    <span>You marked this as handled</span>
-                  </>
-                )}
-                {alert.status === 'DISMISSED' && (
-                  <>
-                    <Archive className="h-3 w-3 text-foreground-subtle" />
-                    <span>This alert has been archived</span>
-                  </>
-                )}
-                {alert.status === 'VIEWED' && (
-                  <>
-                    <Eye className="h-3 w-3 text-info" />
-                    <span>Reviewed - awaiting action</span>
-                  </>
-                )}
+                {/* Save for later */}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="text-sm text-foreground-muted underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  Save for later
+                </button>
+
+                {/* Status indicator */}
+                <div className="flex items-center justify-center gap-2 text-xs text-foreground-muted">
+                  {alert.status === 'ACTIONED' && (
+                    <>
+                      <CheckCircle className="h-3 w-3 text-success" />
+                      <span>You marked this as handled</span>
+                    </>
+                  )}
+                  {alert.status === 'DISMISSED' && (
+                    <>
+                      <Archive className="h-3 w-3 text-foreground-subtle" />
+                      <span>This alert has been archived</span>
+                    </>
+                  )}
+                  {alert.status === 'VIEWED' && (
+                    <>
+                      <Eye className="h-3 w-3 text-info" />
+                      <span>Reviewed - awaiting action</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </>

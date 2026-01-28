@@ -106,10 +106,10 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border p-4 transition-all',
+        'rounded-2xl border p-4 transition-all',
         isDone
-          ? 'bg-background-muted border-border'
-          : 'bg-card border-border hover:border-primary-muted hover:shadow-sm'
+          ? 'bg-background-muted border-border/40'
+          : 'bg-card border-border/40 hover:border-primary-muted hover:shadow-sm'
       )}
     >
       <div className="flex items-start gap-3">
@@ -138,7 +138,7 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
             <div className="flex-1">
               <h3
                 className={cn(
-                  'font-medium transition-all',
+                  'font-serif font-medium transition-all',
                   isDone
                     ? 'text-foreground-muted line-through'
                     : 'text-foreground'

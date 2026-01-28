@@ -304,12 +304,20 @@ export default {
           '-apple-system',
           'sans-serif',
         ],
+        serif: [
+          '"DM Serif Display"',
+          'Georgia',
+          'Cambria',
+          '"Times New Roman"',
+          'serif',
+        ],
       },
 
       borderRadius: {
         lg: '0.75rem',
         xl: '1rem',
         '2xl': '1.5rem',
+        '3xl': '2rem',
       },
 
       // Safe area padding for notch/home indicator

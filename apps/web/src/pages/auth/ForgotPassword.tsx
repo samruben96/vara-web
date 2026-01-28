@@ -56,7 +56,7 @@ export function ForgotPassword() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-foreground">Check your email</h1>
+        <h1 className="mt-6 font-serif text-2xl font-bold text-foreground">Check your email</h1>
         <p className="mt-2 text-foreground-muted">
           If an account exists with that email, we've sent you a password reset link.
         </p>
@@ -82,13 +82,13 @@ export function ForgotPassword() {
         Back to sign in
       </Link>
 
-      <h1 className="mt-6 text-2xl font-bold text-foreground">Reset your password</h1>
+      <h1 className="mt-6 font-serif text-2xl font-bold text-foreground">Reset your password</h1>
       <p className="mt-2 text-foreground-muted">
         Enter your email address and we'll send you a link to reset your password.
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
+        <div className="mt-6 rounded-2xl bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
           {error}
         </div>
       )}

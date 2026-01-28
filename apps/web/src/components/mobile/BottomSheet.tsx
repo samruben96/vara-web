@@ -57,7 +57,7 @@ export function BottomSheet({
           {/* Optional Header */}
           {showHeader && title && (
             <div className="border-b border-border px-4 pb-4">
-              <Drawer.Title className="text-lg font-semibold text-foreground">
+              <Drawer.Title className="text-lg font-serif font-semibold text-foreground">
                 {title}
               </Drawer.Title>
               {description && (

@@ -146,7 +146,7 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
         }
       }}
       className={cn(
-        'rounded-xl border p-4 transition-all cursor-pointer',
+        'rounded-2xl border p-4 transition-all cursor-pointer',
         'hover:shadow-md hover:border-primary/50',
         severity.bgColor,
         alert.status === 'NEW' && 'ring-2 ring-primary/30',
@@ -189,7 +189,7 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
           onKeyDown={handleExpandKeyDown}
           aria-expanded={expanded}
           aria-label={expanded ? 'Collapse alert details' : 'Expand alert details'}
-          className="p-1 hover:bg-white/50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          className="p-1 hover:bg-background-subtle rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         >
           <ChevronRight className={cn('h-5 w-5 text-foreground-subtle transition-transform', expanded && 'rotate-90')} />
         </button>
@@ -202,7 +202,7 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
           {metadata?.similarity && (
             <div className="mb-3 flex items-center gap-2">
               <span className="text-sm text-foreground-muted">Similarity:</span>
-              <div className="flex-1 h-2 bg-white/50 rounded-full overflow-hidden max-w-32">
+              <div className="flex-1 h-2 bg-background-subtle rounded-full overflow-hidden max-w-32">
                 <div
                   className="h-full bg-primary rounded-full"
                   style={{ width: `${metadata.similarity * 100}%` }}
@@ -412,7 +412,7 @@ export function Alerts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Alerts</h1>
+          <h1 className="text-2xl font-serif font-bold text-foreground">Alerts</h1>
           <p className="mt-1 text-foreground-muted">
             Stay informed about potential concerns with your digital presence
           </p>
@@ -469,7 +469,7 @@ export function Alerts() {
 
       {/* Error State */}
       {error && (
-        <div className="rounded-xl bg-destructive-subtle border border-destructive p-6 text-center">
+        <div className="rounded-2xl bg-destructive-subtle border border-destructive p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
           <p className="text-destructive-foreground-subtle">Unable to load alerts. Please try again.</p>
         </div>
@@ -520,7 +520,7 @@ export function Alerts() {
       )}
 
       {/* Info Footer */}
-      <div className="rounded-xl bg-muted border border-border p-4">
+      <div className="rounded-2xl bg-muted border border-border/40 p-4">
         <div className="flex items-start gap-3">
           <Inbox className="h-5 w-5 text-foreground-subtle mt-0.5" />
           <div>

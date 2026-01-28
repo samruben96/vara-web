@@ -97,13 +97,13 @@ export function Signup() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
+      <h1 className="font-serif text-2xl font-bold text-foreground">Create your account</h1>
       <p className="mt-2 text-foreground-muted">
         Start your journey to comprehensive digital safety.
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
+        <div className="mt-6 rounded-2xl bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
           {error}
         </div>
       )}

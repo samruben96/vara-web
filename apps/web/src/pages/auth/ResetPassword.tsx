@@ -112,7 +112,7 @@ export function ResetPassword() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-subtle">
           <CheckCircle className="h-8 w-8 text-success" />
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-foreground">Password updated</h1>
+        <h1 className="mt-6 font-serif text-2xl font-bold text-foreground">Password updated</h1>
         <p className="mt-2 text-foreground-muted">
           Your password has been successfully reset. You'll be redirected to sign in shortly.
         </p>
@@ -147,7 +147,7 @@ export function ResetPassword() {
             />
           </svg>
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-foreground">Reset link invalid</h1>
+        <h1 className="mt-6 font-serif text-2xl font-bold text-foreground">Reset link invalid</h1>
         <p className="mt-2 text-foreground-muted">
           {error || 'This password reset link is invalid or has expired.'}
         </p>
@@ -177,13 +177,13 @@ export function ResetPassword() {
         Back to sign in
       </Link>
 
-      <h1 className="mt-6 text-2xl font-bold text-foreground">Create new password</h1>
+      <h1 className="mt-6 font-serif text-2xl font-bold text-foreground">Create new password</h1>
       <p className="mt-2 text-foreground-muted">
         Enter your new password below. Make sure it's strong and unique.
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
+        <div className="mt-6 rounded-2xl bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
           {error}
         </div>
       )}

@@ -93,7 +93,7 @@ export function ProfileSettings() {
             type="button"
             className={cn(
               'absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center',
-              'rounded-full bg-card border border-border shadow-sm',
+              'rounded-full bg-card border border-border/40 shadow-sm',
               'text-foreground-subtle hover:text-primary hover:border-primary-muted',
               'transition-colors cursor-not-allowed opacity-50'
             )}
@@ -106,7 +106,7 @@ export function ProfileSettings() {
         </div>
 
         <div className="flex-1">
-          <h3 className="font-semibold text-foreground">
+          <h3 className="font-serif font-semibold text-foreground">
             {user?.profile?.displayName || 'Your Profile'}
           </h3>
           <p className="text-sm text-foreground-muted">{user?.email}</p>
@@ -130,7 +130,7 @@ export function ProfileSettings() {
           <label className="block text-sm font-medium text-foreground-muted mb-1.5">
             Email Address
           </label>
-          <div className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-base sm:text-sm text-foreground-muted">
+          <div className="w-full rounded-2xl border border-border/40 bg-muted px-4 py-3 text-base sm:text-sm text-foreground-muted">
             {user?.email}
           </div>
           <p className="mt-1.5 text-xs text-foreground-subtle">
@@ -142,7 +142,7 @@ export function ProfileSettings() {
           <label className="block text-sm font-medium text-foreground-muted mb-1.5">
             Account Created
           </label>
-          <div className="w-full rounded-lg border border-border bg-muted px-4 py-3 text-base sm:text-sm text-foreground-muted">
+          <div className="w-full rounded-2xl border border-border/40 bg-muted px-4 py-3 text-base sm:text-sm text-foreground-muted">
             {user?.profile?.createdAt
               ? new Date(user.profile.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',

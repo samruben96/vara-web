@@ -20,7 +20,7 @@ export function OnboardingProgress({
   return (
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-foreground">
+        <span className="font-serif font-medium text-foreground">
           Step {current} of {total}
         </span>
         <span className="text-foreground-muted">{Math.round(percentage)}% complete</span>

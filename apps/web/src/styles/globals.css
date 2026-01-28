@@ -62,20 +62,25 @@
      CARDS
      ═══════════════════════════════════════════════════════════════════════ */
   .card {
-    @apply rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm;
+    @apply rounded-2xl border border-border/40 bg-card p-5 sm:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)];
   }
 
   .card-compact {
-    @apply rounded-lg border border-border bg-card p-3 shadow-sm;
+    @apply rounded-xl border border-border/40 bg-card p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)];
   }
 
   .card-hover {
-    @apply card transition-colors hover:bg-card-hover hover:border-border-strong;
+    @apply card transition-colors hover:bg-card-hover hover:border-border-strong/60;
+  }
+
+  /* Surface utility — generic elevated container */
+  .surface {
+    @apply bg-card rounded-2xl p-6 shadow-sm border border-border/50;
   }
 
   /* Card variants for different contexts */
   .card-elevated {
-    @apply rounded-xl border border-border bg-background-elevated p-4 sm:p-6 shadow-md;
+    @apply rounded-2xl border border-border/30 bg-background-elevated p-5 sm:p-6 shadow-lg shadow-charcoal-900/5;
   }
 
   .card-muted {
@@ -100,8 +105,8 @@
      BUTTONS
      ═══════════════════════════════════════════════════════════════════════ */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-medium;
-    @apply transition-all duration-150;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-medium;
+    @apply transition-all duration-200;
     @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background;
     @apply disabled:cursor-not-allowed disabled:opacity-50;
   }
@@ -487,5 +492,23 @@
 
   .dark .glass {
     @apply bg-card/90;
+  }
+
+  /* Serif heading utility */
+  .heading-serif {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  /* Subtle grain texture overlay */
+  .grain-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
   }
 }

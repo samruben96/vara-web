@@ -93,7 +93,7 @@ function StatCardSkeleton() {
 // Loading skeleton for alert items
 function AlertSkeleton() {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 animate-pulse">
+    <div className="flex flex-col gap-3 rounded-2xl border border-border/40 p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 animate-pulse">
       <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-muted flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="h-5 w-48 max-w-full rounded bg-muted" />
@@ -121,7 +121,7 @@ function AlertCard({ alert, onClick }: { alert: Alert; onClick?: () => void }) {
       onClick={onClick}
       onKeyDown={handleKeyDown}
       aria-label={`${alert.severity} alert: ${alert.title}`}
-      className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 transition-colors hover:bg-card-hover active:bg-muted cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      className="flex flex-col gap-3 rounded-2xl border border-border/40 p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 transition-colors hover:bg-card-hover active:bg-muted cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
     >
       {/* Icon and badge row on mobile */}
       <div className="flex items-center justify-between sm:contents">
@@ -175,7 +175,7 @@ function EmptyAlertsState() {
 // Error state component
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-destructive-subtle p-4 text-destructive-foreground-subtle">
+    <div className="flex items-center gap-2 rounded-2xl bg-destructive-subtle p-4 text-destructive-foreground-subtle">
       <AlertTriangle className="h-5 w-5" />
       <p className="text-sm">{message}</p>
     </div>
@@ -226,7 +226,7 @@ export function Dashboard() {
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Welcome - responsive typography */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+        <h1 className="text-xl sm:text-2xl font-serif font-bold text-foreground">
           Welcome back, {displayName}
         </h1>
         <p className="mt-1 text-sm sm:text-base text-foreground-muted">
@@ -294,11 +294,11 @@ export function Dashboard() {
 
       {/* Quick Actions - 2x2 grid on mobile */}
       <div className="card">
-        <h2 className="text-base sm:text-lg font-semibold text-foreground">Quick Actions</h2>
+        <h2 className="text-base sm:text-lg font-serif font-semibold text-foreground">Quick Actions</h2>
         <div className="mt-3 sm:mt-4 grid gap-3 grid-cols-2 lg:grid-cols-4">
           <button
             onClick={() => navigate('/images')}
-            className="rounded-lg border border-border p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
+            className="rounded-xl border border-border/40 p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
           >
             <Image className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             <p className="mt-2 font-medium text-sm sm:text-base text-foreground">Upload Photos</p>
@@ -306,7 +306,7 @@ export function Dashboard() {
           </button>
           <button
             onClick={() => navigate('/alerts')}
-            className="rounded-lg border border-border p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
+            className="rounded-xl border border-border/40 p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
           >
             <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             <p className="mt-2 font-medium text-sm sm:text-base text-foreground">View Alerts</p>
@@ -318,7 +318,7 @@ export function Dashboard() {
           </button>
           <button
             onClick={() => navigate('/protection-plan')}
-            className="rounded-lg border border-border p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
+            className="rounded-xl border border-border/40 p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
           >
             <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             <p className="mt-2 font-medium text-sm sm:text-base text-foreground">Protection Plan</p>
@@ -326,7 +326,7 @@ export function Dashboard() {
           </button>
           <button
             onClick={() => navigate('/images')}
-            className="rounded-lg border border-border p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
+            className="rounded-xl border border-border/40 p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
           >
             <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             <p className="mt-2 font-medium text-sm sm:text-base text-foreground">Run Scan</p>
@@ -338,7 +338,7 @@ export function Dashboard() {
       {/* Recent Alerts */}
       <div className="card">
         <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-semibold text-foreground">Recent Alerts</h2>
+          <h2 className="text-base sm:text-lg font-serif font-semibold text-foreground">Recent Alerts</h2>
           <button
             onClick={() => navigate('/alerts')}
             className="text-sm font-medium text-primary hover:text-primary-hover active:text-primary-active touch-manipulation min-h-touch flex items-center px-2 -mr-2"

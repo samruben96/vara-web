@@ -105,7 +105,7 @@ export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
         <div className="flex-1 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
             <Shield className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="font-serif text-lg font-semibold text-foreground">
               Protection Progress
             </h2>
           </div>

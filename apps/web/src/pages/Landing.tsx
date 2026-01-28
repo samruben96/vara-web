@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Shield, Eye, Bell, Lock, ChevronRight, CheckCircle } from 'lucide-react';
-import { Button } from '../components/ui';
+import { Button, ProtectionRing } from '../components/ui';
 
 export function Landing() {
   const features = [
@@ -76,39 +76,39 @@ export function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary-subtle to-card py-20 lg:py-32">
+      <section className="bg-background py-20 lg:py-32">
         <div className="container">
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              Digital safety designed{' '}
-              <span className="gradient-text">for women</span>
+            <h1 className="font-serif text-4xl tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+              Your digital safety, simplified
             </h1>
             <p className="mt-6 text-lg text-foreground-muted sm:text-xl">
-              Protect yourself from online harassment, stalking, impersonation, and image misuse.
-              Take control of your digital presence with comprehensive, privacy-first protection.
+              Comprehensive protection for your online presence. Always watching, always private.
             </p>
+
+            {/* Protection Ring as visual centerpiece */}
+            <div className="mt-10 flex justify-center">
+              <ProtectionRing variant="scanning" size={180} />
+            </div>
+
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto">
-                  Start Free Protection
+                <Button size="md" className="w-full sm:w-auto">
+                  Begin your protection
                   <ChevronRight className="h-5 w-5" />
                 </Button>
               </Link>
               <a href="#how-it-works">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                <Button variant="secondary" size="md" className="w-full sm:w-auto">
                   Learn More
                 </Button>
               </a>
             </div>
             <p className="mt-4 text-sm text-foreground-subtle">
-              Free to start. No credit card required.
+              Private. Secure. Built for you.
             </p>
           </div>
         </div>
-
-        {/* Background decoration */}
-        <div className="absolute -top-40 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-primary-subtle opacity-50 blur-3xl" />
-        <div className="absolute -bottom-40 left-0 -z-10 h-[400px] w-[400px] rounded-full bg-primary-subtle opacity-50 blur-3xl" />
       </section>
 
       {/* Features */}
@@ -129,7 +129,7 @@ export function Landing() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-subtle">
                   <feature.icon className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold text-foreground">{feature.title}</h3>
+                <h3 className="mt-4 font-serif text-lg font-semibold text-foreground">{feature.title}</h3>
                 <p className="mt-2 text-foreground-muted">{feature.description}</p>
               </div>
             ))}
@@ -138,11 +138,11 @@ export function Landing() {
       </section>
 
       {/* How it Works */}
-      <section id="how-it-works" className="bg-muted py-20 lg:py-32">
+      <section id="how-it-works" className="bg-background-subtle py-20 lg:py-32">
         <div className="container">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              <h2 className="font-serif text-3xl tracking-tight text-foreground sm:text-4xl">
                 Your safety, your way
               </h2>
               <p className="mt-4 text-lg text-foreground-muted">
@@ -204,20 +204,16 @@ export function Landing() {
       {/* CTA */}
       <section className="py-20 lg:py-32">
         <div className="container">
-          <div className="mx-auto max-w-3xl rounded-2xl bg-gradient-to-r from-primary to-primary-hover px-8 py-16 text-center shadow-xl sm:px-16">
-            <h2 className="text-3xl font-bold text-primary-foreground sm:text-4xl">
+          <div className="mx-auto max-w-3xl rounded-3xl bg-primary-subtle border border-primary-muted px-8 py-16 text-center sm:px-16">
+            <h2 className="font-serif text-3xl text-foreground sm:text-4xl">
               Ready to take control of your digital safety?
             </h2>
-            <p className="mt-4 text-lg text-primary-foreground/80">
+            <p className="mt-4 text-lg text-foreground-muted">
               Join thousands of women who trust Vara to protect their online presence.
             </p>
             <div className="mt-8">
               <Link to="/signup">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="bg-card text-primary hover:bg-primary-subtle"
-                >
+                <Button size="lg">
                   Get Started Free
                   <ChevronRight className="h-5 w-5" />
                 </Button>

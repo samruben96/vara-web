@@ -25,12 +25,12 @@ export function Privacy() {
         </Link>
 
         <div className="mx-auto max-w-3xl">
-          <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Privacy Policy</h1>
+          <h1 className="text-3xl font-serif font-bold text-foreground sm:text-4xl">Privacy Policy</h1>
           <p className="mt-4 text-foreground-muted">Last updated: January 2026</p>
 
           <div className="mt-8 space-y-8 text-foreground">
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Our Commitment to Privacy</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Our Commitment to Privacy</h2>
               <p className="mt-3">
                 At Vara, your privacy is not just a feature—it's the foundation of everything we build.
                 We are committed to protecting your personal information and being transparent about
@@ -39,7 +39,7 @@ export function Privacy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Information We Collect</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Information We Collect</h2>
               <p className="mt-3">We collect information that you provide directly to us, including:</p>
               <ul className="mt-3 list-disc space-y-2 pl-6">
                 <li>Account information (email, name)</li>
@@ -50,7 +50,7 @@ export function Privacy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">How We Use Your Information</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">How We Use Your Information</h2>
               <p className="mt-3">We use your information solely to:</p>
               <ul className="mt-3 list-disc space-y-2 pl-6">
                 <li>Provide and improve our protection services</li>
@@ -61,7 +61,7 @@ export function Privacy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">What We Never Do</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">What We Never Do</h2>
               <p className="mt-3">We will never:</p>
               <ul className="mt-3 list-disc space-y-2 pl-6">
                 <li>Sell your personal data to third parties</li>
@@ -72,7 +72,7 @@ export function Privacy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Data Security</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Data Security</h2>
               <p className="mt-3">
                 We employ industry-standard security measures to protect your data, including
                 encryption at rest and in transit, secure access controls, and regular security audits.
@@ -80,7 +80,7 @@ export function Privacy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Your Rights</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Your Rights</h2>
               <p className="mt-3">You have the right to:</p>
               <ul className="mt-3 list-disc space-y-2 pl-6">
                 <li>Access your personal data</li>
@@ -92,7 +92,7 @@ export function Privacy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground">Contact Us</h2>
+              <h2 className="text-xl font-serif font-semibold text-foreground">Contact Us</h2>
               <p className="mt-3">
                 If you have any questions about this Privacy Policy or our data practices, please
                 contact us at{' '}

@@ -77,13 +77,13 @@ export function SecuritySettings() {
   return (
     <div className="space-y-6">
       {/* Password Section */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-subtle">
             <Lock className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-foreground">Password</h3>
+            <h3 className="font-serif font-semibold text-foreground">Password</h3>
             <p className="text-sm text-foreground-muted">
               Keep your account secure by using a strong password
             </p>
@@ -155,14 +155,14 @@ export function SecuritySettings() {
       </div>
 
       {/* Two-Factor Authentication Section */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
             <Smartphone className="h-5 w-5 text-foreground-subtle" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-foreground">Two-Factor Authentication</h3>
+              <h3 className="font-serif font-semibold text-foreground">Two-Factor Authentication</h3>
               <span className="inline-flex items-center rounded-full bg-primary-subtle px-2 py-0.5 text-xs font-medium text-primary">
                 Coming Soon
               </span>
@@ -182,13 +182,13 @@ export function SecuritySettings() {
       </div>
 
       {/* Session Security */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success-subtle">
             <Shield className="h-5 w-5 text-success" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-foreground">Session Security</h3>
+            <h3 className="font-serif font-semibold text-foreground">Session Security</h3>
             <p className="text-sm text-foreground-muted">
               Your session is protected with secure authentication
             </p>
@@ -204,7 +204,7 @@ export function SecuritySettings() {
           'mt-4 rounded-lg bg-muted p-4',
           'border border-border-subtle'
         )}>
-          <h4 className="text-sm font-medium text-foreground-muted mb-2">Security Tips</h4>
+          <h4 className="font-serif text-sm font-medium text-foreground-muted mb-2">Security Tips</h4>
           <ul className="space-y-2 text-sm text-foreground-muted">
             <li className="flex items-start gap-2">
               <span className="text-primary">-</span>

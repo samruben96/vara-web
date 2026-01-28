@@ -63,13 +63,13 @@ export function Login() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
+      <h1 className="font-serif text-2xl font-bold text-foreground">Welcome back</h1>
       <p className="mt-2 text-foreground-muted">
         Sign in to your account to continue protecting your digital presence.
       </p>
 
       {error && (
-        <div className="mt-6 rounded-lg bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
+        <div className="mt-6 rounded-2xl bg-destructive-subtle p-4 text-sm text-destructive-foreground-subtle">
           {error}
         </div>
       )}

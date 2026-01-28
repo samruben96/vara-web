@@ -37,7 +37,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteMo
         aria-modal="true"
         aria-labelledby="delete-modal-title"
         className={cn(
-          'relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl',
+          'relative w-full max-w-md rounded-2xl bg-card p-6 shadow-xl',
           'animate-in fade-in-0 zoom-in-95 duration-200'
         )}
       >
@@ -65,7 +65,7 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteMo
         {/* Title */}
         <h2
           id="delete-modal-title"
-          className="mt-4 text-xl font-bold text-foreground text-center"
+          className="mt-4 text-xl font-serif font-bold text-foreground text-center"
         >
           Delete Your Account?
         </h2>
@@ -163,13 +163,13 @@ export function DangerZone() {
   return (
     <div className="space-y-6">
       {/* Warning Header */}
-      <div className="rounded-xl border-2 border-destructive-muted bg-destructive-subtle p-4 sm:p-6">
+      <div className="rounded-2xl border-2 border-destructive-muted bg-destructive-subtle p-4 sm:p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive-muted flex-shrink-0">
             <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-destructive-foreground-subtle">Danger Zone</h3>
+            <h3 className="text-lg font-serif font-semibold text-destructive-foreground-subtle">Danger Zone</h3>
             <p className="text-sm text-destructive mt-1">
               Actions in this section are permanent and cannot be undone. Please proceed with
               caution.
@@ -179,13 +179,13 @@ export function DangerZone() {
       </div>
 
       {/* Delete Account Section */}
-      <div className="rounded-xl border border-border p-4 sm:p-6">
+      <div className="rounded-2xl border border-border/40 p-4 sm:p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive-subtle flex-shrink-0">
             <Trash2 className="h-5 w-5 text-destructive" />
           </div>
           <div className="flex-1">
-            <h4 className="font-semibold text-foreground">Delete Account</h4>
+            <h4 className="font-serif font-semibold text-foreground">Delete Account</h4>
             <p className="text-sm text-foreground-muted mt-1">
               Permanently delete your Vara account and all associated data. This will remove
               your profile, protected images, alerts, scan history, and connected accounts.
@@ -193,7 +193,7 @@ export function DangerZone() {
 
             {/* What gets deleted */}
             <div className="mt-4 rounded-lg bg-background-muted p-4">
-              <h5 className="text-sm font-medium text-foreground mb-2">
+              <h5 className="text-sm font-serif font-medium text-foreground mb-2">
                 What will be deleted:
               </h5>
               <ul className="grid gap-1 text-sm text-foreground-muted sm:grid-cols-2">

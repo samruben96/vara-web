@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
 interface OptionButtonProps {
@@ -11,6 +11,8 @@ interface OptionButtonProps {
   className?: string;
   /** For multiple choice, show checkbox style instead of radio style */
   multiSelect?: boolean;
+  /** Index used to determine decorative sparkle color */
+  index?: number;
 }
 
 /**
@@ -27,9 +29,13 @@ export const OptionButton = forwardRef<HTMLButtonElement, OptionButtonProps>(
       disabled = false,
       className,
       multiSelect = false,
+      index,
     },
     ref
   ) => {
+    const sparkleColors = ['text-primary', 'text-warning', 'text-success', 'text-info'];
+    const sparkleColor = sparkleColors[(index ?? 0) % sparkleColors.length];
+
     return (
       <button
         ref={ref}
@@ -37,7 +43,7 @@ export const OptionButton = forwardRef<HTMLButtonElement, OptionButtonProps>(
         onClick={onClick}
         disabled={disabled}
         className={cn(
-          'group relative w-full rounded-xl border-2 p-4 text-left transition-all duration-200',
+          'group relative w-full rounded-2xl border-2 p-4 text-left transition-all duration-200',
           'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
           selected
             ? 'border-primary bg-primary-subtle'
@@ -49,6 +55,9 @@ export const OptionButton = forwardRef<HTMLButtonElement, OptionButtonProps>(
         aria-checked={selected}
       >
         <div className="flex items-start gap-3">
+          {/* Decorative sparkle */}
+          <Sparkles className={cn('h-4 w-4 shrink-0 opacity-60', sparkleColor)} />
+
           {/* Selection indicator */}
           <div
             className={cn(

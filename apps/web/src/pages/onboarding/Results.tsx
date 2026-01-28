@@ -141,7 +141,7 @@ export function Results() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-success-subtle">
           <Sparkles className="h-8 w-8 text-success" />
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-foreground sm:text-3xl">
+        <h1 className="mt-4 font-serif text-2xl font-bold text-foreground sm:text-3xl">
           Your protection plan is ready
         </h1>
         <p className="mt-2 text-foreground-muted">
@@ -169,7 +169,7 @@ export function Results() {
 
       {/* Protection plan items */}
       <div className="space-y-4">
-        <h2 className="font-semibold text-foreground">
+        <h2 className="font-serif font-semibold text-foreground">
           Your personalized action items
         </h2>
 
@@ -177,7 +177,7 @@ export function Results() {
           {planItems.map((item, index) => (
             <div
               key={item.id}
-              className="flex items-start gap-4 rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-sm"
+              className="flex items-start gap-4 rounded-2xl border border-border/40 bg-card p-4 transition-shadow hover:shadow-sm"
             >
               {/* Priority number */}
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-subtle text-sm font-semibold text-primary">
@@ -191,7 +191,7 @@ export function Results() {
                     {getCategoryLabel(item.category)}
                   </span>
                 </div>
-                <h3 className="mt-1 font-medium text-foreground">
+                <h3 className="mt-1 font-serif font-medium text-foreground">
                   {item.title}
                 </h3>
                 <p className="mt-1 text-sm text-foreground-muted">

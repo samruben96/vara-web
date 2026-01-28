@@ -14,7 +14,7 @@ export function Welcome() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-subtle">
           <Shield className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
+        <h1 className="text-3xl font-serif font-bold text-foreground sm:text-4xl">
           Let's create your safety plan
         </h1>
         <p className="mx-auto max-w-md text-lg text-foreground-muted">
@@ -50,7 +50,7 @@ export function Welcome() {
         </div>
 
         <div className="flex items-center gap-4 rounded-xl bg-card p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning-subtle">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-coral-100">
             <Heart className="h-5 w-5 text-warning" />
           </div>
           <div className="text-left">

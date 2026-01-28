@@ -90,7 +90,7 @@ export function Settings() {
           <SettingsIcon className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <h1 className="text-2xl font-serif font-bold text-foreground">Settings</h1>
           <p className="text-foreground-muted">Manage your account preferences and security</p>
         </div>
       </div>
@@ -113,7 +113,7 @@ export function Settings() {
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left',
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left',
                     'transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
                     isActive
                       ? isDanger
