@@ -55,7 +55,7 @@ export function MainLayout() {
         <div className="container flex h-14 items-center justify-between md:h-16">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 tap-highlight-none">
-            <img src="/vara-logo.png" alt="vara" className="h-8 md:h-10" />
+            <img src="/vara-logo.png" alt="vara" className="h-10 md:h-12" />
           </Link>
 
           {/* Desktop Navigation */}
