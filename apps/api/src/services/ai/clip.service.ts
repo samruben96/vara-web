@@ -59,9 +59,15 @@ const EMBEDDING_DIMENSION = 512;
 const MODEL_VERSION = 'clip-vit-base-patch32';
 
 /**
- * Duration to cache health check results (30 seconds).
+ * Duration to cache SUCCESSFUL health check results (60 seconds).
  */
-const HEALTH_CACHE_DURATION_MS = 30_000;
+const HEALTH_CACHE_SUCCESS_MS = 60_000;
+
+/**
+ * Duration to cache FAILED health check results (5 seconds).
+ * Short duration to quickly retry after transient startup failures.
+ */
+const HEALTH_CACHE_FAILURE_MS = 5_000;
 
 /**
  * CLIP embedding service for generating image embeddings.
@@ -114,50 +120,64 @@ class ClipService {
 
   /**
    * Checks if the DeepFace CLIP service is available.
-   * Results are cached for 30 seconds.
+   * Successful checks cached for 60s, failures cached for 5s.
    *
    * @returns Promise resolving to true if service is available
    */
   public async isServiceAvailable(): Promise<boolean> {
-    // Check cache first
+    // Check cache first - use different TTLs for success vs failure
     if (this.healthCache) {
       const cacheAge = Date.now() - this.healthCache.timestamp;
-      if (cacheAge < HEALTH_CACHE_DURATION_MS) {
+      const cacheDuration = this.healthCache.available
+        ? HEALTH_CACHE_SUCCESS_MS
+        : HEALTH_CACHE_FAILURE_MS;
+      if (cacheAge < cacheDuration) {
         return this.healthCache.available;
       }
     }
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+    // Try health check with retry for transient failures
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/health`, {
-        method: 'GET',
-        signal: controller.signal,
-      });
+        const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/health`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeout);
+        clearTimeout(timeout);
 
-      if (response.ok) {
-        const data = (await response.json()) as HealthResponse;
-        // Check if CLIP is loaded (if the service exposes this info)
-        const available = data.status === 'healthy';
+        if (response.ok) {
+          const data = (await response.json()) as HealthResponse;
+          const available = data.status === 'healthy';
 
-        this.healthCache = { available, timestamp: Date.now() };
-        this.isMockMode = !available;
+          this.healthCache = { available, timestamp: Date.now() };
+          this.isMockMode = !available;
 
-        return available;
+          return available;
+        }
+
+        // Non-200 response - don't retry
+        break;
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        if (attempt < 2) {
+          console.log(`[ClipService] Health check attempt ${attempt} failed: ${errorMsg}. Retrying...`);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } else {
+          console.warn(
+            `[ClipService] Health check failed: ${errorMsg}. ` +
+              `Falling back to mock mode (will retry in ${HEALTH_CACHE_FAILURE_MS / 1000}s).`
+          );
+        }
       }
-
-      this.healthCache = { available: false, timestamp: Date.now() };
-      return false;
-    } catch (error) {
-      console.warn(
-        `[ClipService] Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-      this.healthCache = { available: false, timestamp: Date.now() };
-      return false;
     }
+
+    this.healthCache = { available: false, timestamp: Date.now() };
+    this.isMockMode = true;
+    return false;
   }
 
   /**
@@ -286,49 +306,64 @@ class ClipService {
 
   /**
    * Generates a real embedding from base64 using the DeepFace CLIP service.
+   * Includes retry logic for transient network failures.
    */
   private async generateRealEmbeddingFromBase64(imageBase64: string): Promise<ClipEmbeddingResult> {
     const startTime = Date.now();
+    const maxRetries = 2;
 
-    try {
-      const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/clip/embed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image_base64: imageBase64,
-        }),
-      });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout for embedding
 
-      const processingTimeMs = Date.now() - startTime;
+        const response = await fetch(`${DEEPFACE_SERVICE_URL}/api/v1/clip/embed`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image_base64: imageBase64,
+          }),
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
-        const errorData = (await response.json()) as ClipEmbedResponse;
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        clearTimeout(timeout);
+        const processingTimeMs = Date.now() - startTime;
+
+        if (!response.ok) {
+          const errorData = (await response.json()) as ClipEmbedResponse;
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        const data = (await response.json()) as ClipEmbedResponse;
+
+        if (!data.success || !data.embedding) {
+          throw new Error(data.error || 'Failed to generate embedding');
+        }
+
+        return {
+          embedding: data.embedding,
+          modelVersion: MODEL_VERSION,
+          processingTimeMs,
+        };
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+
+        if (attempt < maxRetries) {
+          console.log(`[ClipService] Embedding attempt ${attempt} failed: ${errorMsg}. Retrying...`);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          continue;
+        }
+
+        console.error(`[ClipService] Embedding generation from base64 failed after ${maxRetries} attempts: ${errorMsg}`);
       }
-
-      const data = (await response.json()) as ClipEmbedResponse;
-
-      if (!data.success || !data.embedding) {
-        throw new Error(data.error || 'Failed to generate embedding');
-      }
-
-      return {
-        embedding: data.embedding,
-        modelVersion: MODEL_VERSION,
-        processingTimeMs,
-      };
-    } catch (error) {
-      console.error(
-        `[ClipService] Embedding generation from base64 failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-
-      // Fall back to mock on error
-      console.warn('[ClipService] Falling back to mock mode');
-      this.isMockMode = true;
-      return this.generateMockEmbeddingFromBase64(imageBase64);
     }
+
+    // Fall back to mock on error
+    console.warn('[ClipService] Falling back to mock mode');
+    this.isMockMode = true;
+    return this.generateMockEmbeddingFromBase64(imageBase64);
   }
 
   /**

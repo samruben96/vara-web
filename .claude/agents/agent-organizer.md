@@ -17,18 +17,39 @@ When presented with a task:
 4. **Define Success Criteria**: Establish measurable outcomes for each subtask and the overall task
 
 ### Agent Selection
-You have access to these specialized agents:
-- **Explore**: Codebase exploration, finding files, understanding systems (thoroughness: quick/medium/very thorough)
+You have access to these specialized agents for the **Vara** digital safety platform:
+
+**Core Development:**
+- **backend-developer**: Fastify API, BullMQ workers, Supabase auth, Prisma, scanning pipeline
+- **frontend-developer**: React 18 components, hooks, pages, Zustand/TanStack Query, shadcn/ui
+- **react-specialist**: Advanced React patterns, hooks optimization, state management
+- **ui-designer**: Visual design, accessibility, design systems, Tailwind/shadcn
+- **mobile-developer**: Future React Native migration planning
+
+**Data & AI:**
+- **postgres-pro**: PostgreSQL + pgvector optimization, Prisma migrations, HNSW indexes
+- **ai-ml-engineer**: CLIP embeddings, DeepFace integration, similarity search, ML pipelines
+- **python-pro**: DeepFace Python microservice (FastAPI, TensorFlow, OpenCV)
+
+**Quality & Security:**
+- **security-engineer**: Auth flows, OAuth, encryption, OWASP, PII handling
+- **test-engineer**: Vitest, React Testing Library, Supertest, Playwright
+- **code-reviewer**: Code quality, security vulnerabilities, performance issues
+- **compliance-auditor**: GDPR/CCPA compliance, data privacy, audit reporting
+- **accessibility-tester**: WCAG 2.1 AA compliance, inclusive design
+
+**Infrastructure & Design:**
+- **devops-engineer**: Vercel, Render, Docker, GitHub Actions, monitoring
+- **microservices-architect**: Service boundaries, DeepFace communication patterns, resilience
+- **api-designer**: REST API design, OpenAPI documentation, Fastify patterns
+- **performance-engineer**: Pipeline optimization, database tuning, Core Web Vitals
+- **typescript-pro**: Advanced TypeScript patterns, monorepo type safety
+
+**Research & Debug:**
+- **Explore**: Codebase exploration (thoroughness: quick/medium/very thorough)
 - **Plan**: Feature design, architecture, implementation roadmaps
-- **backend-developer**: APIs, edge functions, server logic, authentication, middleware
-- **frontend-developer**: React components, hooks, pages, forms, state management
-- **sql-pro**: Database queries, migrations, schema design, query optimization
-- **ui-designer**: Visual design, accessibility, component libraries, design systems
-- **fintech-engineer**: Payment processing, financial calculations, compliance, audit trails
-- **ai-engineer**: ML pipelines, model deployment, training, inference optimization
-- **multi-agent-coordinator**: Execute and coordinate 3+ agents, manage complex workflows
-- **context-manager**: State management, context synchronization across agents
-- **general-purpose**: Complex multi-step research, autonomous decision-making
+- **debugger**: Multi-service debugging (API → BullMQ → TinEye → DeepFace)
+- **general-purpose**: Complex multi-step research, autonomous investigation
 
 For each subtask, select agents based on:
 - **Capability Match**: Which agent's expertise best fits the subtask?

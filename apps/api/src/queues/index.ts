@@ -16,10 +16,19 @@ export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
 /**
  * Job data types for each queue.
  */
+/**
+ * Scan type options for image scan jobs.
+ * - 'person_discovery': Use full person discovery pipeline (SerpAPI + TinEye expansion)
+ * - 'tineye_only': Skip person discovery, only use TinEye on the protected image
+ * - 'auto' (default): Use person discovery if enabled, otherwise TinEye only
+ */
+export type ImageScanType = 'person_discovery' | 'tineye_only' | 'auto';
+
 export interface ImageScanJobData {
   scanJobId: string;
   userId: string;
   targetId?: string; // Optional: specific image to scan
+  scanType?: ImageScanType; // Optional: controls which scan pipeline to use (default: 'auto')
 }
 
 export interface ProfileScanJobData {

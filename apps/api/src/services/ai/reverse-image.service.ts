@@ -1,4 +1,42 @@
+/**
+ * Reverse Image Search Service
+ *
+ * Provides reverse image search capabilities for detecting image misuse across the web.
+ *
+ * Engine Priority:
+ * 1. TinEye (PRIMARY) - High reliability, score-based confidence, requires TINEYE_API_KEY
+ * 2. Google Vision (FALLBACK) - Web detection API, requires GOOGLE_VISION_API_KEY
+ * 3. Mock Mode (DEVELOPMENT) - Deterministic test results when no API keys configured
+ *
+ * Configuration:
+ * - SCAN_ENGINE env var controls engine selection:
+ *   - 'auto' (default): Use TinEye if configured, otherwise Google Vision
+ *   - 'tineye': Force TinEye only
+ *   - 'google-vision': Force Google Vision only
+ * - TINEYE_API_KEY: Enables TinEye integration
+ * - GOOGLE_VISION_API_KEY: Enables Google Vision integration
+ *
+ * @see ../scan/engines/tineye.engine.ts for TinEye implementation details
+ */
+
 import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
+import { TinEyeEngine, getTinEyeEngine } from '../scan/engines/tineye.engine';
+import type { ScanMatch, MatchConfidence } from '../scan/interfaces/scan-result.types';
+import {
+  getSerpApiPersonDiscoveryEngine,
+  type PersonDiscoveryCandidate,
+  type PersonDiscoveryResult,
+} from '../scan/person-discovery';
+import {
+  createProxyUrlFromImage,
+  validateProxyUrl,
+} from '../proxy';
+import {
+  getPersonDiscoveryConfig,
+  isPersonDiscoveryEnabled,
+} from '@/config/person-discovery.config';
+import { supabaseAdmin } from '@/config/supabase';
 
 /**
  * A single match result from reverse image search.
@@ -20,6 +58,71 @@ export interface ReverseImageSearchResult {
   matches: ReverseImageMatch[];
   searchedAt: string;
   processingTimeMs: number;
+}
+
+/**
+ * Options for person discovery scan pipeline.
+ */
+export interface PersonDiscoveryScanOptions {
+  /** Maximum number of candidates to fetch from SerpAPI (default: 20) */
+  maxCandidates?: number;
+  /** Maximum number of TinEye expansion searches per scan (default: 10) */
+  maxTineyeExpansions?: number;
+  /** Skip face verification step - always true for now (placeholder) */
+  skipFaceVerification?: boolean;
+  /** Skip cache and force fresh search */
+  skipCache?: boolean;
+}
+
+/**
+ * A candidate expanded with TinEye results.
+ */
+export interface ExpandedCandidate {
+  /** The original person discovery candidate */
+  candidate: PersonDiscoveryCandidate;
+  /** TinEye matches found for this candidate's image */
+  tineyeMatches: ScanMatch[];
+  /** Face similarity score (placeholder for future face verification) */
+  faceSimilarity?: number;
+}
+
+/**
+ * Result from the full person discovery scan pipeline.
+ *
+ * The pipeline:
+ * 1. Gets a public URL for the protected image
+ * 2. Runs SerpAPI person discovery to find visually similar images
+ * 3. (Optional) Face verification gate (placeholder)
+ * 4. Runs TinEye on each discovered candidate
+ * 5. Returns combined results with person-level grouping
+ */
+export interface PersonDiscoveryScanResult {
+  /** TinEye/Google Vision scan results on the original protected image */
+  originalImageMatches: ScanMatch[];
+
+  /** Person discovery candidates expanded with TinEye results */
+  candidates: ExpandedCandidate[];
+
+  /** UUID to group all results from this scan together */
+  candidateGroupId: string;
+
+  /** Total number of matches found across all sources */
+  totalMatchesFound: number;
+
+  /** Time taken for person discovery phase (SerpAPI) in milliseconds */
+  discoveryDurationMs: number;
+
+  /** Time taken for TinEye expansion phase in milliseconds */
+  expansionDurationMs: number;
+
+  /** Whether person discovery was available and used */
+  personDiscoveryUsed: boolean;
+
+  /** Providers used for person discovery */
+  providersUsed: string[];
+
+  /** Any warnings or issues during the scan */
+  warnings: string[];
 }
 
 /**
@@ -66,9 +169,17 @@ interface GoogleVisionAnnotateResponse {
 
 /**
  * Environment variables for reverse image search APIs.
+ * Note: TINEYE_API_KEY is read by TinEyeEngine directly
  */
-const TINEYE_API_KEY = process.env.TINEYE_API_KEY;
 const GOOGLE_VISION_API_KEY = process.env.GOOGLE_VISION_API_KEY;
+
+/**
+ * Scan engine selection.
+ * - 'tineye': Always use TinEye (requires TINEYE_API_KEY)
+ * - 'google-vision': Always use Google Vision (requires GOOGLE_VISION_API_KEY)
+ * - 'auto' (default): Use TinEye if configured, otherwise Google Vision
+ */
+const SCAN_ENGINE = process.env.SCAN_ENGINE || 'auto';
 
 /**
  * Google Vision API endpoint for image annotation.
@@ -137,28 +248,94 @@ function generateMockMatch(imageBuffer: Buffer, index: number): ReverseImageMatc
 }
 
 /**
+ * Maps TinEye confidence level to matchSourceType.
+ * - HIGH (score >= 80) -> fullMatchingImages (exact matches)
+ * - MEDIUM (score 50-79) -> partialMatchingImages (modified versions)
+ * - LOW (score < 50) -> visuallySimilarImages (weak matches)
+ */
+function confidenceToMatchSourceType(confidence: MatchConfidence): ReverseImageMatch['matchSourceType'] {
+  switch (confidence) {
+    case 'HIGH':
+      return 'fullMatchingImages';
+    case 'MEDIUM':
+      return 'partialMatchingImages';
+    case 'LOW':
+      return 'visuallySimilarImages';
+  }
+}
+
+/**
+ * Maps a TinEye ScanMatch to ReverseImageMatch format for backward compatibility.
+ */
+function mapTinEyeMatchToReverseImageMatch(match: ScanMatch): ReverseImageMatch {
+  return {
+    sourceUrl: match.imageUrl,
+    domain: match.domain,
+    // TinEye score is 0-100, convert to 0.0-1.0
+    similarity: match.score / 100,
+    pageTitle: match.backlinks.length > 0 ? match.backlinks[0]?.pageUrl : undefined,
+    isMock: false,
+    matchSourceType: confidenceToMatchSourceType(match.confidence),
+  };
+}
+
+/**
  * Reverse image search service for finding image matches across the web.
  *
- * Uses TinEye or Google Vision APIs when configured,
- * otherwise falls back to mock results for development.
+ * Supports multiple providers:
+ * - TinEye (primary, when TINEYE_API_KEY is set)
+ * - Google Vision (fallback, when GOOGLE_VISION_API_KEY is set)
+ * - Mock mode (development, when no API keys are configured)
+ *
+ * Provider selection is controlled by SCAN_ENGINE env var:
+ * - 'auto' (default): TinEye if configured, otherwise Google Vision
+ * - 'tineye': Force TinEye
+ * - 'google-vision': Force Google Vision
  */
 class ReverseImageService {
   private static instance: ReverseImageService;
   private readonly isMockMode: boolean;
   private readonly provider: string;
+  private readonly useTinEye: boolean;
+  private readonly tineyeEngine: TinEyeEngine;
 
   private constructor() {
-    this.isMockMode = !TINEYE_API_KEY && !GOOGLE_VISION_API_KEY;
+    this.tineyeEngine = getTinEyeEngine();
+    
+    // Determine which provider to use based on SCAN_ENGINE and available API keys
+    this.useTinEye = this.shouldUseTinEye();
+    this.isMockMode = !this.useTinEye && !GOOGLE_VISION_API_KEY;
 
-    if (TINEYE_API_KEY) {
+    if (this.useTinEye) {
       this.provider = 'tineye';
-      console.log('[ReverseImageService] Running with TinEye API');
+      console.log('[ReverseImageService] Running with TinEye API (primary engine)');
     } else if (GOOGLE_VISION_API_KEY) {
       this.provider = 'google-vision';
-      console.log('[ReverseImageService] Running with Google Vision API');
+      console.log('[ReverseImageService] Running with Google Vision API (fallback engine)');
     } else {
       this.provider = MOCK_PROVIDER;
       console.log('[ReverseImageService] Running in mock mode - no API keys configured');
+    }
+  }
+
+  /**
+   * Determines if TinEye should be used based on configuration.
+   */
+  private shouldUseTinEye(): boolean {
+    const tineyeConfigured = this.tineyeEngine.isConfigured();
+    
+    switch (SCAN_ENGINE) {
+      case 'tineye':
+        if (!tineyeConfigured) {
+          console.warn('[ReverseImageService] SCAN_ENGINE=tineye but TINEYE_API_KEY not set');
+        }
+        return tineyeConfigured;
+      case 'google-vision':
+        return false; // Force Google Vision
+      case 'auto':
+      default:
+        // Auto mode: prefer TinEye if configured
+        return tineyeConfigured;
     }
   }
 
@@ -187,6 +364,13 @@ class ReverseImageService {
   }
 
   /**
+   * Checks if TinEye is being used as the scan engine.
+   */
+  public isUsingTinEye(): boolean {
+    return this.useTinEye;
+  }
+
+  /**
    * Performs a reverse image search for the given image buffer.
    *
    * @param imageBuffer - The image data as a Buffer
@@ -202,6 +386,253 @@ class ReverseImageService {
     }
 
     return this.performRealSearch(imageBuffer);
+  }
+
+  /**
+   * Performs a full person discovery scan pipeline.
+   *
+   * Pipeline steps:
+   * 1. Generate a unique candidate group ID
+   * 2. Get a public signed URL for the protected image
+   * 3. Run person discovery (SerpAPI - Google Lens / Bing)
+   * 4. (Placeholder) Face verification gate
+   * 5. Run TinEye on the original image
+   * 6. Run TinEye on each discovered candidate
+   * 7. Aggregate and return results
+   *
+   * @param protectedImage - Object containing id and storageUrl of the protected image
+   * @param options - Optional configuration for the scan pipeline
+   * @returns Promise resolving to combined results with person-level grouping
+   */
+  public async scanWithPersonDiscovery(
+    protectedImage: { id: string; storageUrl: string },
+    options?: PersonDiscoveryScanOptions
+  ): Promise<PersonDiscoveryScanResult> {
+    const candidateGroupId = uuidv4();
+    const warnings: string[] = [];
+
+    // Merge options with defaults from config
+    const config = getPersonDiscoveryConfig();
+    const maxCandidates = options?.maxCandidates ?? config.maxCandidates;
+    const maxTineyeExpansions = options?.maxTineyeExpansions ?? config.maxTineyeExpansions;
+    const skipCache = options?.skipCache ?? false;
+
+
+    let originalImageMatches: ScanMatch[] = [];
+    let candidates: ExpandedCandidate[] = [];
+    let discoveryDurationMs = 0;
+    let expansionDurationMs = 0;
+    let personDiscoveryUsed = false;
+    let providersUsed: string[] = [];
+
+    // Step 1: Try to get public URL and run person discovery
+    let personDiscoveryResult: PersonDiscoveryResult | null = null;
+
+    if (isPersonDiscoveryEnabled()) {
+      const discoveryStartTime = Date.now();
+
+      try {
+        // Create a short-lived proxy URL for the protected image
+        // This generates a single proxy URL that will be reused across all providers
+        const proxyUrl = createProxyUrlFromImage(protectedImage);
+
+        // CRITICAL: Check if proxy URL is accessible from external services
+        // SerpAPI servers CANNOT access localhost URLs
+        if (proxyUrl.includes('localhost') || proxyUrl.includes('127.0.0.1')) {
+          console.warn(
+            `[ReverseImageService] ⚠️ WARNING: Proxy URL uses localhost (${proxyUrl.substring(0, 50)}...). ` +
+            `SerpAPI servers cannot access localhost URLs. ` +
+            `For local testing, either:\n` +
+            `  1. Use ngrok to expose your local server: ngrok http 4000\n` +
+            `  2. Set API_URL to your ngrok URL in .env\n` +
+            `  3. Deploy to production (Render) for real testing`
+          );
+          // Continue anyway - local validation will pass, but SerpAPI will fail
+        }
+
+        // Validate the proxy URL is accessible from THIS server (won't catch localhost issue)
+        const isValid = await validateProxyUrl(proxyUrl);
+        if (!isValid) {
+          throw new Error('Failed to validate proxy URL - image not accessible');
+        }
+
+        // Run person discovery via SerpAPI
+        const discoveryEngine = getSerpApiPersonDiscoveryEngine();
+
+        if (discoveryEngine) {
+          personDiscoveryResult = await discoveryEngine.discoverByImageUrl(proxyUrl, {
+            maxCandidates,
+            skipCache,
+          });
+
+          personDiscoveryUsed = true;
+          providersUsed = personDiscoveryResult.providersUsed;
+        } else {
+          warnings.push('Person discovery engine not available - skipping person discovery phase');
+          console.warn('[ReverseImageService] Person discovery engine not available');
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        warnings.push(`Person discovery failed: ${errorMessage}`);
+        console.error(`[ReverseImageService] Person discovery failed: ${errorMessage}`);
+      }
+
+      discoveryDurationMs = Date.now() - discoveryStartTime;
+    } else {
+      warnings.push('Person discovery not enabled (missing SERPAPI_API_KEY or disabled)');
+    }
+
+    // Step 2: Run TinEye on the original protected image
+    const expansionStartTime = Date.now();
+
+    try {
+      // Download the protected image to get a buffer for TinEye
+      const imageBuffer = await this.downloadProtectedImage(protectedImage.storageUrl);
+
+      if (imageBuffer && this.useTinEye) {
+        const tineyeResult = await this.tineyeEngine.searchByUpload(imageBuffer, 'protected-image.jpg', {
+          limit: 50,
+        });
+        originalImageMatches = tineyeResult.matches;
+      } else if (imageBuffer && !this.useTinEye && GOOGLE_VISION_API_KEY) {
+        const searchResult = await this.performGoogleVisionSearch(imageBuffer, Date.now());
+
+        // Convert ReverseImageMatch to ScanMatch format
+        originalImageMatches = searchResult.matches.map((match) => ({
+          imageUrl: match.sourceUrl,
+          domain: match.domain,
+          score: Math.round(match.similarity * 100),
+          confidence: match.similarity >= 0.8 ? 'HIGH' : match.similarity >= 0.5 ? 'MEDIUM' : 'LOW',
+          backlinks: [],
+          tags: [],
+        })) as ScanMatch[];
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      warnings.push(`Original image scan failed: ${errorMessage}`);
+      console.error(`[ReverseImageService] Original image scan failed: ${errorMessage}`);
+    }
+
+    // Step 3: Run TinEye expansion on each person discovery candidate
+    if (personDiscoveryResult && personDiscoveryResult.candidates.length > 0 && this.useTinEye) {
+      const candidatesToExpand = personDiscoveryResult.candidates.slice(0, maxTineyeExpansions);
+
+      for (let i = 0; i < candidatesToExpand.length; i++) {
+        const candidate = candidatesToExpand[i]!;
+
+        // Skip candidates without a direct image URL
+        if (!candidate.candidateImageUrl) {
+          candidates.push({
+            candidate,
+            tineyeMatches: [],
+            faceSimilarity: undefined,
+          });
+          continue;
+        }
+
+        try {
+          const tineyeResult = await this.tineyeEngine.searchByUrl(candidate.candidateImageUrl, {
+            limit: 20,
+          });
+          candidates.push({
+            candidate,
+            tineyeMatches: tineyeResult.matches,
+            faceSimilarity: undefined,
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          warnings.push(`TinEye expansion failed for candidate ${i + 1}: ${errorMessage}`);
+          candidates.push({
+            candidate,
+            tineyeMatches: [],
+            faceSimilarity: undefined,
+          });
+        }
+      }
+
+      // Add remaining candidates that weren't expanded
+      const remainingCandidates = personDiscoveryResult.candidates.slice(maxTineyeExpansions);
+      for (const candidate of remainingCandidates) {
+        candidates.push({
+          candidate,
+          tineyeMatches: [],
+          faceSimilarity: undefined,
+        });
+      }
+    } else if (personDiscoveryResult && personDiscoveryResult.candidates.length > 0) {
+      // No TinEye - just include candidates without expansion
+      for (const candidate of personDiscoveryResult.candidates) {
+        candidates.push({
+          candidate,
+          tineyeMatches: [],
+          faceSimilarity: undefined,
+        });
+      }
+    }
+
+    expansionDurationMs = Date.now() - expansionStartTime;
+
+    // Calculate total matches
+    const totalMatchesFound =
+      originalImageMatches.length +
+      candidates.reduce((sum, c) => sum + c.tineyeMatches.length, 0);
+
+    return {
+      originalImageMatches,
+      candidates,
+      candidateGroupId,
+      totalMatchesFound,
+      discoveryDurationMs,
+      expansionDurationMs,
+      personDiscoveryUsed,
+      providersUsed,
+      warnings,
+    };
+  }
+
+  /**
+   * Downloads a protected image from Supabase storage.
+   *
+   * @param storageUrl - The full storage URL of the protected image
+   * @returns Buffer containing the image data, or null if download fails
+   */
+  private async downloadProtectedImage(storageUrl: string): Promise<Buffer | null> {
+    try {
+      // Extract the storage path from the full URL
+      const STORAGE_BUCKET = 'protected-images';
+      const prefix = `/storage/v1/object/${STORAGE_BUCKET}/`;
+      const index = storageUrl.indexOf(prefix);
+
+      if (index === -1) {
+        console.error('[ReverseImageService] Invalid storage URL format');
+        return null;
+      }
+
+      const storagePath = storageUrl.substring(index + prefix.length);
+
+      // Download from Supabase
+      const { data, error } = await supabaseAdmin.storage
+        .from(STORAGE_BUCKET)
+        .download(storagePath);
+
+      if (error) {
+        console.error(`[ReverseImageService] Failed to download image: ${error.message}`);
+        return null;
+      }
+
+      if (!data) {
+        console.error('[ReverseImageService] Download returned no data');
+        return null;
+      }
+
+      // Convert Blob to Buffer
+      const arrayBuffer = await data.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[ReverseImageService] Download error: ${errorMessage}`);
+      return null;
+    }
   }
 
   /**
@@ -243,19 +674,12 @@ class ReverseImageService {
   private async performRealSearch(imageBuffer: Buffer): Promise<ReverseImageSearchResult> {
     const startTime = Date.now();
 
-    if (this.provider === 'google-vision') {
-      return this.performGoogleVisionSearch(imageBuffer, startTime);
+    if (this.useTinEye) {
+      return this.performTinEyeSearch(imageBuffer, startTime);
     }
 
-    if (this.provider === 'tineye') {
-      // TinEye implementation can be added here in the future
-      console.warn('[ReverseImageService] TinEye API not yet implemented, falling back to mock');
-      const mockResult = await this.performMockSearch(imageBuffer);
-      return {
-        ...mockResult,
-        provider: this.provider,
-        processingTimeMs: Date.now() - startTime,
-      };
+    if (this.provider === 'google-vision') {
+      return this.performGoogleVisionSearch(imageBuffer, startTime);
     }
 
     // Fallback to mock
@@ -265,6 +689,72 @@ class ReverseImageService {
       provider: this.provider,
       processingTimeMs: Date.now() - startTime,
     };
+  }
+
+  /**
+   * Performs reverse image search using TinEye API.
+   */
+  private async performTinEyeSearch(
+    imageBuffer: Buffer,
+    startTime: number
+  ): Promise<ReverseImageSearchResult> {
+    try {
+      // Use TinEye engine to search by upload
+      const scanResult = await this.tineyeEngine.searchByUpload(
+        imageBuffer,
+        'scan-image.jpg', // Default filename for upload
+        {
+          limit: 20, // Match Google Vision's maxResults
+        }
+      );
+
+      // Map TinEye ScanResult to ReverseImageSearchResult
+      const matches: ReverseImageMatch[] = scanResult.matches.map(mapTinEyeMatchToReverseImageMatch);
+
+      const processingTimeMs = Date.now() - startTime;
+
+      // Log match breakdown by confidence
+      const highConfidence = matches.filter(m => m.matchSourceType === 'fullMatchingImages').length;
+      const mediumConfidence = matches.filter(m => m.matchSourceType === 'partialMatchingImages').length;
+      const lowConfidence = matches.filter(m => m.matchSourceType === 'visuallySimilarImages').length;
+
+      console.log(
+        `[ReverseImageService] TinEye search completed in ${processingTimeMs}ms, ` +
+        `found ${matches.length} matches (high: ${highConfidence}, medium: ${mediumConfidence}, low: ${lowConfidence})`
+      );
+
+      if (scanResult.warnings && scanResult.warnings.length > 0) {
+        console.warn('[ReverseImageService] TinEye warnings:', scanResult.warnings.join('; '));
+      }
+
+      return {
+        provider: 'tineye',
+        matches,
+        searchedAt: scanResult.searchedAt,
+        processingTimeMs,
+      };
+    } catch (error) {
+      console.error('[ReverseImageService] TinEye search failed:', error);
+
+      // If Google Vision is available as fallback, try it
+      if (GOOGLE_VISION_API_KEY && SCAN_ENGINE === 'auto') {
+        console.warn('[ReverseImageService] Falling back to Google Vision due to TinEye error');
+        return this.performGoogleVisionSearch(imageBuffer, startTime);
+      }
+
+      // On error in development, fall back to mock results
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[ReverseImageService] Falling back to mock results due to API error');
+        const mockResult = await this.performMockSearch(imageBuffer);
+        return {
+          ...mockResult,
+          provider: 'tineye-fallback',
+          processingTimeMs: Date.now() - startTime,
+        };
+      }
+
+      throw error;
+    }
   }
 
   /**

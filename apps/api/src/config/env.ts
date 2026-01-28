@@ -10,6 +10,11 @@ const envSchema = z.object({
   SUPABASE_SERVICE_KEY: z.string(),
   SUPABASE_JWT_SECRET: z.string(),
   REDIS_URL: z.string().optional(),
+  // Prisma query logging - disabled by default, enable for debugging
+  PRISMA_LOG_QUERIES: z
+    .enum(['true', 'false', '1', '0'])
+    .transform((val) => val === 'true' || val === '1')
+    .default('false'),
 });
 
 function loadEnv() {
@@ -32,6 +37,7 @@ function loadEnv() {
         SUPABASE_SERVICE_KEY: 'placeholder-key',
         SUPABASE_JWT_SECRET: 'placeholder-secret',
         REDIS_URL: undefined,
+        PRISMA_LOG_QUERIES: false,
       };
     }
 

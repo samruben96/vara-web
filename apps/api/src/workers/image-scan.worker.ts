@@ -3,7 +3,7 @@ import type { Prisma, ImageMatchType } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { supabaseAdmin } from '../config/supabase';
 import { createWorkerConnectionOptions } from '../config/redis';
-import { QUEUE_NAMES, ImageScanJobData } from '../queues';
+import { QUEUE_NAMES, ImageScanJobData, ImageScanType } from '../queues';
 import {
   clipService,
   ClipService,
@@ -12,7 +12,13 @@ import {
   deepfakeService,
   faceEmbeddingService,
 } from '../services/ai';
+import type { PersonDiscoveryScanResult } from '../services/ai/reverse-image.service';
+import {
+  isPersonDiscoveryEnabled,
+  getPersonDiscoveryConfig,
+} from '../config/person-discovery.config';
 import { createAlertFromMatch } from '../utils/alert-creator';
+import { preprocessImageForFaceDetection } from '../utils/image-preprocessing';
 
 // Supabase Storage bucket name
 const STORAGE_BUCKET = 'protected-images';
@@ -22,22 +28,37 @@ const DEEPFAKE_CONFIDENCE_THRESHOLD = 0.7;
 
 /**
  * Match type configuration for tiered confidence filtering.
- * Google Vision returns 4 match types with different reliability levels.
- * This config determines how strictly each type is filtered.
+ * 
+ * This configuration works with both scan engines:
+ * 
+ * TinEye (primary engine):
+ * - Uses score-based confidence mapping (0-100 scale)
+ * - HIGH confidence (score >= 80) → fullMatchingImages
+ * - MEDIUM confidence (score 50-79) → partialMatchingImages
+ * - LOW confidence (score < 50) → visuallySimilarImages
+ * - TinEye scores are highly reliable; HIGH confidence matches can skip verification
+ * 
+ * Google Vision (fallback):
+ * - Returns 4 match types with different reliability levels
+ * - fullMatchingImages, partialMatchingImages, pagesWithMatchingImages, visuallySimilarImages
+ * - Requires more verification due to higher false positive rate
+ * 
+ * The thresholds and verification requirements below are optimized for TinEye's
+ * reliable scoring while maintaining compatibility with Google Vision results.
  */
 const MATCH_TYPE_CONFIG = {
   fullMatchingImages: {
     confidence: 'HIGH' as const,
-    requireFaceVerification: false, // Trust exact matches
+    requireFaceVerification: false, // TinEye HIGH confidence is very reliable - skip verification
     requireClipVerification: false,
-    minSimilarityThreshold: 0.7,
+    minSimilarityThreshold: 0.75, // TinEye score >= 80 maps to similarity >= 0.80
     autoCreateAlert: true,
   },
   partialMatchingImages: {
     confidence: 'MEDIUM_HIGH' as const,
-    requireFaceVerification: true,
+    requireFaceVerification: true, // Verify identity for modified/partial matches
     requireClipVerification: false,
-    minSimilarityThreshold: 0.75,
+    minSimilarityThreshold: 0.50, // TinEye medium range starts at score 50
     autoCreateAlert: true,
   },
   pagesWithMatchingImages: {
@@ -51,8 +72,8 @@ const MATCH_TYPE_CONFIG = {
     confidence: 'LOW' as const,
     requireFaceVerification: true,
     requireClipVerification: true,
-    minSimilarityThreshold: 0.85,
-    autoCreateAlert: false, // Flag for review instead
+    minSimilarityThreshold: 0.40, // TinEye low confidence requires stricter CLIP/face verification
+    autoCreateAlert: false, // Flag for review instead of auto-alert
   },
 } as const;
 
@@ -80,12 +101,35 @@ interface ImageScanResult {
   duration: number;
   details: {
     reverseImageSearch: boolean;
+    reverseImageSearchEngine: string; // 'tineye', 'google-vision', 'mock', etc.
     deepfakeAnalysis: boolean;
     similarityCheck: boolean;
     embeddingsGenerated: number;
     hashesGenerated: number;
     faceEmbeddingsGenerated: number;
     faceVerifiedMatches: number;
+    matchBreakdown: {
+      highConfidence: number; // fullMatchingImages - no verification needed
+      mediumConfidence: number; // partialMatchingImages - face verification
+      pagesMatches: number; // pagesWithMatchingImages - face+CLIP verification
+      lowConfidence: number; // visuallySimilarImages - flagged for review
+      skippedBelowThreshold: number;
+      skippedFaceMismatch: number;
+      skippedClipMismatch: number;
+    };
+    // Person discovery metrics (when enabled)
+    personDiscovery?: {
+      enabled: boolean;
+      candidatesFound: number;
+      candidatesExpanded: number;
+      expansionMatches: number;
+      originalImageMatches: number;
+      candidateGroupId: string;
+      discoveryDurationMs: number;
+      expansionDurationMs: number;
+      providersUsed: string[];
+      warnings: string[];
+    };
   };
   errors: string[];
 }
@@ -156,7 +200,36 @@ async function downloadImage(storageUrl: string): Promise<Buffer | null> {
 
   // Convert Blob to Buffer
   const arrayBuffer = await data.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  const rawBuffer = Buffer.from(arrayBuffer);
+
+  // DEBUG: Log image details before preprocessing
+  const magicBytes = rawBuffer.slice(0, 8).toString('hex');
+  console.log('[FaceDetection] Debug - Downloaded protected image (raw):', {
+    storagePath: path,
+    byteLength: rawBuffer.byteLength,
+    magicBytes,
+    contentType: data.type || 'unknown',
+  });
+
+  // Preprocess image: normalize EXIF orientation and ensure minimum dimensions for face detection
+  try {
+    const preprocessed = await preprocessImageForFaceDetection(rawBuffer);
+    console.log('[FaceDetection] Debug - Preprocessed protected image:', {
+      storagePath: path,
+      originalSize: `${preprocessed.originalWidth}x${preprocessed.originalHeight}`,
+      finalSize: `${preprocessed.finalWidth}x${preprocessed.finalHeight}`,
+      wasRotated: preprocessed.wasRotated,
+      wasResized: preprocessed.wasResized,
+      resizeOperation: preprocessed.resizeOperation,
+      processingTimeMs: preprocessed.processingTimeMs,
+    });
+    return preprocessed.buffer;
+  } catch (preprocessError) {
+    console.warn(
+      `[ImageScanWorker] Image preprocessing failed, using raw buffer: ${preprocessError instanceof Error ? preprocessError.message : 'Unknown error'}`
+    );
+    return rawBuffer;
+  }
 }
 
 /**
@@ -199,7 +272,37 @@ async function downloadMatchedImage(url: string): Promise<Buffer | null> {
       return null;
     }
 
-    return Buffer.from(arrayBuffer);
+    const rawBuffer = Buffer.from(arrayBuffer);
+
+    // DEBUG: Log image details before preprocessing
+    const magicBytes = rawBuffer.slice(0, 8).toString('hex');
+    const truncatedUrl = url.length > 80 ? url.substring(0, 80) + '...' : url;
+    console.log('[FaceDetection] Debug - Downloaded matched image (raw):', {
+      contentType,
+      byteLength: rawBuffer.byteLength,
+      magicBytes,
+      sourceUrl: truncatedUrl,
+    });
+
+    // Preprocess image: normalize EXIF orientation and ensure minimum dimensions for face detection
+    try {
+      const preprocessed = await preprocessImageForFaceDetection(rawBuffer);
+      console.log('[FaceDetection] Debug - Preprocessed matched image:', {
+        sourceUrl: truncatedUrl,
+        originalSize: `${preprocessed.originalWidth}x${preprocessed.originalHeight}`,
+        finalSize: `${preprocessed.finalWidth}x${preprocessed.finalHeight}`,
+        wasRotated: preprocessed.wasRotated,
+        wasResized: preprocessed.wasResized,
+        resizeOperation: preprocessed.resizeOperation,
+        processingTimeMs: preprocessed.processingTimeMs,
+      });
+      return preprocessed.buffer;
+    } catch (preprocessError) {
+      console.warn(
+        `[ImageScanWorker] Image preprocessing failed for matched image, using raw buffer: ${preprocessError instanceof Error ? preprocessError.message : 'Unknown error'}`
+      );
+      return rawBuffer;
+    }
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.warn(`[ImageScanWorker] Timeout downloading matched image: ${url}`);
@@ -260,34 +363,364 @@ function identifyPlatform(domain: string): string | null {
 }
 
 /**
- * Processes a single image through the AI scanning pipeline.
+ * Stores person discovery results with the new schema fields.
  *
- * @param image - The image record to process
+ * Creates ImageMatch records for:
+ * 1. Person candidates (PERSON_CANDIDATE) from SerpAPI
+ * 2. TinEye expansion results (EXACT_COPY, ALTERED_COPY) linked to their parent candidates
+ * 3. Original image matches from TinEye
+ *
+ * @param protectedImageId - The protected image ID
  * @param userId - The user ID who owns the image
  * @param scanJobId - The scan job ID for linking matches
- * @returns Processing result with counts
+ * @param result - The person discovery scan result
+ * @param deepfakeResult - Optional deepfake analysis result
+ * @returns Storage result with counts
  */
-async function processImage(
-  image: ImageRecord,
+async function storePersonDiscoveryResults(
+  protectedImageId: string,
   userId: string,
-  scanJobId: string
+  scanJobId: string,
+  result: PersonDiscoveryScanResult,
+  deepfakeResult: { isDeepfake: boolean; confidence: number }
 ): Promise<{
+  matchesCreated: number;
+  alertsCreated: number;
+  matchBreakdown: {
+    personCandidates: number;
+    exactCopies: number;
+    alteredCopies: number;
+    originalImageMatches: number;
+  };
+}> {
+  let matchesCreated = 0;
+  let alertsCreated = 0;
+  let personCandidatesStored = 0;
+  let exactCopiesStored = 0;
+  let alteredCopiesStored = 0;
+  let originalMatchesStored = 0;
+
+  const isDeepfakeDetected = deepfakeResult.isDeepfake && deepfakeResult.confidence >= DEEPFAKE_CONFIDENCE_THRESHOLD;
+
+  // Collect alerts to create AFTER transaction commits (avoids connection contention)
+  const alertsToCreate: Array<{
+    matchId: string;
+    sourceUrl: string;
+    platform: string;
+    similarity: number;
+    matchType: ImageMatchType;
+  }> = [];
+
+  // Calculate total operations for timeout planning
+  const totalTineyeMatches = result.candidates.reduce(
+    (sum, c) => sum + c.tineyeMatches.length,
+    0
+  );
+  const estimatedOperations =
+    result.candidates.length + totalTineyeMatches + result.originalImageMatches.length;
+
+  // Log warning for large batches that may take longer
+  if (estimatedOperations > 500) {
+    console.warn(
+      `[ImageScanWorker] Large batch detected: ${estimatedOperations} operations ` +
+      `(${result.candidates.length} candidates, ${totalTineyeMatches} tineye matches, ` +
+      `${result.originalImageMatches.length} original matches). Transaction may take longer.`
+    );
+  }
+
+  // Use a transaction to ensure atomicity for database writes only
+  await prisma.$transaction(async (tx) => {
+    // 1. Store each person discovery candidate
+    for (const expandedCandidate of result.candidates) {
+      const candidate = expandedCandidate.candidate;
+      const platform = identifyPlatform(new URL(candidate.sourcePageUrl).hostname);
+
+      // Create the PERSON_CANDIDATE record
+      try {
+        const candidateMatch = await tx.imageMatch.upsert({
+          where: {
+            protectedImageId_sourceUrl: {
+              protectedImageId,
+              sourceUrl: candidate.sourcePageUrl,
+            },
+          },
+          create: {
+            protectedImageId,
+            scanJobId,
+            sourceUrl: candidate.sourcePageUrl,
+            platform,
+            matchType: 'PERSON_CANDIDATE',
+            similarity: 0, // Not a similarity-based match
+            status: 'NEW',
+            discoveryEngine: candidate.engine,
+            candidateGroupId: result.candidateGroupId,
+            // Store face similarity if available (placeholder for future face verification)
+            faceSimilarity: expandedCandidate.faceSimilarity ?? null,
+          },
+          update: {
+            scanJobId,
+            lastSeenAt: new Date(),
+            candidateGroupId: result.candidateGroupId,
+          },
+        });
+
+        matchesCreated++;
+        personCandidatesStored++;
+
+        // 2. Store TinEye expansion matches for this candidate
+        for (const tineyeMatch of expandedCandidate.tineyeMatches) {
+          const tineyePlatform = identifyPlatform(tineyeMatch.domain);
+
+          // Determine match type based on TinEye confidence
+          const matchType: ImageMatchType =
+            tineyeMatch.confidence === 'HIGH' ? 'EXACT_COPY' : 'ALTERED_COPY';
+
+          try {
+            const tineyeMatchRecord = await tx.imageMatch.upsert({
+              where: {
+                protectedImageId_sourceUrl: {
+                  protectedImageId,
+                  sourceUrl: tineyeMatch.imageUrl,
+                },
+              },
+              create: {
+                protectedImageId,
+                scanJobId,
+                sourceUrl: tineyeMatch.imageUrl,
+                platform: tineyePlatform,
+                matchType,
+                similarity: tineyeMatch.score / 100, // Convert 0-100 to 0.0-1.0
+                status: 'NEW',
+                discoveryEngine: 'tineye',
+                verificationEngine: 'tineye',
+                candidateGroupId: result.candidateGroupId,
+                parentCandidateId: candidateMatch.id,
+              },
+              update: {
+                scanJobId,
+                similarity: tineyeMatch.score / 100,
+                lastSeenAt: new Date(),
+                candidateGroupId: result.candidateGroupId,
+                parentCandidateId: candidateMatch.id,
+              },
+            });
+
+            matchesCreated++;
+            if (matchType === 'EXACT_COPY') {
+              exactCopiesStored++;
+            } else {
+              alteredCopiesStored++;
+            }
+
+            // Queue alert for high-confidence TinEye matches (created after tx commits)
+            if (tineyeMatch.confidence === 'HIGH') {
+              alertsToCreate.push({
+                matchId: tineyeMatchRecord.id,
+                sourceUrl: tineyeMatch.imageUrl,
+                platform: tineyePlatform,
+                similarity: tineyeMatch.score / 100,
+                matchType,
+              });
+            }
+          } catch (err) {
+            console.error(
+              `[ImageScanWorker] Failed to store TinEye expansion match ${tineyeMatch.imageUrl}:`,
+              err instanceof Error ? err.message : String(err)
+            );
+          }
+        }
+      } catch (err) {
+        console.error(
+          `[ImageScanWorker] Failed to store PERSON_CANDIDATE ${candidate.sourcePageUrl}:`,
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+    }
+
+    // 3. Store original image matches (TinEye on the protected image itself)
+    for (const match of result.originalImageMatches) {
+      const platform = identifyPlatform(match.domain);
+
+      // Use existing match type determination
+      const matchType: ImageMatchType =
+        match.confidence === 'HIGH' ? 'EXACT' : match.confidence === 'MEDIUM' ? 'SIMILAR' : 'MODIFIED';
+
+      try {
+        const imageMatch = await tx.imageMatch.upsert({
+          where: {
+            protectedImageId_sourceUrl: {
+              protectedImageId,
+              sourceUrl: match.imageUrl,
+            },
+          },
+          create: {
+            protectedImageId,
+            scanJobId,
+            sourceUrl: match.imageUrl,
+            platform,
+            matchType,
+            similarity: match.score / 100,
+            status: 'NEW',
+            discoveryEngine: 'tineye',
+            candidateGroupId: result.candidateGroupId,
+            // No parentCandidateId - this is from the original image
+          },
+          update: {
+            scanJobId,
+            similarity: match.score / 100,
+            lastSeenAt: new Date(),
+            candidateGroupId: result.candidateGroupId,
+          },
+        });
+
+        matchesCreated++;
+        originalMatchesStored++;
+
+        // Queue alert for high-confidence original image matches (created after tx commits)
+        if (match.confidence === 'HIGH') {
+          alertsToCreate.push({
+            matchId: imageMatch.id,
+            sourceUrl: match.imageUrl,
+            platform,
+            similarity: match.score / 100,
+            matchType,
+          });
+        }
+      } catch (err) {
+        console.error(
+          `[ImageScanWorker] Failed to store original image match ${match.imageUrl}:`,
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+    }
+  }, {
+    // Timeout for database writes - increased to handle large batches (500+ upserts)
+    // Sequential upserts can take 100-200ms each under load
+    timeout: 120000, // 2 minutes for large batches
+    maxWait: 15000, // 15 seconds max wait to acquire connection
+  });
+
+  // Create alerts AFTER transaction commits (avoids connection contention)
+  if (alertsToCreate.length > 0) {
+    console.log(`[ImageScanWorker] Creating ${alertsToCreate.length} alerts after transaction...`);
+
+    for (const alertData of alertsToCreate) {
+      try {
+        await createAlertFromMatch(
+          userId,
+          {
+            id: alertData.matchId,
+            protectedImageId,
+            sourceUrl: alertData.sourceUrl,
+            platform: alertData.platform,
+            similarity: alertData.similarity,
+            matchType: alertData.matchType,
+            isMock: false,
+          },
+          isDeepfakeDetected
+            ? {
+                isDeepfake: true,
+                confidence: deepfakeResult.confidence,
+                analysisMethod: 'person-discovery',
+                details: { candidateGroupId: result.candidateGroupId },
+              }
+            : undefined
+        );
+        alertsCreated++;
+      } catch (alertError) {
+        console.error(
+          `[ImageScanWorker] Failed to create alert for match ${alertData.matchId}:`,
+          alertError
+        );
+      }
+    }
+  }
+
+  console.log(
+    `[ImageScanWorker] Person discovery storage complete: ` +
+    `${matchesCreated} matches (${personCandidatesStored} candidates, ` +
+    `${exactCopiesStored} exact copies, ${alteredCopiesStored} altered copies, ` +
+    `${originalMatchesStored} original matches), ${alertsCreated} alerts`
+  );
+
+  return {
+    matchesCreated,
+    alertsCreated,
+    matchBreakdown: {
+      personCandidates: personCandidatesStored,
+      exactCopies: exactCopiesStored,
+      alteredCopies: alteredCopiesStored,
+      originalImageMatches: originalMatchesStored,
+    },
+  };
+}
+
+/**
+ * Result type for processImage function.
+ */
+interface ProcessImageResult {
   matchesCreated: number;
   alertsCreated: number;
   embeddingGenerated: boolean;
   hashGenerated: boolean;
   faceEmbeddingGenerated: boolean;
   faceVerifiedMatches: number;
+  scanEngine?: string;
+  matchBreakdown?: {
+    highConfidence: number;
+    mediumConfidence: number;
+    pagesMatches: number;
+    lowConfidence: number;
+    skippedBelowThreshold: number;
+    skippedFaceMismatch: number;
+    skippedClipMismatch: number;
+  };
+  personDiscovery?: {
+    enabled: boolean;
+    candidatesFound: number;
+    candidatesExpanded: number;
+    expansionMatches: number;
+    originalImageMatches: number;
+    candidateGroupId: string;
+    discoveryDurationMs: number;
+    expansionDurationMs: number;
+    providersUsed: string[];
+    warnings: string[];
+  };
   error?: string;
-}> {
-  const result = {
+}
+
+/**
+ * Processes a single image through the AI scanning pipeline.
+ *
+ * Supports two scanning modes:
+ * 1. Person Discovery (when enabled): Uses SerpAPI to find visually similar persons,
+ *    then expands each candidate with TinEye to find exact/altered copies.
+ * 2. TinEye Only (fallback): Direct reverse image search on the protected image.
+ *
+ * @param image - The image record to process
+ * @param userId - The user ID who owns the image
+ * @param scanJobId - The scan job ID for linking matches
+ * @param scanType - Controls which scan pipeline to use ('auto', 'person_discovery', 'tineye_only')
+ * @returns Processing result with counts and metrics
+ */
+async function processImage(
+  image: ImageRecord,
+  userId: string,
+  scanJobId: string,
+  scanType: ImageScanType = 'auto'
+): Promise<ProcessImageResult> {
+  const result: ProcessImageResult = {
     matchesCreated: 0,
     alertsCreated: 0,
     embeddingGenerated: false,
     hashGenerated: false,
     faceEmbeddingGenerated: false,
     faceVerifiedMatches: 0,
-    error: undefined as string | undefined,
+    scanEngine: undefined,
+    matchBreakdown: undefined,
+    personDiscovery: undefined,
+    error: undefined,
   };
 
   try {
@@ -298,19 +731,13 @@ async function processImage(
       return result;
     }
 
-    // Generate CLIP embedding
-    console.log(`[ImageScanWorker] Generating CLIP embedding for image ${image.id}`);
+    // Generate embeddings and hash
     const clipResult = await clipService.generateEmbeddingFromBase64(imageBuffer.toString('base64'));
     const embeddingVector = formatForPgVector(clipResult.embedding);
     result.embeddingGenerated = true;
 
-    // Generate perceptual hash
-    console.log(`[ImageScanWorker] Generating perceptual hash for image ${image.id}`);
     const hashResult = await perceptualHashService.generateHash(imageBuffer);
     result.hashGenerated = true;
-
-    // Extract face embedding for identity verification
-    console.log(`[ImageScanWorker] Extracting face embedding for image ${image.id}`);
     const faceResult = await faceEmbeddingService.extractEmbedding(imageBuffer);
 
     // Store the user's face embedding for later verification
@@ -337,7 +764,6 @@ async function processImage(
         WHERE id = ${image.id}
       `;
       result.faceEmbeddingGenerated = true;
-      console.log(`[ImageScanWorker] Face detected in image ${image.id} with confidence ${faceResult.faceConfidence}`);
     } else {
       // No face detected - update other fields
       await prisma.$executeRaw`
@@ -350,42 +776,102 @@ async function processImage(
           "scanCount" = COALESCE("scanCount", 0) + 1
         WHERE id = ${image.id}
       `;
-      console.log(`[ImageScanWorker] No face detected in image ${image.id}`);
     }
 
-    // Perform reverse image search
-    console.log(`[ImageScanWorker] Running reverse image search for image ${image.id}`);
-    const searchResult = await reverseImageService.search(imageBuffer);
-
-    // Run deepfake detection on original image
-    console.log(`[ImageScanWorker] Running deepfake detection for image ${image.id}`);
+    // Run deepfake detection
     const deepfakeResult = await deepfakeService.analyze(imageBuffer);
 
-    // Process matches from reverse image search
-    console.log(`[ImageScanWorker] Processing ${searchResult.matches.length} matches from ${searchResult.provider}`);
+    // Determine which scan pipeline to use
+    const shouldUsePersonDiscovery =
+      scanType === 'person_discovery' ||
+      (scanType === 'auto' && isPersonDiscoveryEnabled());
 
-    let skippedBelowThreshold = 0;
-    let skippedFaceMismatch = 0;
-    let skippedClipMismatch = 0;
-    let flaggedForReview = 0;
+    // Variables for match breakdown tracking
+    let highConfidence = 0;
+    let mediumConfidence = 0;
+    let pagesMatches = 0;
+    let lowConfidence = 0;
 
-    for (const match of searchResult.matches) {
+    if (shouldUsePersonDiscovery) {
+      // === PERSON DISCOVERY PIPELINE ===
+      const config = getPersonDiscoveryConfig();
+
+      const personDiscoveryResult = await reverseImageService.scanWithPersonDiscovery(
+        { id: image.id, storageUrl: image.storageUrl },
+        {
+          maxCandidates: config.maxCandidates,
+          maxTineyeExpansions: config.maxTineyeExpansions,
+        }
+      );
+
+      // Store person discovery metrics
+      const candidatesWithMatches = personDiscoveryResult.candidates.filter(c => c.tineyeMatches.length > 0);
+      const totalExpansionMatches = personDiscoveryResult.candidates.reduce(
+        (sum, c) => sum + c.tineyeMatches.length,
+        0
+      );
+
+      result.personDiscovery = {
+        enabled: true,
+        candidatesFound: personDiscoveryResult.candidates.length,
+        candidatesExpanded: candidatesWithMatches.length,
+        expansionMatches: totalExpansionMatches,
+        originalImageMatches: personDiscoveryResult.originalImageMatches.length,
+        candidateGroupId: personDiscoveryResult.candidateGroupId,
+        discoveryDurationMs: personDiscoveryResult.discoveryDurationMs,
+        expansionDurationMs: personDiscoveryResult.expansionDurationMs,
+        providersUsed: personDiscoveryResult.providersUsed,
+        warnings: personDiscoveryResult.warnings,
+      };
+
+      result.scanEngine = personDiscoveryResult.personDiscoveryUsed
+        ? `person-discovery:${personDiscoveryResult.providersUsed.join(',')}`
+        : 'tineye';
+
+      // Store results using the person discovery schema
+      const personDiscoveryStorageResult = await storePersonDiscoveryResults(
+        image.id,
+        userId,
+        scanJobId,
+        personDiscoveryResult,
+        deepfakeResult
+      );
+
+      result.matchesCreated = personDiscoveryStorageResult.matchesCreated;
+      result.alertsCreated = personDiscoveryStorageResult.alertsCreated;
+
+      // Set match breakdown from person discovery results
+      highConfidence = personDiscoveryStorageResult.matchBreakdown.exactCopies;
+      mediumConfidence = personDiscoveryStorageResult.matchBreakdown.alteredCopies;
+      pagesMatches = 0; // Not applicable for person discovery
+      lowConfidence = personDiscoveryStorageResult.matchBreakdown.personCandidates;
+
+    } else {
+      // === TRADITIONAL TINEYE-ONLY PIPELINE ===
+      const searchResult = await reverseImageService.search(imageBuffer);
+      result.scanEngine = searchResult.provider;
+
+      // Calculate match breakdown by confidence tier
+      highConfidence = searchResult.matches.filter(m => m.matchSourceType === 'fullMatchingImages').length;
+      mediumConfidence = searchResult.matches.filter(m => m.matchSourceType === 'partialMatchingImages').length;
+      pagesMatches = searchResult.matches.filter(m => m.matchSourceType === 'pagesWithMatchingImages').length;
+      lowConfidence = searchResult.matches.filter(m => m.matchSourceType === 'visuallySimilarImages').length;
+
+      let skippedBelowThreshold = 0;
+      let skippedFaceMismatch = 0;
+      let skippedClipMismatch = 0;
+      let flaggedForReview = 0;
+
+      for (const match of searchResult.matches) {
       // Get match type config for tiered filtering
       const matchSourceType = match.matchSourceType || 'visuallySimilarImages'; // Default to most restrictive
       const matchConfig = MATCH_TYPE_CONFIG[matchSourceType];
 
       // Skip matches below type-specific threshold
       if (match.similarity < matchConfig.minSimilarityThreshold) {
-        console.log(
-          `[ImageScanWorker] Skipping ${matchSourceType} - below threshold: ${match.similarity} < ${matchConfig.minSimilarityThreshold}`
-        );
         skippedBelowThreshold++;
         continue;
       }
-
-      console.log(
-        `[ImageScanWorker] Match [${matchSourceType}/${matchConfig.confidence}]: ${match.domain} - similarity: ${match.similarity}`
-      );
 
       // Extended match data for verification
       const extendedMatch: ExtendedMatch = {
@@ -400,8 +886,6 @@ async function processImage(
       // Face verification: If required by config and user's image has a face
       if (matchConfig.requireFaceVerification && userFaceEmbedding && match.sourceUrl) {
         try {
-          // Download the matched image and extract its face
-          console.log(`[ImageScanWorker] Verifying face in matched image: ${match.sourceUrl}`);
           const matchedImageBuffer = await downloadMatchedImage(match.sourceUrl);
 
           if (matchedImageBuffer) {
@@ -415,44 +899,26 @@ async function processImage(
               );
 
               if (comparison.isSamePerson) {
-                // Face matches - this is a verified identity match
                 extendedMatch.faceVerified = 'VERIFIED';
                 extendedMatch.faceSimilarity = comparison.similarity;
                 extendedMatch.faceConfidence = comparison.confidence;
                 result.faceVerifiedMatches++;
-                console.log(
-                  `[ImageScanWorker] Face VERIFIED for ${match.sourceUrl}: ` +
-                  `similarity=${comparison.similarity}, confidence=${comparison.confidence}`
-                );
               } else {
-                // Face doesn't match - this is a false positive, skip it
-                console.log(
-                  `[ImageScanWorker] Skipping ${matchSourceType} - face mismatch: ` +
-                  `similarity=${comparison.similarity}, distance=${comparison.distance}`
-                );
                 skippedFaceMismatch++;
-                continue; // Skip this match entirely
+                continue;
               }
             } else {
-              // No face in matched image - for types requiring face verification, this is suspicious
-              console.log(`[ImageScanWorker] No face detected in matched image ${match.sourceUrl}`);
-              // Allow to proceed but mark as not face verified
               extendedMatch.faceVerified = 'NO_FACE_DETECTED';
             }
           }
-        } catch (err) {
+        } catch {
           // Failed to verify face, proceed with original match logic
-          console.log(
-            `[ImageScanWorker] Could not verify face for ${match.sourceUrl}: ` +
-            `${err instanceof Error ? err.message : 'Unknown error'}`
-          );
         }
       }
 
       // CLIP verification: If required by config, compare image embeddings
       if (matchConfig.requireClipVerification && match.sourceUrl) {
         try {
-          console.log(`[ImageScanWorker] Verifying CLIP similarity for ${match.sourceUrl}`);
           const matchedImageBuffer = await downloadMatchedImage(match.sourceUrl);
 
           if (matchedImageBuffer) {
@@ -473,26 +939,13 @@ async function processImage(
             const clipThreshold = 0.8;
             if (clipSimilarity >= clipThreshold) {
               extendedMatch.clipVerified = true;
-              console.log(
-                `[ImageScanWorker] CLIP VERIFIED for ${match.sourceUrl}: similarity=${clipSimilarity.toFixed(3)}`
-              );
             } else {
-              // CLIP similarity too low - skip for low confidence match types
-              console.log(
-                `[ImageScanWorker] Skipping ${matchSourceType} - CLIP similarity too low: ${clipSimilarity.toFixed(3)} < ${clipThreshold}`
-              );
               skippedClipMismatch++;
               continue;
             }
           }
-        } catch (err) {
-          console.log(
-            `[ImageScanWorker] Could not verify CLIP for ${match.sourceUrl}: ` +
-            `${err instanceof Error ? err.message : 'Unknown error'}`
-          );
-          // For types requiring CLIP verification, skip if we can't verify
+        } catch {
           if (matchConfig.requireClipVerification) {
-            console.log(`[ImageScanWorker] Skipping ${matchSourceType} - CLIP verification required but failed`);
             skippedClipMismatch++;
             continue;
           }
@@ -549,14 +1002,7 @@ async function processImage(
         result.matchesCreated++;
         if (!matchConfig.autoCreateAlert) {
           flaggedForReview++;
-          console.log(
-            `[ImageScanWorker] Flagging ${matchSourceType} for review - low confidence: ${match.sourceUrl}`
-          );
-        } else {
-          console.log(`[ImageScanWorker] New match created: ${match.sourceUrl}`);
         }
-      } else {
-        console.log(`[ImageScanWorker] Existing match updated: ${match.sourceUrl}`);
       }
 
       // Only create alert for NEW matches with autoCreateAlert=true
@@ -593,35 +1039,39 @@ async function processImage(
           );
           // Continue processing - don't fail the entire scan for an alert creation failure
         }
+        }
       }
-    }
 
-    // Log summary of skipped matches
-    if (skippedBelowThreshold > 0) {
-      console.log(`[ImageScanWorker] Skipped ${skippedBelowThreshold} matches below similarity threshold`);
-    }
-    if (skippedFaceMismatch > 0) {
-      console.log(`[ImageScanWorker] Skipped ${skippedFaceMismatch} matches due to face mismatch`);
-    }
-    if (skippedClipMismatch > 0) {
-      console.log(`[ImageScanWorker] Skipped ${skippedClipMismatch} matches due to low CLIP similarity`);
-    }
-    if (flaggedForReview > 0) {
-      console.log(`[ImageScanWorker] Flagged ${flaggedForReview} low-confidence matches for review`);
-    }
+      // Log filter summary (single line)
+      const filtered = skippedBelowThreshold + skippedFaceMismatch + skippedClipMismatch;
+      if (filtered > 0 || flaggedForReview > 0) {
+        console.log(`[ImageScanWorker] Filtered: ${filtered} (threshold: ${skippedBelowThreshold}, face: ${skippedFaceMismatch}, clip: ${skippedClipMismatch}), flagged: ${flaggedForReview}`);
+      }
 
-    // If deepfake detected but no matches found, still create an alert for the original
-    if (
-      deepfakeResult.isDeepfake &&
-      deepfakeResult.confidence >= DEEPFAKE_CONFIDENCE_THRESHOLD &&
-      searchResult.matches.length === 0
-    ) {
-      console.log(
-        `[ImageScanWorker] Deepfake detected in original image ${image.id} with confidence ${deepfakeResult.confidence}`
-      );
-      // Note: This would typically only happen if someone uploaded a deepfake
-      // For now we log but don't alert since the image was uploaded by the user
-    }
+      // Store match breakdown in result for job statistics
+      result.matchBreakdown = {
+        highConfidence,
+        mediumConfidence,
+        pagesMatches,
+        lowConfidence,
+        skippedBelowThreshold,
+        skippedFaceMismatch,
+        skippedClipMismatch,
+      };
+
+      // If deepfake detected but no matches found, still create an alert for the original
+      if (
+        deepfakeResult.isDeepfake &&
+        deepfakeResult.confidence >= DEEPFAKE_CONFIDENCE_THRESHOLD &&
+        searchResult.matches.length === 0
+      ) {
+        console.log(
+          `[ImageScanWorker] Deepfake detected in original image ${image.id} with confidence ${deepfakeResult.confidence}`
+        );
+        // Note: This would typically only happen if someone uploaded a deepfake
+        // For now we log but don't alert since the image was uploaded by the user
+      }
+    } // End of traditional TinEye-only pipeline else block
 
     return result;
   } catch (error) {
@@ -645,7 +1095,7 @@ async function processImage(
  * 8. Updates job progress throughout
  */
 async function processImageScan(job: Job<ImageScanJobData>): Promise<ImageScanResult> {
-  const { scanJobId, userId, targetId } = job.data;
+  const { scanJobId, userId, targetId, scanType = 'auto' } = job.data;
   const startTime = Date.now();
   const errors: string[] = [];
 
@@ -688,6 +1138,21 @@ async function processImageScan(job: Job<ImageScanJobData>): Promise<ImageScanRe
     let hashesGenerated = 0;
     let faceEmbeddingsGenerated = 0;
     let faceVerifiedMatches = 0;
+    let lastScanEngine = 'unknown';
+    
+    // Aggregated match breakdown across all images
+    const aggregatedBreakdown = {
+      highConfidence: 0,
+      mediumConfidence: 0,
+      pagesMatches: 0,
+      lowConfidence: 0,
+      skippedBelowThreshold: 0,
+      skippedFaceMismatch: 0,
+      skippedClipMismatch: 0,
+    };
+
+    // Aggregated person discovery metrics (when enabled)
+    let aggregatedPersonDiscovery: ImageScanResult['details']['personDiscovery'] = undefined;
 
     // Calculate progress increments per image
     // Progress: 10% (start) -> 90% (processing) -> 100% (complete)
@@ -696,11 +1161,7 @@ async function processImageScan(job: Job<ImageScanJobData>): Promise<ImageScanRe
     // Process each image
     for (let i = 0; i < images.length; i++) {
       const image = images[i]!;
-      console.log(
-        `[ImageScanWorker] Processing image ${i + 1}/${images.length}: ${image.id}`
-      );
-
-      const imageResult = await processImage(image, userId, scanJobId);
+      const imageResult = await processImage(image, userId, scanJobId, scanType);
 
       totalMatches += imageResult.matchesCreated;
       totalAlerts += imageResult.alertsCreated;
@@ -715,6 +1176,46 @@ async function processImageScan(job: Job<ImageScanJobData>): Promise<ImageScanRe
         faceEmbeddingsGenerated++;
       }
       faceVerifiedMatches += imageResult.faceVerifiedMatches;
+      
+      // Aggregate scan engine (use the last one processed)
+      if (imageResult.scanEngine) {
+        lastScanEngine = imageResult.scanEngine;
+      }
+      
+      // Aggregate match breakdown statistics
+      if (imageResult.matchBreakdown) {
+        aggregatedBreakdown.highConfidence += imageResult.matchBreakdown.highConfidence;
+        aggregatedBreakdown.mediumConfidence += imageResult.matchBreakdown.mediumConfidence;
+        aggregatedBreakdown.pagesMatches += imageResult.matchBreakdown.pagesMatches;
+        aggregatedBreakdown.lowConfidence += imageResult.matchBreakdown.lowConfidence;
+        aggregatedBreakdown.skippedBelowThreshold += imageResult.matchBreakdown.skippedBelowThreshold;
+        aggregatedBreakdown.skippedFaceMismatch += imageResult.matchBreakdown.skippedFaceMismatch;
+        aggregatedBreakdown.skippedClipMismatch += imageResult.matchBreakdown.skippedClipMismatch;
+      }
+
+      // Aggregate person discovery metrics (use last result since they share candidateGroupId)
+      if (imageResult.personDiscovery) {
+        if (!aggregatedPersonDiscovery) {
+          // First person discovery result - initialize
+          aggregatedPersonDiscovery = { ...imageResult.personDiscovery };
+        } else {
+          // Merge subsequent results
+          aggregatedPersonDiscovery.candidatesFound += imageResult.personDiscovery.candidatesFound;
+          aggregatedPersonDiscovery.candidatesExpanded += imageResult.personDiscovery.candidatesExpanded;
+          aggregatedPersonDiscovery.expansionMatches += imageResult.personDiscovery.expansionMatches;
+          aggregatedPersonDiscovery.originalImageMatches += imageResult.personDiscovery.originalImageMatches;
+          aggregatedPersonDiscovery.discoveryDurationMs += imageResult.personDiscovery.discoveryDurationMs;
+          aggregatedPersonDiscovery.expansionDurationMs += imageResult.personDiscovery.expansionDurationMs;
+          aggregatedPersonDiscovery.warnings.push(...imageResult.personDiscovery.warnings);
+          // Merge unique providers
+          for (const provider of imageResult.personDiscovery.providersUsed) {
+            if (!aggregatedPersonDiscovery.providersUsed.includes(provider)) {
+              aggregatedPersonDiscovery.providersUsed.push(provider);
+            }
+          }
+        }
+      }
+
       if (imageResult.error) {
         errors.push(`Image ${image.id}: ${imageResult.error}`);
       }
@@ -738,12 +1239,15 @@ async function processImageScan(job: Job<ImageScanJobData>): Promise<ImageScanRe
       duration,
       details: {
         reverseImageSearch: true,
+        reverseImageSearchEngine: lastScanEngine,
         deepfakeAnalysis: true,
         similarityCheck: true,
         embeddingsGenerated,
         hashesGenerated,
         faceEmbeddingsGenerated,
         faceVerifiedMatches,
+        matchBreakdown: aggregatedBreakdown,
+        personDiscovery: aggregatedPersonDiscovery,
       },
       errors,
     };

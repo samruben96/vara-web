@@ -149,14 +149,24 @@ model ImageMatch {
   reviewedAt   DateTime?
   reviewedBy   String? // userId who reviewed (UUID as string)
 
+  // Person discovery fields
+  discoveryEngine    String? // Which engine discovered this (e.g., 'google_lens', 'bing_reverse_image', 'tineye')
+  candidateGroupId   String? // Groups results from a single person search (UUID)
+  faceSimilarity     Float?  // Face similarity score if face verification was run (0-1)
+  verificationEngine String? // Which engine verified this match (e.g., 'tineye', 'deepface')
+  parentCandidateId  String? // For TinEye expansion results, points to the PERSON_CANDIDATE they came from
+
   // Relations
-  protectedImage ProtectedImage @relation(fields: [protectedImageId], references: [id], onDelete: Cascade)
-  scanJob        ScanJob?       @relation(fields: [scanJobId], references: [id], onDelete: SetNull)
+  protectedImage  ProtectedImage @relation(fields: [protectedImageId], references: [id], onDelete: Cascade)
+  scanJob         ScanJob?       @relation(fields: [scanJobId], references: [id], onDelete: SetNull)
+  parentCandidate ImageMatch?    @relation("CandidateExpansion", fields: [parentCandidateId], references: [id])
+  childMatches    ImageMatch[]   @relation("CandidateExpansion")
 
   @@unique([protectedImageId, sourceUrl])
   @@index([protectedImageId, status])
   @@index([scanJobId])
   @@index([reviewStatus])
+  @@index([candidateGroupId])
   @@map("image_matches")
 }
 
@@ -304,6 +314,9 @@ enum ImageMatchType {
   SIMILAR
   MODIFIED
   DEEPFAKE
+  PERSON_CANDIDATE // From SerpAPI discovery - visually similar person
+  EXACT_COPY       // From TinEye - exact duplicate of a candidate
+  ALTERED_COPY     // From TinEye - modified version of a candidate
 }
 
 enum ImageMatchStatus {

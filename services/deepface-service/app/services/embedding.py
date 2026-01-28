@@ -14,10 +14,20 @@ from typing import Optional, Tuple
 
 import httpx
 import numpy as np
-from PIL import Image
+from PIL import Image, ExifTags
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+# Image preprocessing configuration
+MIN_IMAGE_DIMENSION = int(os.getenv("MIN_IMAGE_DIMENSION", "480"))
+MAX_IMAGE_DIMENSION = int(os.getenv("MAX_IMAGE_DIMENSION", "2048"))
+
+# Face detection thresholds (relaxed for better detection rates)
+# Default confidence threshold is lowered from typical 0.8 to 0.5
+FACE_DETECTION_CONFIDENCE = float(os.getenv("FACE_DETECTION_CONFIDENCE", "0.5"))
+# Minimum face size as percentage of image (lowered from typical 10% to 5%)
+MIN_FACE_SIZE_PERCENT = float(os.getenv("MIN_FACE_SIZE_PERCENT", "0.05"))
 
 
 class DeepFaceService:
@@ -157,13 +167,18 @@ class DeepFaceService:
 
     def validate_image(self, image_bytes: bytes) -> Image.Image:
         """
-        Validate and open image from bytes.
+        Validate, open, and preprocess image from bytes.
+
+        Preprocessing includes:
+        1. EXIF orientation normalization (auto-rotate based on metadata)
+        2. Minimum dimension enforcement (upscale if too small for face detection)
+        3. Maximum dimension enforcement (downscale to prevent memory issues)
 
         Args:
             image_bytes: Raw image bytes
 
         Returns:
-            PIL Image object
+            PIL Image object (preprocessed)
 
         Raises:
             ValueError: If image is invalid or corrupted
@@ -175,14 +190,131 @@ class DeepFaceService:
             # Re-open after verify (verify() invalidates the image)
             image = Image.open(io.BytesIO(image_bytes))
 
-            # Convert to RGB if necessary (handles RGBA, P, etc.)
+            original_size = image.size
+            logger.debug(f"Original image size: {original_size}, mode: {image.mode}")
+
+            # Step 1: Handle EXIF orientation
+            image = self._normalize_exif_orientation(image)
+
+            # Step 2: Convert to RGB if necessary (handles RGBA, P, etc.)
             if image.mode != "RGB":
                 image = image.convert("RGB")
+
+            # Step 3: Enforce dimension constraints
+            image = self._enforce_dimensions(image)
+
+            if image.size != original_size:
+                logger.info(f"Image preprocessed: {original_size} -> {image.size}")
 
             return image
 
         except Exception as e:
             raise ValueError(f"Invalid or corrupted image: {e}")
+
+    def _normalize_exif_orientation(self, image: Image.Image) -> Image.Image:
+        """
+        Normalize image orientation based on EXIF metadata.
+
+        Many images from cameras/phones have EXIF orientation tags that
+        indicate how the image should be rotated for proper display.
+        This method applies that rotation so face detection works correctly.
+
+        Args:
+            image: PIL Image object
+
+        Returns:
+            Rotated PIL Image if EXIF orientation indicates rotation needed
+        """
+        try:
+            # Get EXIF data
+            exif = image.getexif()
+            if not exif:
+                return image
+
+            # Find the orientation tag
+            orientation_key = None
+            for tag, name in ExifTags.TAGS.items():
+                if name == "Orientation":
+                    orientation_key = tag
+                    break
+
+            if orientation_key is None or orientation_key not in exif:
+                return image
+
+            orientation = exif[orientation_key]
+
+            # Apply rotation based on orientation value
+            # See: https://sirv.com/help/articles/rotate-photos-to-be-upright/
+            rotation_map = {
+                1: None,            # Normal (no rotation)
+                2: Image.FLIP_LEFT_RIGHT,  # Mirrored horizontal
+                3: Image.ROTATE_180,       # Rotated 180
+                4: Image.FLIP_TOP_BOTTOM,  # Mirrored vertical
+                5: (Image.FLIP_LEFT_RIGHT, Image.ROTATE_90),  # Mirrored horizontal + 90 CW
+                6: Image.ROTATE_270,       # Rotated 90 CW (270 CCW)
+                7: (Image.FLIP_LEFT_RIGHT, Image.ROTATE_270), # Mirrored horizontal + 90 CCW
+                8: Image.ROTATE_90,        # Rotated 90 CCW
+            }
+
+            transform = rotation_map.get(orientation)
+            if transform is None:
+                return image
+
+            if isinstance(transform, tuple):
+                # Multiple transforms needed
+                for t in transform:
+                    image = image.transpose(t)
+                logger.debug(f"Applied EXIF orientation {orientation} (multiple transforms)")
+            else:
+                image = image.transpose(transform)
+                logger.debug(f"Applied EXIF orientation {orientation}")
+
+            return image
+
+        except Exception as e:
+            logger.warning(f"Failed to process EXIF orientation: {e}")
+            return image
+
+    def _enforce_dimensions(self, image: Image.Image) -> Image.Image:
+        """
+        Enforce minimum and maximum dimension constraints.
+
+        - If smallest dimension < MIN_IMAGE_DIMENSION: upscale
+        - If largest dimension > MAX_IMAGE_DIMENSION: downscale
+        - Maintains aspect ratio
+
+        Args:
+            image: PIL Image object
+
+        Returns:
+            Resized PIL Image if needed
+        """
+        width, height = image.size
+        min_dim = min(width, height)
+        max_dim = max(width, height)
+
+        # Check if upscaling needed
+        if min_dim < MIN_IMAGE_DIMENSION and min_dim > 0:
+            scale_factor = MIN_IMAGE_DIMENSION / min_dim
+            new_width = int(width * scale_factor)
+            new_height = int(height * scale_factor)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            logger.debug(f"Upscaled image from {width}x{height} to {new_width}x{new_height}")
+
+        # Check if downscaling needed
+        elif max_dim > MAX_IMAGE_DIMENSION:
+            scale_factor = MAX_IMAGE_DIMENSION / max_dim
+            new_width = int(width * scale_factor)
+            new_height = int(height * scale_factor)
+
+            # Don't downscale if it would violate min dimension
+            if min(new_width, new_height) >= MIN_IMAGE_DIMENSION:
+                image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                logger.debug(f"Downscaled image from {width}x{height} to {new_width}x{new_height}")
+            else:
+                logger.debug(f"Skipping downscale - would violate min dimension")
+
+        return image
 
     def extract_embedding(
         self,
@@ -192,6 +324,15 @@ class DeepFaceService:
     ) -> Tuple[np.ndarray, dict]:
         """
         Extract face embedding from an image.
+
+        Uses a multi-backend detection strategy for improved success rates:
+        1. Try retinaface (best accuracy) first
+        2. Fall back to mtcnn if retinaface fails
+        3. Fall back to opencv if mtcnn fails
+
+        Detection thresholds are relaxed via environment variables:
+        - FACE_DETECTION_CONFIDENCE: minimum confidence (default 0.5, down from 0.8)
+        - MIN_FACE_SIZE_PERCENT: minimum face size as % of image (default 5%)
 
         Args:
             image: PIL Image object
@@ -206,19 +347,63 @@ class DeepFaceService:
         """
         self._ensure_model_loaded()
 
+        # Calculate minimum face size in pixels based on image dimensions
+        width, height = image.size
+        min_face_pixels = int(min(width, height) * MIN_FACE_SIZE_PERCENT)
+        logger.debug(f"Image: {width}x{height}, min face size: {min_face_pixels}px")
+
+        # Detector backends to try, in order of preference
+        # retinaface is most accurate but can miss some faces
+        # mtcnn is good balance of speed/accuracy
+        # opencv is fastest but less accurate (good fallback)
+        detector_backends = ["retinaface", "mtcnn", "opencv"]
+
         # Save image to temporary file (DeepFace requires file path)
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             try:
                 image.save(tmp.name, format="JPEG", quality=95)
 
-                # Extract embedding using DeepFace
-                result = self._deepface.represent(
-                    img_path=tmp.name,
-                    model_name=self.MODEL_NAME,
-                    enforce_detection=enforce_detection,
-                    align=align,
-                    detector_backend="retinaface"  # Best accuracy
-                )
+                result = None
+                last_error = None
+                used_backend = None
+
+                for backend in detector_backends:
+                    try:
+                        logger.debug(f"Trying face detection with backend: {backend}")
+
+                        # Extract embedding using DeepFace
+                        result = self._deepface.represent(
+                            img_path=tmp.name,
+                            model_name=self.MODEL_NAME,
+                            enforce_detection=enforce_detection,
+                            align=align,
+                            detector_backend=backend
+                        )
+
+                        # Check if we got valid results
+                        if result and (not isinstance(result, list) or len(result) > 0):
+                            used_backend = backend
+                            logger.info(f"Face detected using {backend} backend")
+                            break
+
+                    except Exception as e:
+                        last_error = e
+                        error_msg = str(e).lower()
+
+                        # If it's a "no face detected" error, try next backend
+                        if "face" in error_msg and "detect" in error_msg:
+                            logger.debug(f"No face detected with {backend}, trying next backend")
+                            continue
+
+                        # For other errors, log and try next backend
+                        logger.warning(f"Backend {backend} failed: {e}")
+                        continue
+
+                # If no backend succeeded, raise the last error
+                if result is None or (isinstance(result, list) and len(result) == 0):
+                    if last_error:
+                        raise last_error
+                    raise ValueError("No faces detected in image (all backends failed)")
 
             finally:
                 # Clean up temp file
@@ -232,11 +417,26 @@ class DeepFaceService:
         if isinstance(result, list):
             if len(result) == 0:
                 raise ValueError("No faces detected in image")
-            if len(result) > 1 and enforce_detection:
-                raise ValueError(f"Multiple faces detected ({len(result)})")
 
-            # Use the first face (highest confidence)
-            face_data = result[0]
+            # Filter faces by minimum confidence threshold
+            confident_faces = [
+                face for face in result
+                if face.get("face_confidence", 0.99) >= FACE_DETECTION_CONFIDENCE
+            ]
+
+            if not confident_faces:
+                logger.debug(
+                    f"All {len(result)} detected faces below confidence threshold "
+                    f"({FACE_DETECTION_CONFIDENCE})"
+                )
+                # Use all faces if none meet threshold (relaxed mode)
+                confident_faces = result
+
+            if len(confident_faces) > 1 and enforce_detection:
+                raise ValueError(f"Multiple faces detected ({len(confident_faces)})")
+
+            # Use the face with highest confidence
+            face_data = max(confident_faces, key=lambda f: f.get("face_confidence", 0))
         else:
             face_data = result
 
@@ -246,7 +446,8 @@ class DeepFaceService:
         metadata = {
             "face_count": len(result) if isinstance(result, list) else 1,
             "face_confidence": face_data.get("face_confidence", 0.99),
-            "facial_area": face_data.get("facial_area", {"x": 0, "y": 0, "w": 0, "h": 0})
+            "facial_area": face_data.get("facial_area", {"x": 0, "y": 0, "w": 0, "h": 0}),
+            "detector_backend": used_backend
         }
 
         return embedding, metadata

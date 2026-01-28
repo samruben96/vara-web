@@ -57,6 +57,16 @@ The swarm can leverage these MCP tools when beneficial:
 - 🌐 UI verification → Use **playwright** or **chrome-devtools**
 - 🧠 Complex reasoning → Use **sequential-thinking**
 
+### Vara Domain Context
+
+This swarm operates on the **Vara** digital safety platform — a monorepo with:
+- `apps/web/` — React 18 + Vite + Zustand + TanStack Query + shadcn/ui
+- `apps/api/` — Fastify + Prisma + BullMQ + Supabase Auth
+- `services/deepface-service/` — Python FastAPI + DeepFace (face recognition)
+- `packages/shared/` — Shared TypeScript types, Zod schemas, utilities
+
+Key domains: image scanning pipeline, face recognition, reverse image search (TinEye/SerpAPI), alerts, protection plans, onboarding assessment.
+
 ### Agent Color Reference
 
 Use these colored indicators for each agent in ALL output:
@@ -65,11 +75,13 @@ Use these colored indicators for each agent in ALL output:
 🔴 frontend-developer, security-engineer (red)
 🟠 agent-organizer, code-reviewer, react-specialist (orange)
 🟡 backend-developer, microservices-architect (yellow)
-🟢 test-engineer, ui-designer (green)
-🔵 mobile-developer (blue)
-🟣 ai-ml-engineer (purple)
+🟢 test-engineer, ui-designer, accessibility-tester (green)
+🔵 mobile-developer, api-designer (blue)
+🟣 ai-ml-engineer, python-pro (purple)
 🩵 devops-engineer (cyan)
 🩷 postgres-pro (pink)
+🟤 performance-engineer, compliance-auditor (brown)
+🔘 typescript-pro, debugger (gray)
 ⚪ Explore, Plan, general-purpose (white/default)
 ```
 
@@ -96,22 +108,39 @@ Use the Task tool to call the **agent-organizer** agent with this prompt:
 
 Task: $ARGUMENTS
 
-Available agents:
-- Explore: Codebase exploration, finding files
+Available agents (Vara-optimized):
+
+Core Development:
+- backend-developer: Fastify API, BullMQ workers, Supabase auth, Prisma, scanning pipeline (apps/api/)
+- frontend-developer: React 18 components, hooks, pages, Zustand/TanStack Query, shadcn/ui (apps/web/)
+- react-specialist: Advanced React patterns, hooks optimization, state management
+- ui-designer: Visual design, accessibility, Tailwind/shadcn, calm empowering UX
+- mobile-developer: React Native migration planning, cross-platform mobile
+
+Data & AI:
+- postgres-pro: PostgreSQL + pgvector optimization, Prisma migrations, HNSW indexes
+- ai-ml-engineer: CLIP embeddings, DeepFace integration, similarity search, scanning pipeline
+- python-pro: DeepFace Python microservice (FastAPI, TensorFlow, OpenCV) (services/deepface-service/)
+
+Quality & Security:
+- security-engineer: Auth flows, OAuth, encryption, OWASP, PII handling
+- test-engineer: Vitest, React Testing Library, Supertest, Playwright
+- code-reviewer: Code quality, security vulnerabilities, performance
+- compliance-auditor: GDPR/CCPA compliance, data privacy, audit reporting
+- accessibility-tester: WCAG 2.1 AA compliance, inclusive design
+
+Infrastructure & Type Safety:
+- devops-engineer: Vercel, Render, Docker, GitHub Actions, monitoring
+- microservices-architect: Service boundaries, DeepFace communication, resilience
+- api-designer: REST API design, OpenAPI documentation, Fastify patterns
+- performance-engineer: Pipeline optimization, database tuning, Core Web Vitals
+- typescript-pro: Advanced TypeScript patterns, monorepo type safety
+
+Research & Debug:
+- Explore: Codebase exploration, finding files (thoroughness: quick/medium/very thorough)
 - Plan: Architecture and design
-- backend-developer: APIs, routes, auth, middleware
-- frontend-developer: React components, hooks, pages
-- react-specialist: Advanced React, hooks optimization
-- ui-designer: Visual design, accessibility
-- postgres-pro: Database, migrations, queries
-- mobile-developer: React Native, mobile optimization
-- microservices-architect: Distributed systems, service mesh
-- security-engineer: Security audits, auth, encryption
-- ai-ml-engineer: ML/AI, embeddings, vector search
-- test-engineer: Unit/integration/E2E tests
-- devops-engineer: CI/CD, Docker, deployment
-- code-reviewer: Code quality review
-- general-purpose: Complex research
+- debugger: Multi-service debugging (API → BullMQ → TinEye → DeepFace)
+- general-purpose: Complex multi-step research
 
 Available MCP tools (use when beneficial):
 - context7: Library documentation lookup (React, Fastify, Prisma docs)
@@ -414,38 +443,61 @@ After all phases, show comprehensive metrics:
 ════════════════════════════════════════════════════════════════
 ```
 
-## Agent Reference with Colors
+## Agent Reference with Colors (21 Agents)
 
 ### Core Development
-| Color | Agent | Domain | Token Usage |
-|-------|-------|--------|-------------|
-| 🟡 | **backend-developer** | Server | Medium-Large |
-| 🔴 | **frontend-developer** | Client | Medium-Large |
-| 🟠 | **react-specialist** | React 18+ | Medium |
-| 🩷 | **postgres-pro** | Database | Small-Medium |
+| Color | Agent | Vara Domain | Token Usage |
+|-------|-------|-------------|-------------|
+| 🟡 | **backend-developer** | Fastify API, BullMQ, scanning pipeline | Medium-Large |
+| 🔴 | **frontend-developer** | React UI, Zustand, TanStack Query | Medium-Large |
+| 🟠 | **react-specialist** | Advanced hooks, state optimization | Medium |
+| 🩷 | **postgres-pro** | pgvector, Prisma, similarity search | Small-Medium |
+| 🔘 | **typescript-pro** | Monorepo types, strict TS patterns | Small-Medium |
 
-### Specialized
-| Color | Agent | Domain | Token Usage |
-|-------|-------|--------|-------------|
-| 🔴 | **security-engineer** | Security | Medium |
-| 🟣 | **ai-ml-engineer** | ML/AI | Medium-Large |
-| 🟢 | **ui-designer** | Design | Medium |
-| 🔵 | **mobile-developer** | Mobile | Medium-Large |
-| 🟡 | **microservices-architect** | Distributed | Medium |
+### AI, ML & Python
+| Color | Agent | Vara Domain | Token Usage |
+|-------|-------|-------------|-------------|
+| 🟣 | **ai-ml-engineer** | CLIP, DeepFace, TinEye, similarity | Medium-Large |
+| 🟣 | **python-pro** | DeepFace service (FastAPI, TF, OpenCV) | Medium |
 
-### Quality & Operations
-| Color | Agent | Domain | Token Usage |
-|-------|-------|--------|-------------|
-| 🟢 | **test-engineer** | Testing | Medium |
-| 🩵 | **devops-engineer** | DevOps | Small-Medium |
-| 🟠 | **code-reviewer** | Quality | Small-Medium |
+### Security & Compliance
+| Color | Agent | Vara Domain | Token Usage |
+|-------|-------|-------------|-------------|
+| 🔴 | **security-engineer** | Auth, OAuth, PII, OWASP | Medium |
+| 🟤 | **compliance-auditor** | GDPR/CCPA, data privacy | Medium |
 
-### Research & Planning
-| Color | Agent | Domain | Token Usage |
-|-------|-------|--------|-------------|
-| ⚪ | **Explore** | Research | Small |
-| ⚪ | **Plan** | Architecture | Medium |
-| ⚪ | **general-purpose** | General | Large |
+### Design & Accessibility
+| Color | Agent | Vara Domain | Token Usage |
+|-------|-------|-------------|-------------|
+| 🟢 | **ui-designer** | Calm UX, Tailwind/shadcn | Medium |
+| 🟢 | **accessibility-tester** | WCAG 2.1 AA compliance | Small-Medium |
+
+### Quality & Testing
+| Color | Agent | Vara Domain | Token Usage |
+|-------|-------|-------------|-------------|
+| 🟢 | **test-engineer** | Vitest, RTL, Supertest, Playwright | Medium |
+| 🟠 | **code-reviewer** | Code quality, security review | Small-Medium |
+
+### Infrastructure & APIs
+| Color | Agent | Vara Domain | Token Usage |
+|-------|-------|-------------|-------------|
+| 🩵 | **devops-engineer** | Vercel, Render, Docker, CI/CD | Small-Medium |
+| 🟡 | **microservices-architect** | DeepFace service architecture | Medium |
+| 🔵 | **api-designer** | REST API, OpenAPI, Fastify patterns | Small-Medium |
+| 🟤 | **performance-engineer** | Pipeline optimization, Web Vitals | Medium |
+
+### Mobile & Future
+| Color | Agent | Vara Domain | Token Usage |
+|-------|-------|-------------|-------------|
+| 🔵 | **mobile-developer** | React Native migration planning | Medium-Large |
+
+### Research & Debug
+| Color | Agent | Vara Domain | Token Usage |
+|-------|-------|-------------|-------------|
+| ⚪ | **Explore** | Codebase research | Small |
+| ⚪ | **Plan** | Architecture design | Medium |
+| 🔘 | **debugger** | Multi-service debugging | Medium |
+| ⚪ | **general-purpose** | Complex research | Large |
 
 ## Token Usage Guide
 
@@ -460,26 +512,41 @@ After all phases, show comprehensive metrics:
 3. Use `--focus=N` to run only needed phases
 4. Use `--dry-run` first to preview and refine the plan
 
-## Examples
+## Examples (Vara-Specific)
 
 ### Standard Execution
 ```
-/swarm Add user notification preferences with database, API, and settings UI
+/swarm Add email notification preferences with database migration, API endpoints, and settings UI
+```
+
+### Image Scanning Feature
+```
+/swarm Add deepfake detection to the image scanning pipeline with DeepFace integration and alert creation
+```
+
+### Security & Compliance
+```
+/swarm Implement GDPR data export and deletion with API endpoints, database queries, and UI flow
 ```
 
 ### Dry Run (Preview Only)
 ```
-/swarm --dry-run Refactor authentication to use JWT refresh tokens
+/swarm --dry-run Refactor the image-scan.worker.ts into smaller composable services
 ```
 
 ### Fast Mode (Reduced Tokens)
 ```
-/swarm --fast Add a simple health check endpoint
+/swarm --fast Add health check endpoint that reports TinEye and DeepFace service status
 ```
 
 ### Focus on Specific Phase
 ```
-/swarm --focus=2 Add image upload with virus scanning
+/swarm --focus=2 Optimize the pgvector similarity search with HNSW indexes
+```
+
+### Full-Stack Feature
+```
+/swarm Build real-time scan progress tracking with WebSocket updates, React progress UI, and BullMQ job events
 ```
 
 ## Example Output
