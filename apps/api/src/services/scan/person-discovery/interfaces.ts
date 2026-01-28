@@ -14,7 +14,7 @@
  * Supported person discovery providers.
  * Order in arrays indicates search priority.
  */
-export type PersonDiscoveryProvider = 'google_lens' | 'google_reverse_image' | 'bing_reverse_image';
+export type PersonDiscoveryProvider = 'google_lens' | 'google_reverse_image' | 'bing_reverse_image' | 'facecheck';
 
 /**
  * A candidate image found by a person discovery engine.
@@ -72,6 +72,9 @@ export interface PersonDiscoveryCandidate {
    * Structure varies by provider.
    */
   raw?: unknown;
+
+  /** Discovery engine confidence score (0-100). Used by FaceCheck for face match scoring. */
+  score?: number;
 }
 
 /**

@@ -25,6 +25,7 @@ import { TinEyeEngine, getTinEyeEngine } from '../scan/engines/tineye.engine';
 import type { ScanMatch, MatchConfidence } from '../scan/interfaces/scan-result.types';
 import {
   getSerpApiPersonDiscoveryEngine,
+  getFaceCheckPersonDiscoveryEngine,
   type PersonDiscoveryCandidate,
   type PersonDiscoveryResult,
 } from '../scan/person-discovery';
@@ -36,6 +37,9 @@ import {
   getPersonDiscoveryConfig,
   isPersonDiscoveryEnabled,
 } from '@/config/person-discovery.config';
+import {
+  isFaceCheckEnabled,
+} from '@/config/facecheck.config';
 import { supabaseAdmin } from '@/config/supabase';
 
 /**
@@ -265,6 +269,30 @@ function confidenceToMatchSourceType(confidence: MatchConfidence): ReverseImageM
 }
 
 /**
+ * Deduplicates person discovery candidates across multiple engines.
+ * When the same sourcePageUrl is found by multiple engines, prefers FaceCheck
+ * candidates (since they're already face-verified) over SerpAPI ones.
+ */
+function deduplicateCandidates(
+  candidates: PersonDiscoveryCandidate[]
+): PersonDiscoveryCandidate[] {
+  const seen = new Map<string, PersonDiscoveryCandidate>();
+
+  for (const candidate of candidates) {
+    const existing = seen.get(candidate.sourcePageUrl);
+    if (!existing) {
+      seen.set(candidate.sourcePageUrl, candidate);
+    } else if (candidate.engine === 'facecheck' && existing.engine !== 'facecheck') {
+      // Prefer FaceCheck candidates (already face-verified)
+      seen.set(candidate.sourcePageUrl, candidate);
+    }
+    // Otherwise keep the first one seen
+  }
+
+  return Array.from(seen.values());
+}
+
+/**
  * Maps a TinEye ScanMatch to ReverseImageMatch format for backward compatibility.
  */
 function mapTinEyeMatchToReverseImageMatch(match: ScanMatch): ReverseImageMatch {
@@ -424,52 +452,108 @@ class ReverseImageService {
     let expansionDurationMs = 0;
     let personDiscoveryUsed = false;
     let providersUsed: string[] = [];
+    let cachedImageBuffer: Buffer | null = null; // Reused across discovery + TinEye
 
     // Step 1: Try to get public URL and run person discovery
     let personDiscoveryResult: PersonDiscoveryResult | null = null;
 
-    if (isPersonDiscoveryEnabled()) {
+    const discoveryEnabled = isPersonDiscoveryEnabled() || isFaceCheckEnabled();
+
+    if (discoveryEnabled) {
       const discoveryStartTime = Date.now();
 
       try {
-        // Create a short-lived proxy URL for the protected image
-        // This generates a single proxy URL that will be reused across all providers
-        const proxyUrl = createProxyUrlFromImage(protectedImage);
+        // Build parallel discovery promises
+        const discoveryPromises: Array<Promise<PersonDiscoveryResult>> = [];
+        const engineNames: string[] = [];
 
-        // CRITICAL: Check if proxy URL is accessible from external services
-        // SerpAPI servers CANNOT access localhost URLs
-        if (proxyUrl.includes('localhost') || proxyUrl.includes('127.0.0.1')) {
-          console.warn(
-            `[ReverseImageService] ⚠️ WARNING: Proxy URL uses localhost (${proxyUrl.substring(0, 50)}...). ` +
-            `SerpAPI servers cannot access localhost URLs. ` +
-            `For local testing, either:\n` +
-            `  1. Use ngrok to expose your local server: ngrok http 4000\n` +
-            `  2. Set API_URL to your ngrok URL in .env\n` +
-            `  3. Deploy to production (Render) for real testing`
-          );
-          // Continue anyway - local validation will pass, but SerpAPI will fail
+        // SerpAPI engine (needs proxy URL)
+        if (isPersonDiscoveryEnabled()) {
+          const discoveryEngine = getSerpApiPersonDiscoveryEngine();
+          if (discoveryEngine) {
+            const proxyUrl = createProxyUrlFromImage(protectedImage);
+
+            if (proxyUrl.includes('localhost') || proxyUrl.includes('127.0.0.1')) {
+              console.warn(
+                `[ReverseImageService] ⚠️ WARNING: Proxy URL uses localhost (${proxyUrl.substring(0, 50)}...). ` +
+                `SerpAPI servers cannot access localhost URLs. ` +
+                `For local testing, either:\n` +
+                `  1. Use ngrok to expose your local server: ngrok http 4000\n` +
+                `  2. Set API_URL to your ngrok URL in .env\n` +
+                `  3. Deploy to production (Render) for real testing`
+              );
+            }
+
+            const isValid = await validateProxyUrl(proxyUrl);
+            if (isValid) {
+              discoveryPromises.push(
+                discoveryEngine.discoverByImageUrl(proxyUrl, { maxCandidates, skipCache })
+              );
+              engineNames.push('serpapi');
+            } else {
+              warnings.push('Proxy URL validation failed - skipping SerpAPI');
+            }
+          }
         }
 
-        // Validate the proxy URL is accessible from THIS server (won't catch localhost issue)
-        const isValid = await validateProxyUrl(proxyUrl);
-        if (!isValid) {
-          throw new Error('Failed to validate proxy URL - image not accessible');
+        // FaceCheck engine (needs image buffer -- download once, reuse for TinEye too)
+        if (isFaceCheckEnabled()) {
+          const faceCheckEngine = getFaceCheckPersonDiscoveryEngine();
+          if (faceCheckEngine) {
+            cachedImageBuffer = await this.downloadProtectedImage(protectedImage.storageUrl);
+            if (cachedImageBuffer) {
+              discoveryPromises.push(
+                faceCheckEngine.discoverByUpload(cachedImageBuffer, 'image/jpeg', { maxCandidates })
+              );
+              engineNames.push('facecheck');
+            } else {
+              warnings.push('Failed to download image for FaceCheck -- skipping');
+            }
+          }
         }
 
-        // Run person discovery via SerpAPI
-        const discoveryEngine = getSerpApiPersonDiscoveryEngine();
+        // Run all discovery engines in parallel
+        if (discoveryPromises.length > 0) {
+          const results = await Promise.allSettled(discoveryPromises);
 
-        if (discoveryEngine) {
-          personDiscoveryResult = await discoveryEngine.discoverByImageUrl(proxyUrl, {
-            maxCandidates,
-            skipCache,
-          });
+          // Merge results from all engines
+          let allCandidates: PersonDiscoveryCandidate[] = [];
 
-          personDiscoveryUsed = true;
-          providersUsed = personDiscoveryResult.providersUsed;
+          for (let i = 0; i < results.length; i++) {
+            const result = results[i]!;
+            const engineName = engineNames[i]!;
+
+            if (result.status === 'fulfilled') {
+              allCandidates.push(...result.value.candidates);
+              providersUsed.push(...result.value.providersUsed);
+              personDiscoveryUsed = true;
+              console.log(
+                `[ReverseImageService] ${engineName} returned ${result.value.candidates.length} candidates`
+              );
+            } else {
+              const errorMessage = result.reason instanceof Error
+                ? result.reason.message
+                : String(result.reason);
+              warnings.push(`${engineName} discovery failed: ${errorMessage}`);
+              console.error(`[ReverseImageService] ${engineName} failed: ${errorMessage}`);
+            }
+          }
+
+          // Deduplicate across engines (prefer FaceCheck over SerpAPI)
+          allCandidates = deduplicateCandidates(allCandidates);
+
+          // Build a merged PersonDiscoveryResult
+          personDiscoveryResult = {
+            candidates: allCandidates,
+            providersUsed: providersUsed as PersonDiscoveryCandidate['engine'][],
+            totalFound: allCandidates.length,
+            truncated: false,
+            cacheHit: false,
+            durationMs: Date.now() - discoveryStartTime,
+          };
         } else {
-          warnings.push('Person discovery engine not available - skipping person discovery phase');
-          console.warn('[ReverseImageService] Person discovery engine not available');
+          warnings.push('No person discovery engines available');
+          console.warn('[ReverseImageService] No person discovery engines available');
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -479,15 +563,15 @@ class ReverseImageService {
 
       discoveryDurationMs = Date.now() - discoveryStartTime;
     } else {
-      warnings.push('Person discovery not enabled (missing SERPAPI_API_KEY or disabled)');
+      warnings.push('Person discovery not enabled (no engines configured)');
     }
 
     // Step 2: Run TinEye on the original protected image
     const expansionStartTime = Date.now();
 
     try {
-      // Download the protected image to get a buffer for TinEye
-      const imageBuffer = await this.downloadProtectedImage(protectedImage.storageUrl);
+      // Reuse cached buffer from FaceCheck download, or download now for TinEye
+      const imageBuffer = cachedImageBuffer ?? await this.downloadProtectedImage(protectedImage.storageUrl);
 
       if (imageBuffer && this.useTinEye) {
         const tineyeResult = await this.tineyeEngine.searchByUpload(imageBuffer, 'protected-image.jpg', {

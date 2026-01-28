@@ -388,6 +388,7 @@ async function storePersonDiscoveryResults(
   alertsCreated: number;
   matchBreakdown: {
     personCandidates: number;
+    faceMatches: number;
     exactCopies: number;
     alteredCopies: number;
     originalImageMatches: number;
@@ -399,6 +400,7 @@ async function storePersonDiscoveryResults(
   let exactCopiesStored = 0;
   let alteredCopiesStored = 0;
   let originalMatchesStored = 0;
+  let faceMatchesStored = 0;
 
   const isDeepfakeDetected = deepfakeResult.isDeepfake && deepfakeResult.confidence >= DEEPFAKE_CONFIDENCE_THRESHOLD;
 
@@ -406,7 +408,7 @@ async function storePersonDiscoveryResults(
   const alertsToCreate: Array<{
     matchId: string;
     sourceUrl: string;
-    platform: string;
+    platform: string | null;
     similarity: number;
     matchType: ImageMatchType;
   }> = [];
@@ -435,7 +437,17 @@ async function storePersonDiscoveryResults(
       const candidate = expandedCandidate.candidate;
       const platform = identifyPlatform(new URL(candidate.sourcePageUrl).hostname);
 
-      // Create the PERSON_CANDIDATE record
+      // Determine match type based on discovery engine
+      const isFaceCheckCandidate = candidate.engine === 'facecheck';
+      const matchType: ImageMatchType = isFaceCheckCandidate ? 'FACE_MATCH' : 'PERSON_CANDIDATE';
+
+      // FaceCheck candidates come with a score (0-100) and are already face-verified
+      const faceCheckScore = candidate.score ?? null;
+      const faceSimilarityValue = isFaceCheckCandidate && faceCheckScore !== null
+        ? faceCheckScore / 100
+        : expandedCandidate.faceSimilarity ?? null;
+      const faceVerifiedValue = isFaceCheckCandidate ? 'VERIFIED' : null;
+
       try {
         const candidateMatch = await tx.imageMatch.upsert({
           where: {
@@ -449,23 +461,32 @@ async function storePersonDiscoveryResults(
             scanJobId,
             sourceUrl: candidate.sourcePageUrl,
             platform,
-            matchType: 'PERSON_CANDIDATE',
-            similarity: 0, // Not a similarity-based match
+            matchType,
+            similarity: isFaceCheckCandidate ? (faceCheckScore !== null ? faceCheckScore / 100 : 0) : 0,
             status: 'NEW',
             discoveryEngine: candidate.engine,
             candidateGroupId: result.candidateGroupId,
-            // Store face similarity if available (placeholder for future face verification)
-            faceSimilarity: expandedCandidate.faceSimilarity ?? null,
+            faceSimilarity: faceSimilarityValue,
+            faceVerified: faceVerifiedValue,
+            discoveryScore: faceCheckScore,
           },
           update: {
             scanJobId,
             lastSeenAt: new Date(),
             candidateGroupId: result.candidateGroupId,
+            ...(isFaceCheckCandidate && {
+              faceSimilarity: faceSimilarityValue,
+              faceVerified: faceVerifiedValue,
+              discoveryScore: faceCheckScore,
+            }),
           },
         });
 
         matchesCreated++;
         personCandidatesStored++;
+        if (isFaceCheckCandidate) {
+          faceMatchesStored++;
+        }
 
         // 2. Store TinEye expansion matches for this candidate
         for (const tineyeMatch of expandedCandidate.tineyeMatches) {
@@ -528,6 +549,17 @@ async function storePersonDiscoveryResults(
               err instanceof Error ? err.message : String(err)
             );
           }
+        }
+
+        // Queue alert for high-score FaceCheck matches (score >= 80)
+        if (isFaceCheckCandidate && faceCheckScore !== null && faceCheckScore >= 80) {
+          alertsToCreate.push({
+            matchId: candidateMatch.id,
+            sourceUrl: candidate.sourcePageUrl,
+            platform,
+            similarity: faceCheckScore / 100,
+            matchType: 'FACE_MATCH',
+          });
         }
       } catch (err) {
         console.error(
@@ -639,6 +671,7 @@ async function storePersonDiscoveryResults(
   console.log(
     `[ImageScanWorker] Person discovery storage complete: ` +
     `${matchesCreated} matches (${personCandidatesStored} candidates, ` +
+    `${faceMatchesStored} face matches, ` +
     `${exactCopiesStored} exact copies, ${alteredCopiesStored} altered copies, ` +
     `${originalMatchesStored} original matches), ${alertsCreated} alerts`
   );
@@ -648,6 +681,7 @@ async function storePersonDiscoveryResults(
     alertsCreated,
     matchBreakdown: {
       personCandidates: personCandidatesStored,
+      faceMatches: faceMatchesStored,
       exactCopies: exactCopiesStored,
       alteredCopies: alteredCopiesStored,
       originalImageMatches: originalMatchesStored,

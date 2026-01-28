@@ -80,6 +80,43 @@ export {
   resetSerpApiPersonDiscoveryEngine,
 } from './serpapi.engine';
 
+// FaceCheck.id Client
+export {
+  FaceCheckClient,
+  getFaceCheckClient,
+  isFaceCheckConfigured,
+  resetFaceCheckClient,
+  FaceCheckError,
+  FaceCheckAuthError,
+  FaceCheckUploadError,
+  FaceCheckCreditError,
+  FaceCheckTimeoutError,
+  FaceCheckCancelledError,
+} from './facecheck.client';
+
+// FaceCheck.id Types
+export type {
+  FaceCheckMatch,
+  FaceCheckSearchResult,
+  FaceCheckUploadResult,
+  FaceCheckInfo,
+  FaceCheckPollingOptions,
+  FaceCheckPollingProgress,
+  FaceCheckRawMatch,
+  FaceCheckRawSearchResponse,
+  FaceCheckRawUploadResponse,
+} from './facecheck.types';
+
+export { FaceCheckErrorCode, FACECHECK_DEFAULTS } from './facecheck.types';
+
+// FaceCheck Person Discovery Engine
+export {
+  FaceCheckPersonDiscoveryEngine,
+  getFaceCheckPersonDiscoveryEngine,
+  isFaceCheckEngineEnabled,
+  resetFaceCheckEngine,
+} from './facecheck.engine';
+
 // Discovery Cache Service
 export {
   DiscoveryCacheService,

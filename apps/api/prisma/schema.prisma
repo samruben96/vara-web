@@ -153,6 +153,7 @@ model ImageMatch {
   discoveryEngine    String? // Which engine discovered this (e.g., 'google_lens', 'bing_reverse_image', 'tineye')
   candidateGroupId   String? // Groups results from a single person search (UUID)
   faceSimilarity     Float?  // Face similarity score if face verification was run (0-1)
+  discoveryScore     Float?  // Raw discovery engine score (e.g., FaceCheck 0-100)
   verificationEngine String? // Which engine verified this match (e.g., 'tineye', 'deepface')
   parentCandidateId  String? // For TinEye expansion results, points to the PERSON_CANDIDATE they came from
 
@@ -317,6 +318,7 @@ enum ImageMatchType {
   PERSON_CANDIDATE // From SerpAPI discovery - visually similar person
   EXACT_COPY       // From TinEye - exact duplicate of a candidate
   ALTERED_COPY     // From TinEye - modified version of a candidate
+  FACE_MATCH       // From FaceCheck.id - face recognition match
 }
 
 enum ImageMatchStatus {
