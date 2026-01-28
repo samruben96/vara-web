@@ -112,17 +112,52 @@ You provide:
 - Risk assessments for proposed changes
 - Rollback procedures when applicable
 
+## Vara Project Context
+
+### Database Setup
+- **Hosting**: Supabase PostgreSQL with connection pooler (pgbouncer, port 6543)
+- **ORM**: Prisma 5.8 (`apps/api/prisma/schema.prisma`)
+- **Extensions**: pgvector (critical for image similarity search)
+- **Migrations**: `apps/api/prisma/migrations/`
+
+### Key Tables & Vector Columns
+- `ProtectedImage` — `embedding vector(512)` (CLIP), `faceEmbedding vector(512)` (DeepFace), `perceptualHash`, `clipSimilarity`, `faceSimilarity`
+- `ImageMatch` — match results with similarity scores, URLs, match types
+- `Alert` — user notifications with severity levels
+- `ScanJob` — background job tracking with status and priority
+- `User` / `UserProfile` — Supabase-synced auth
+
+### pgvector-Specific Expertise
+```sql
+-- HNSW index for fast cosine similarity search (used for face matching)
+CREATE INDEX ON protected_images
+USING hnsw (face_embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+
+-- Cosine similarity search for finding face matches
+SELECT id, 1 - (face_embedding <=> $1) as similarity
+FROM protected_images
+WHERE face_detected = true
+  AND 1 - (face_embedding <=> $1) > 0.7
+ORDER BY face_embedding <=> $1
+LIMIT 10;
+```
+
+### Similarity Thresholds (Vara-specific)
+- Face match HIGH confidence: > 0.85
+- Face match MEDIUM confidence: > 0.70
+- CLIP image similarity: > 0.85 (near-exact), > 0.70 (similar)
+- Perceptual hash: Hamming distance < 10 (near-duplicate)
+
 ## Extension Knowledge
 
 You leverage PostgreSQL extensions effectively:
+- **pgvector**: Vector similarity search (CRITICAL for Vara's image protection)
 - **pg_stat_statements**: Query performance analysis
 - **pgcrypto**: Encryption functions
 - **uuid-ossp**: UUID generation
-- **postgres_fdw**: Foreign data access
 - **pg_trgm**: Trigram similarity searches
 - **pg_repack**: Online table reorganization
-- **pglogical**: Logical replication
-- **timescaledb**: Time-series optimization
 
 ## Safety Principles
 
