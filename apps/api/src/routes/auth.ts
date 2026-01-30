@@ -22,6 +22,12 @@ const AUTH_ERROR_CODES = {
 } as const;
 
 export async function authRoutes(app: FastifyInstance) {
+  // Stricter rate limit on auth routes (20 req/min) to prevent brute force
+  await app.register(import('@fastify/rate-limit'), {
+    max: 20,
+    timeWindow: '1 minute',
+  });
+
   // Sign up
   app.post('/signup', async (request, reply) => {
     const body = signupSchema.parse(request.body);

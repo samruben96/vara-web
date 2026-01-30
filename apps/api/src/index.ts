@@ -61,7 +61,7 @@ async function start() {
   });
 
   await app.register(rateLimit, {
-    max: 100,
+    max: 300,
     timeWindow: '1 minute',
   });
 

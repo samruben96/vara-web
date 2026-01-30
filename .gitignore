@@ -38,3 +38,4 @@ coverage
 *.pem
 *.tsbuildinfo
 .vercel
+__pycache__/
