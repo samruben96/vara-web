@@ -38,10 +38,21 @@ export interface FaceCheckRawUploadResponse {
 
 /** POST /api/search response (polled until output populated) */
 export interface FaceCheckRawSearchResponse {
-  output?: FaceCheckRawMatch[];
+  output?: FaceCheckRawSearchOutput;
   message?: string;
   progress?: string;
   error?: string;
+}
+
+/** The output object returned when search is complete */
+export interface FaceCheckRawSearchOutput {
+  items?: FaceCheckRawMatch[];
+  demo?: boolean;
+  max_score?: number;
+  searchedFaces?: number;
+  tookSeconds?: number;
+  tookSecondsDownload?: number;
+  tookSecondsQueue?: number;
 }
 
 /** Individual match from search output */

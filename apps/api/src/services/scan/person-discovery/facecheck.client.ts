@@ -16,6 +16,7 @@ import {
   FACECHECK_DEFAULTS,
   type FaceCheckRawUploadResponse,
   type FaceCheckRawSearchResponse,
+  type FaceCheckRawSearchOutput,
   type FaceCheckRawMatch,
   type FaceCheckRawInfoResponse,
   type FaceCheckMatch,
@@ -221,6 +222,8 @@ export class FaceCheckClient {
 
     const startTime = Date.now();
     let attempt = 0;
+    let completedWithNoOutputRetries = 0;
+    const MAX_COMPLETED_NO_OUTPUT_RETRIES = 5;
 
     console.log(
       `[FaceCheckClient] Starting search polling (interval: ${intervalMs}ms, timeout: ${Math.round(maxTimeMs / 1000)}s, demo: ${this.demoMode})`
@@ -279,11 +282,14 @@ export class FaceCheckClient {
           throw new FaceCheckError(data.error, FaceCheckErrorCode.API_ERROR);
         }
 
-        // Check if results are ready
-        if (data.output && data.output.length > 0) {
+        // Check if results are ready.
+        // FaceCheck API returns output as an object with an items sub-array:
+        // { output: { items: [...], max_score: ..., ... } }
+        const outputItems = data.output?.items;
+        if (outputItems && outputItems.length > 0) {
           onProgress?.({ attempt, elapsedMs: Date.now() - startTime, status: 'completed' });
 
-          const matches = this.normalizeMatches(data.output);
+          const matches = this.normalizeMatches(outputItems);
           const durationMs = Date.now() - startTime;
 
           console.log(
@@ -297,6 +303,41 @@ export class FaceCheckClient {
             durationMs,
             demoMode: this.demoMode,
           };
+        }
+
+        // Detect when the API reports search is completed but output items
+        // are not yet populated. The API may return the output object with no
+        // items, or a "Search Completed" status message before items are ready.
+        // Give it a few more poll attempts, then return empty results.
+        const statusText = (data.message || data.progress || '').toLowerCase();
+        const isSearchCompleted =
+          statusText.includes('completed') ||
+          statusText.includes('complete') ||
+          (data.output != null && (!outputItems || outputItems.length === 0));
+
+        if (isSearchCompleted) {
+          completedWithNoOutputRetries++;
+          console.log(
+            `[FaceCheckClient] Search reports completed but no output yet ` +
+            `(retry ${completedWithNoOutputRetries}/${MAX_COMPLETED_NO_OUTPUT_RETRIES})`
+          );
+
+          if (completedWithNoOutputRetries >= MAX_COMPLETED_NO_OUTPUT_RETRIES) {
+            const durationMs = Date.now() - startTime;
+            console.warn(
+              `[FaceCheckClient] Search completed with no results after ${MAX_COMPLETED_NO_OUTPUT_RETRIES} ` +
+              `additional polls (${Math.round(durationMs / 1000)}s). Returning empty result set.`
+            );
+            onProgress?.({ attempt, elapsedMs: Date.now() - startTime, status: 'completed' });
+
+            return {
+              matches: [],
+              idSearch,
+              totalFound: 0,
+              durationMs,
+              demoMode: this.demoMode,
+            };
+          }
         }
 
         // Not ready yet — report progress and wait

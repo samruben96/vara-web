@@ -113,22 +113,24 @@ function createSearchReadyResponse(matches?: Array<Record<string, unknown>>) {
     ok: true,
     status: 200,
     json: async () => ({
-      output: matches ?? [
-        {
-          score: 95,
-          url: 'https://example.com/found-face',
-          base64: 'data:image/jpeg;base64,AAAA',
-          guid: 'match-guid-1',
-          group: 1,
-          image_url: 'https://example.com/face-image.jpg',
-        },
-        {
-          score: 80,
-          url: 'https://other-site.org/profile',
-          guid: 'match-guid-2',
-          group: 2,
-        },
-      ],
+      output: {
+        items: matches ?? [
+          {
+            score: 95,
+            url: 'https://example.com/found-face',
+            base64: 'data:image/jpeg;base64,AAAA',
+            guid: 'match-guid-1',
+            group: 1,
+            image_url: 'https://example.com/face-image.jpg',
+          },
+          {
+            score: 80,
+            url: 'https://other-site.org/profile',
+            guid: 'match-guid-2',
+            group: 2,
+          },
+        ],
+      },
     }),
   });
 }
@@ -681,6 +683,244 @@ describe('FaceCheckClient', () => {
       });
 
       expect(result.matches[0].imageUrl).toBeUndefined();
+    });
+
+    // ========================================================================
+    // Polling Termination Bug Fix — "completed with no output" detection
+    // ========================================================================
+
+    it('should return results immediately when API reports "Search Completed" AND output in the same response', async () => {
+      // API returns both message="Search Completed" and populated output in one response.
+      // This verifies no regression: the output.items check fires first, so the
+      // completed-status detection code is never reached.
+      mockFetch
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              message: 'Search Completed',
+              progress: '100%',
+              output: {
+                items: [
+                  { score: 92, url: 'https://example.com/match1', guid: 'g1' },
+                ],
+              },
+            }),
+          }),
+        )
+        .mockResolvedValueOnce(createDeleteSuccessResponse());
+
+      const result = await client.searchWithPolling('search-completed-with-output', {
+        intervalMs: 10,
+        maxTimeMs: 5000,
+      });
+
+      expect(result.matches).toHaveLength(1);
+      expect(result.matches[0].sourcePageUrl).toBe('https://example.com/match1');
+      // 1 search call + 1 deletePic call
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should return results when output arrives after a few "completed but no output" retries', async () => {
+      // Simulates the real-world race condition: API says "Search Completed" on polls 1-2
+      // but output is null/empty, then on poll 3 output finally appears.
+      mockFetch
+        // Poll 1: completed status, no output
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              message: 'Search Completed',
+              progress: '100%',
+            }),
+          }),
+        )
+        // Poll 2: completed status, still no output
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              message: 'Search Completed',
+              progress: '100%',
+            }),
+          }),
+        )
+        // Poll 3: output is now populated
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              message: 'Search Completed',
+              output: {
+                items: [
+                  { score: 88, url: 'https://example.com/delayed-match', guid: 'dg1' },
+                  { score: 75, url: 'https://other.com/page', guid: 'dg2' },
+                ],
+              },
+            }),
+          }),
+        )
+        .mockResolvedValueOnce(createDeleteSuccessResponse());
+
+      const result = await client.searchWithPolling('search-delayed-output', {
+        intervalMs: 10,
+        maxTimeMs: 10000,
+      });
+
+      expect(result.matches).toHaveLength(2);
+      expect(result.matches[0].sourcePageUrl).toBe('https://example.com/delayed-match');
+      expect(result.matches[1].sourcePageUrl).toBe('https://other.com/page');
+      expect(result.idSearch).toBe('search-delayed-output');
+      // 3 search polls + 1 deletePic
+      expect(mockFetch).toHaveBeenCalledTimes(4);
+    });
+
+    it('should return empty result set after 5 retries when search completed but output never arrives', async () => {
+      // API always returns "Search Completed" but never populates output.
+      // After 5 additional retry polls, the client should give up and return
+      // an empty result set instead of timing out.
+      let searchCallCount = 0;
+
+      mockFetch.mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/api/delete_pic')) {
+          return createDeleteSuccessResponse();
+        }
+        searchCallCount++;
+        return createMockResponse({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            message: 'Search Completed',
+            progress: '100%',
+            // output is intentionally absent
+          }),
+        });
+      });
+
+      const result = await client.searchWithPolling('search-no-output-ever', {
+        intervalMs: 10,
+        maxTimeMs: 30000, // high timeout so we don't hit it
+      });
+
+      // Should return empty, NOT throw a timeout error
+      expect(result.matches).toHaveLength(0);
+      expect(result.totalFound).toBe(0);
+      expect(result.idSearch).toBe('search-no-output-ever');
+      expect(result.demoMode).toBe(false);
+      // Exactly 5 polls with "completed but no output" should have happened
+      expect(searchCallCount).toBe(5);
+    });
+
+    it('should detect completion status case-insensitively (lowercase "search completed")', async () => {
+      mockFetch.mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/api/delete_pic')) {
+          return createDeleteSuccessResponse();
+        }
+        return createMockResponse({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            message: 'search completed',  // all lowercase
+            progress: '100%',
+          }),
+        });
+      });
+
+      const result = await client.searchWithPolling('search-lowercase', {
+        intervalMs: 10,
+        maxTimeMs: 30000,
+      });
+
+      // Should detect completion and return empty after 5 retries
+      expect(result.matches).toHaveLength(0);
+      expect(result.totalFound).toBe(0);
+    });
+
+    it('should detect completion status case-insensitively via progress field containing "Complete"', async () => {
+      mockFetch.mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/api/delete_pic')) {
+          return createDeleteSuccessResponse();
+        }
+        return createMockResponse({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            // message is absent; progress contains the keyword
+            progress: 'Complete',
+          }),
+        });
+      });
+
+      const result = await client.searchWithPolling('search-progress-complete', {
+        intervalMs: 10,
+        maxTimeMs: 30000,
+      });
+
+      expect(result.matches).toHaveLength(0);
+      expect(result.totalFound).toBe(0);
+    });
+
+    it('should report completed status via onProgress when returning empty after max retries', async () => {
+      const onProgress = vi.fn();
+
+      mockFetch.mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/api/delete_pic')) {
+          return createDeleteSuccessResponse();
+        }
+        return createMockResponse({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            message: 'Search Completed',
+          }),
+        });
+      });
+
+      await client.searchWithPolling('search-progress-tracking', {
+        intervalMs: 10,
+        maxTimeMs: 30000,
+        onProgress,
+      });
+
+      // The final onProgress call should have status 'completed'
+      const progressCalls = onProgress.mock.calls.map((c) => c[0]);
+      const lastCall = progressCalls[progressCalls.length - 1];
+      expect(lastCall.status).toBe('completed');
+
+      // All intermediate calls should be 'polling'
+      const pollingCalls = progressCalls.filter((p) => p.status === 'polling');
+      expect(pollingCalls.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should still call deletePic when returning empty after completed-no-output retries', async () => {
+      mockFetch.mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/api/delete_pic')) {
+          return createDeleteSuccessResponse();
+        }
+        return createMockResponse({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            message: 'Search Completed',
+          }),
+        });
+      });
+
+      await client.searchWithPolling('search-cleanup-check', {
+        intervalMs: 10,
+        maxTimeMs: 30000,
+      });
+
+      const deleteCalls = mockFetch.mock.calls.filter(
+        (call) => typeof call[0] === 'string' && call[0].includes('/api/delete_pic'),
+      );
+      expect(deleteCalls).toHaveLength(1);
+      const body = JSON.parse(deleteCalls[0][1].body);
+      expect(body.id_search).toBe('search-cleanup-check');
     });
   });
 
