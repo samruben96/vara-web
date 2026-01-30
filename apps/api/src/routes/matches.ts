@@ -5,7 +5,7 @@ import { prisma } from '../config/prisma';
 import { requireAuth } from '../middleware/auth';
 import { AppError } from '../middleware/error-handler';
 import { createAlertFromMatch } from '../utils/alert-creator';
-import type { ImageMatchType } from '@prisma/client';
+import type { ImageMatchType } from '../generated/prisma/client.js';
 
 /**
  * Match Review Routes

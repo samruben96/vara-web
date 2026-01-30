@@ -1,5 +1,5 @@
 import { Worker, Job } from 'bullmq';
-import type { Prisma, ImageMatchType } from '@prisma/client';
+import type { Prisma, ImageMatchType } from '../generated/prisma/client.js';
 import { prisma } from '../config/prisma';
 import { supabaseAdmin } from '../config/supabase';
 import { createWorkerConnectionOptions } from '../config/redis';

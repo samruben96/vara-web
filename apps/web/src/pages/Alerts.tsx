@@ -17,6 +17,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { cn } from '../lib/cn';
 import { Button } from '../components/ui/Button';
@@ -224,7 +225,7 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
                 rel="noopener noreferrer"
                 className="ml-2 text-sm text-primary hover:text-primary-hover inline-flex items-center gap-1"
               >
-                {metadata.platform || new URL(metadata.sourceUrl).hostname}
+                {metadata.platform || (() => { try { return new URL(metadata.sourceUrl!).hostname; } catch { return metadata.sourceUrl; } })()}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
@@ -533,15 +534,18 @@ export function Alerts() {
         </div>
       </div>
 
-      {/* Alert Detail Panel */}
-      <AlertDetailPanel
-        alertId={selectedAlertId}
-        onClose={handleCloseDetails}
-        onDismiss={handleDismiss}
-        onMarkViewed={handleMarkViewed}
-        onMarkActioned={handleMarkActioned}
-        isUpdating={updateStatusMutation.isPending}
-      />
+      <AnimatePresence>
+        {selectedAlertId && (
+          <AlertDetailPanel
+            alertId={selectedAlertId}
+            onClose={handleCloseDetails}
+            onDismiss={handleDismiss}
+            onMarkViewed={handleMarkViewed}
+            onMarkActioned={handleMarkActioned}
+            isUpdating={updateStatusMutation.isPending}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

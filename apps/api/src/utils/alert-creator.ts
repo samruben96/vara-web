@@ -5,9 +5,8 @@
  * Follows Vara's design philosophy: "Emotional Clarity, Not Panic"
  */
 
-import type { Prisma } from '@prisma/client';
+import type { Prisma, AlertType, AlertSeverity, ImageMatchType } from '../generated/prisma/client.js';
 import { prisma } from '../config/prisma';
-import type { AlertType, AlertSeverity, ImageMatchType } from '@prisma/client';
 
 /**
  * Confidence tier for image matches.

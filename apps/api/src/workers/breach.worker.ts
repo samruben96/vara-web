@@ -6,7 +6,7 @@
  */
 
 import { Worker, Job } from 'bullmq';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../generated/prisma/client.js';
 import { prisma } from '../config/prisma';
 import { createWorkerConnectionOptions } from '../config/redis';
 import { QUEUE_NAMES, BreachCheckJobData } from '../queues';

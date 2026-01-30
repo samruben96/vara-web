@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
   X,
   Shield,
@@ -20,6 +21,7 @@ import {
 import { cn } from '../../lib/cn';
 import { Button } from '../ui/Button';
 import { useAlert } from '../../hooks/useAlerts';
+import { useLockBodyScroll } from '../../hooks/mobile/useLockBodyScroll';
 import type { AlertType, AlertSeverity } from '@vara/shared';
 
 interface AlertDetailPanelProps {
@@ -235,11 +237,13 @@ export function AlertDetailPanel({
 }: AlertDetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const hasMarkedViewed = useRef<string | null>(null);
 
   const { data, isLoading, error } = useAlert(alertId || '', !!alertId);
   const alert = data?.data;
 
-  // Handle escape key
+  useLockBodyScroll(!!alertId);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && alertId) {
@@ -250,29 +254,18 @@ export function AlertDetailPanel({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [alertId, onClose]);
 
-  // Focus trap and body scroll lock
   useEffect(() => {
     if (alertId) {
-      // Focus the close button when panel opens
       closeButtonRef.current?.focus();
-      // Prevent body scroll
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [alertId]);
 
-  // Mark as viewed when opening
   useEffect(() => {
-    if (alert && alert.status === 'NEW') {
+    if (alert?.status === 'NEW' && alert.id !== hasMarkedViewed.current && onMarkViewed) {
+      hasMarkedViewed.current = alert.id;
       onMarkViewed(alert.id);
     }
-  }, [alert, onMarkViewed]);
-
-  if (!alertId) return null;
+  }, [alert?.id, alert?.status, onMarkViewed]);
 
   const severity = alert ? severityConfig[alert.severity] : null;
   const alertType = alert ? alertTypeConfig[alert.type] : null;
@@ -289,7 +282,6 @@ export function AlertDetailPanel({
     relatedAlerts?: Array<{ id: string; title: string }>;
   } | null;
 
-  // Filter report links by detected platform if available
   const relevantReportLinks = alertType?.reportLinks.filter(link => {
     if (!metadata?.platform) return true;
     return link.platform.toLowerCase() === metadata.platform.toLowerCase() ||
@@ -297,42 +289,41 @@ export function AlertDetailPanel({
   }) || [];
 
   const handleSaveEvidence = () => {
-    // Placeholder for evidence saving functionality
     alert && window.alert('Evidence saving feature coming soon. For now, we recommend taking screenshots.');
   };
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className={cn(
-          'fixed inset-0 z-40 bg-charcoal-900/50 transition-opacity duration-300',
-          alertId ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
+      <motion.div
+        className="fixed inset-0 z-[70] bg-charcoal-900/50"
         onClick={onClose}
         aria-hidden="true"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
       />
 
-      {/* Slide-over Panel */}
-      <div
+      <motion.div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="alert-detail-title"
         className={cn(
-          'fixed inset-y-0 right-0 z-50 w-full max-w-lg transform bg-card shadow-xl transition-transform duration-300 ease-out',
+          'fixed inset-y-0 right-0 z-[80] w-full max-w-lg bg-card shadow-xl',
           'flex flex-col',
-          alertId ? 'translate-x-0' : 'translate-x-full'
         )}
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       >
-        {/* Loading State */}
         {isLoading && (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="flex flex-1 flex-col items-center justify-center p-6">
             <AlertTriangle className="h-12 w-12 text-warning mb-4" />
@@ -343,10 +334,8 @@ export function AlertDetailPanel({
           </div>
         )}
 
-        {/* Alert Content */}
         {alert && severity && alertType && (
           <>
-            {/* Header */}
             <div className={cn('flex items-start gap-4 p-6 border-b', severity.bgColor, severity.borderColor)}>
               <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/80')}>
                 <SeverityIcon className={cn('h-6 w-6', severity.color)} />
@@ -386,21 +375,17 @@ export function AlertDetailPanel({
               </button>
             </div>
 
-            {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Detection Time */}
               <div className="flex items-center gap-2 text-sm text-foreground-subtle">
                 <Clock className="h-4 w-4" />
                 <span>Detected {formatDate(alert.createdAt)}</span>
               </div>
 
-              {/* Alert Description */}
               <div>
                 <h3 className="font-serif text-base font-semibold text-foreground-muted mb-2">What we noticed</h3>
                 <p className="text-foreground-muted leading-relaxed">{alert.description}</p>
               </div>
 
-              {/* Source Information */}
               {metadata?.sourceUrl && (
                 <div className="rounded-xl bg-background-subtle border border-border/40 p-4">
                   <h3 className="text-sm font-semibold text-foreground-muted mb-2 flex items-center gap-2">
@@ -413,7 +398,7 @@ export function AlertDetailPanel({
                     rel="noopener noreferrer"
                     className="text-primary hover:text-primary-hover text-sm break-all inline-flex items-center gap-1"
                   >
-                    {metadata.platform || new URL(metadata.sourceUrl).hostname}
+                    {metadata.platform || (() => { try { return new URL(metadata.sourceUrl!).hostname; } catch { return metadata.sourceUrl; } })()}
                     <ExternalLink className="h-3 w-3 shrink-0" />
                   </a>
                   {metadata.similarity && (
@@ -433,7 +418,6 @@ export function AlertDetailPanel({
                 </div>
               )}
 
-              {/* Breach Details */}
               {metadata?.breaches && metadata.breaches.length > 0 && (
                 <div className="rounded-xl bg-background-subtle border border-border/40 p-4">
                   <h3 className="text-sm font-semibold text-foreground-muted mb-3 flex items-center gap-2">
@@ -467,13 +451,11 @@ export function AlertDetailPanel({
                 </div>
               )}
 
-              {/* What This Means */}
               <div>
                 <h3 className="font-serif text-base font-semibold text-foreground-muted mb-2">What This Means</h3>
                 <p className="text-foreground-muted leading-relaxed text-sm">{alertType.explanation}</p>
               </div>
 
-              {/* Next Steps */}
               <div>
                 <h3 className="font-serif text-base font-semibold text-foreground-muted mb-3">What to do next</h3>
                 <ol className="space-y-2">
@@ -491,7 +473,6 @@ export function AlertDetailPanel({
                 </ol>
               </div>
 
-              {/* Report Links */}
               {relevantReportLinks.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-foreground-muted mb-3">Report This Content</h3>
@@ -523,7 +504,6 @@ export function AlertDetailPanel({
                 </div>
               )}
 
-              {/* Related Alerts */}
               {metadata?.relatedAlerts && metadata.relatedAlerts.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-foreground-muted mb-3">Related Alerts</h3>
@@ -542,7 +522,6 @@ export function AlertDetailPanel({
                 </div>
               )}
 
-              {/* Test Data Notice */}
               {metadata?.isMock && (
                 <div className="rounded-lg bg-primary-subtle border border-primary-muted p-4">
                   <p className="text-sm text-primary">
@@ -553,8 +532,7 @@ export function AlertDetailPanel({
               )}
             </div>
 
-            {/* Footer Actions */}
-            <div className="border-t border-border/40 p-4 bg-background-subtle">
+            <div className="border-t border-border/40 p-4 pb-20 md:pb-4 bg-background-subtle">
               <div className="flex flex-col items-center gap-3">
                 <div className="flex flex-wrap gap-2 w-full">
                   {!metadata?.isMock && (
@@ -599,7 +577,6 @@ export function AlertDetailPanel({
                   )}
                 </div>
 
-                {/* Save for later */}
                 <button
                   type="button"
                   onClick={onClose}
@@ -608,7 +585,6 @@ export function AlertDetailPanel({
                   Save for later
                 </button>
 
-                {/* Status indicator */}
                 <div className="flex items-center justify-center gap-2 text-xs text-foreground-muted">
                   {alert.status === 'ACTIONED' && (
                     <>
@@ -633,7 +609,7 @@ export function AlertDetailPanel({
             </div>
           </>
         )}
-      </div>
+      </motion.div>
     </>
   );
 }

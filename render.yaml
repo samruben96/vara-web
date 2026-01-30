@@ -1,0 +1,55 @@
+# Render Blueprint - Vara Digital Safety Platform
+# https://docs.render.com/blueprint-spec
+#
+# Database (PostgreSQL): Supabase
+# Frontend: Vercel
+# Redis: Upstash (free tier)
+# DeepFace: Not deployed (mock fallback in API)
+
+services:
+  # Backend API (Node.js/Fastify)
+  - type: web
+    name: vara-api
+    runtime: node
+    region: virginia
+    plan: free
+    rootDir: apps/api
+    buildCommand: cd ../.. && NODE_ENV=development pnpm install --ignore-scripts && pnpm turbo build --filter=@vara/api && pnpm --filter=@vara/api db:generate
+    startCommand: node dist/index.js
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      - key: WEB_URL
+        sync: false  # Set manually: Vercel frontend URL (no trailing slash)
+      - key: DATABASE_URL
+        sync: false  # Set manually: Supabase pooler connection string (?pgbouncer=true)
+      - key: DIRECT_URL
+        sync: false  # Set manually: Supabase direct connection string (port 5432)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: REDIS_URL
+        sync: false  # Set manually: Upstash Redis URL
+      - key: SCAN_ENGINE
+        value: auto
+      - key: PERSON_DISCOVERY_ENGINE
+        value: serpapi
+      - key: FACECHECK_ENGINE
+        value: "off"
+      - key: FACECHECK_DEMO
+        value: "true"
+      - key: TINEYE_API_KEY
+        sync: false
+      - key: GOOGLE_VISION_API_KEY
+        sync: false
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: FACECHECK_API_KEY
+        sync: false
