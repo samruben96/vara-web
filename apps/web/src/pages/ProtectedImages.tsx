@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { ImageUpload, EmptyImagesState } from '../components/ImageUpload';
 import { ScanStatus } from '../components/ScanStatus';
 import { useImages, useDeleteImage } from '../hooks/useImages';
-import { useActiveScan, useTriggerScan, useTriggerImageScan } from '../hooks/useScans';
+import { useActiveScan, useLastCompletedScan, useTriggerScan, useTriggerImageScan } from '../hooks/useScans';
 import { ApiRequestError } from '../lib/api';
 import type { ProtectedImage } from '@vara/shared';
 
@@ -37,6 +37,7 @@ export function ProtectedImages() {
   const triggerScan = useTriggerScan();
   const triggerImageScan = useTriggerImageScan();
   const { data: activeScanData } = useActiveScan();
+  const { refetch: refetchLastCompleted } = useLastCompletedScan();
 
   const images = data?.data || [];
   const hasImages = images.length > 0;
@@ -45,29 +46,78 @@ export function ProtectedImages() {
   const activeScan = activeScanData?.data?.scans?.[0] || null;
   const isScanRunning = activeScan?.status === 'RUNNING' || activeScan?.status === 'PENDING';
 
-  // Track scan completion
+  // Track scan completion and failure
+  // Note: useActiveScan only returns RUNNING/PENDING scans. When a scan completes,
+  // it disappears from results (status becomes null, not 'COMPLETED').
+  // We detect completion as: previousStatus was RUNNING/PENDING -> now null.
+  // Then we fetch the last completed scan to get results.
   useEffect(() => {
     const scanStatus = activeScan?.status ?? null;
-    const scanResult = activeScan?.result as { matchesFound?: number; imagesScanned?: number } | null;
 
-    if (previousScanStatus === 'RUNNING' && scanStatus === 'COMPLETED') {
-      // Scan just completed
-      setRecentlyCompleted(true);
+    // Scan just completed: was active, now gone from active query
+    if (
+      (previousScanStatus === 'RUNNING' || previousScanStatus === 'PENDING') &&
+      scanStatus === null
+    ) {
+      // Refetch the last completed scan to get results
+      refetchLastCompleted().then((result) => {
+        const lastScan = result.data?.data?.scans?.[0];
+        const scanResult = lastScan?.result as { matchesFound?: number; imagesScanned?: number } | undefined;
 
-      // Extract results from scan
-      setCompletedResult({
-        matchesFound: scanResult?.matchesFound ?? 0,
-        imagesScanned: scanResult?.imagesScanned ?? images.length,
+        if (lastScan?.status === 'FAILED') {
+          // Scan failed
+          setScanningImageId(null);
+          toast('Scan could not be completed. Please try again later.', {
+            duration: 5000,
+            style: {
+              background: '#fef2f2',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+            },
+          });
+          return;
+        }
+
+        // Scan completed successfully
+        const matchesFound = scanResult?.matchesFound ?? 0;
+        const imagesScanned = scanResult?.imagesScanned ?? images.length;
+
+        setRecentlyCompleted(true);
+        setCompletedResult({ matchesFound, imagesScanned });
+        setScanningImageId(null);
+
+        // Refetch images to update lastScanned status
+        refetch();
+
+        // Show completion toast
+        if (matchesFound > 0) {
+          toast(
+            `Scan complete \u2014 ${matchesFound} potential match${matchesFound !== 1 ? 'es' : ''} found. Review your alerts.`,
+            {
+              duration: 5000,
+              icon: '\u26A0\uFE0F',
+              style: {
+                background: '#fefce8',
+                color: '#854d0e',
+                border: '1px solid #fde68a',
+              },
+            }
+          );
+        } else {
+          toast.success('Scan complete \u2014 your images are protected.', {
+            duration: 5000,
+            style: {
+              background: '#f0fdf4',
+              color: '#166534',
+              border: '1px solid #bbf7d0',
+            },
+          });
+        }
       });
-
-      // Clear scanning image state
-      setScanningImageId(null);
-
-      // Refetch images to update lastScanned status
-      refetch();
     }
+
     setPreviousScanStatus(scanStatus);
-  }, [activeScan?.status, activeScan?.result, previousScanStatus, images.length, refetch]);
+  }, [activeScan?.status, previousScanStatus, images.length, refetch, refetchLastCompleted]);
 
   // Handle scan all images
   const handleScanAll = useCallback(async () => {
@@ -206,10 +256,10 @@ export function ProtectedImages() {
             <Button
               onClick={handleScanAll}
               disabled={isScanRunning || triggerScan.isPending}
-              isLoading={triggerScan.isPending}
+              isLoading={triggerScan.isPending || isScanRunning}
               className="self-start sm:self-auto"
             >
-              <Scan className="h-4 w-4" />
+              {!isScanRunning && <Scan className="h-4 w-4" />}
               <span>{isScanRunning ? 'Scanning...' : 'Scan All Images'}</span>
             </Button>
           )}

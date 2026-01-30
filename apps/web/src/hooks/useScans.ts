@@ -134,9 +134,24 @@ export function useActiveScan(enabled = true) {
     staleTime: 3 * 1000, // 3 seconds
     refetchInterval: (query) => {
       // Poll every 3 seconds only if there are active scans
-      const hasActiveScans = query.state.data?.data?.scans?.length ?? 0 > 0;
+      const hasActiveScans = (query.state.data?.data?.scans?.length ?? 0) > 0;
       return hasActiveScans ? 3000 : false;
     },
+  });
+}
+
+/**
+ * Fetch the most recently completed or failed scan
+ * Used to get results after a scan finishes (since useActiveScan only returns RUNNING/PENDING)
+ */
+export function useLastCompletedScan(enabled = true) {
+  return useQuery<ApiResponse<ScansListResponse>>({
+    queryKey: [...scanKeys.lists(), 'last-completed'] as const,
+    queryFn: async () => {
+      return api.get<ScansListResponse>('/api/v1/scans?status=COMPLETED,FAILED&limit=1');
+    },
+    enabled,
+    staleTime: 5 * 1000,
   });
 }
 

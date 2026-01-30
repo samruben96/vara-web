@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './stores/authStore';
 import { useAuthSession } from './hooks/useAuthSession';
 import { MainLayout } from './layouts/MainLayout';
@@ -62,7 +63,20 @@ export function App() {
   useAuthSession();
 
   return (
-    <Routes>
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            borderRadius: '12px',
+            padding: '12px 16px',
+            fontSize: '14px',
+            maxWidth: '420px',
+          },
+        }}
+      />
+      <Routes>
       {/* Public routes */}
       <Route path="/" element={<Landing />} />
       <Route path="/privacy" element={<Privacy />} />
@@ -147,6 +161,7 @@ export function App() {
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
