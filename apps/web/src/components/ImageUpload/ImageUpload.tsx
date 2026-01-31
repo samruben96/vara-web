@@ -481,9 +481,15 @@ export function EmptyImagesState() {
           <span>Instant Alerts</span>
         </div>
       </div>
-      <p className="mt-6 text-xs text-foreground-subtle">
-        Use the upload area above to add your first image
-      </p>
+      <Button
+        variant="primary"
+        className="mt-6"
+        onClick={() => {
+          document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+      >
+        Upload Your First Photo
+      </Button>
     </div>
   );
 }

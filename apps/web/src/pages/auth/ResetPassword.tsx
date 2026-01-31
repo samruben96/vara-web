@@ -8,6 +8,7 @@ import { passwordSchema } from '@vara/shared';
 import { Button, Input } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../../lib/toastStyles';
 
 // Local schema for reset password form (without token since Supabase handles it via session)
 const resetPasswordFormSchema = z.object({
@@ -84,7 +85,7 @@ export function ResetPassword() {
       await supabase.auth.signOut();
 
       setSuccess(true);
-      toast.success('Password updated successfully!');
+      toast.success('Password updated successfully!', toastPresets.success);
 
       // Redirect to login after a brief delay
       setTimeout(() => {

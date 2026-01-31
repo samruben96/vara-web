@@ -1,9 +1,17 @@
-import { Shield, AlertTriangle, Image, TrendingUp } from 'lucide-react';
+import { useCallback } from 'react';
+import { Shield, AlertTriangle, Image, TrendingUp, Eye, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Skeleton } from '../components/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useDashboardStats, useDashboardAlerts } from '../hooks/useDashboardStats';
 import { useScans } from '../hooks/useScans';
 import { ProtectionStatusHero } from '../components/dashboard';
+import { toastPresets } from '../lib/toastStyles';
+import { api } from '../lib/api';
+import { alertKeys } from '../hooks/useAlerts';
+import { PullToRefreshContainer } from '../components/mobile/PullToRefreshContainer';
 import type { Alert, AlertSeverity } from '@vara/shared';
 
 // Helper to format relative time
@@ -74,17 +82,25 @@ function getSeverityIconColor(severity: AlertSeverity): string {
   }
 }
 
+// Helper to get time-aware greeting
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour <= 11) return 'Good morning';
+  if (hour >= 12 && hour <= 16) return 'Good afternoon';
+  return 'Good evening';
+}
+
 // Loading skeleton for stat cards
 function StatCardSkeleton() {
   return (
     <div className="card animate-pulse">
       <div className="flex items-center justify-between">
-        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-muted" />
-        <div className="h-4 w-12 rounded bg-muted" />
+        <Skeleton variant="rect" className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg" />
+        <Skeleton variant="rect" width={48} height={16} />
       </div>
       <div className="mt-3 sm:mt-4">
-        <div className="h-7 sm:h-8 w-16 rounded bg-muted" />
-        <div className="mt-1.5 sm:mt-2 h-4 w-24 rounded bg-muted" />
+        <Skeleton variant="rect" className="h-7 sm:h-8 w-16" />
+        <Skeleton variant="line" className="mt-1.5 sm:mt-2 w-24" />
       </div>
     </div>
   );
@@ -94,19 +110,19 @@ function StatCardSkeleton() {
 function AlertSkeleton() {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border/40 p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 animate-pulse">
-      <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-muted flex-shrink-0" />
+      <Skeleton variant="circle" className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="h-5 w-48 max-w-full rounded bg-muted" />
-        <div className="mt-2 h-4 w-full rounded bg-muted" />
-        <div className="mt-2 h-3 w-20 rounded bg-muted" />
+        <Skeleton variant="rect" className="h-5 w-48 max-w-full" />
+        <Skeleton variant="line" className="mt-2 w-full" />
+        <Skeleton variant="rect" className="mt-2 h-3 w-20" />
       </div>
-      <div className="h-6 w-16 rounded bg-muted self-start" />
+      <Skeleton variant="rect" className="h-6 w-16 self-start" />
     </div>
   );
 }
 
 // Alert card component - mobile-optimized with keyboard accessibility
-function AlertCard({ alert, onClick }: { alert: Alert; onClick?: () => void }) {
+function AlertCard({ alert, onClick, onDismiss }: { alert: Alert; onClick?: () => void; onDismiss?: (id: string) => void }) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -121,7 +137,7 @@ function AlertCard({ alert, onClick }: { alert: Alert; onClick?: () => void }) {
       onClick={onClick}
       onKeyDown={handleKeyDown}
       aria-label={`${alert.severity} alert: ${alert.title}`}
-      className="flex flex-col gap-3 rounded-2xl border border-border/40 p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 transition-colors hover:bg-card-hover active:bg-muted cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      className="group flex flex-col gap-3 rounded-2xl border border-border/40 p-3 sm:flex-row sm:items-start sm:gap-4 sm:p-4 transition-colors hover:bg-card-hover active:bg-muted cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
     >
       {/* Icon and badge row on mobile */}
       <div className="flex items-center justify-between sm:contents">
@@ -147,6 +163,24 @@ function AlertCard({ alert, onClick }: { alert: Alert; onClick?: () => void }) {
         <p className="mt-1.5 sm:mt-2 text-xs text-foreground-subtle">
           {formatRelativeTime(alert.createdAt)}
         </p>
+      </div>
+
+      {/* Inline Actions */}
+      <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity self-start">
+        <button
+          onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground-subtle hover:text-primary hover:bg-primary-subtle transition-colors"
+          aria-label="View alert details"
+        >
+          <Eye className="h-4 w-4" />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDismiss?.(alert.id); }}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground-subtle hover:text-destructive hover:bg-destructive-subtle transition-colors"
+          aria-label="Dismiss alert"
+        >
+          <XCircle className="h-4 w-4" />
+        </button>
       </div>
 
       {/* Badge hidden on mobile (shown above) */}
@@ -187,6 +221,30 @@ export function Dashboard() {
   const { user } = useAuthStore();
   const displayName = user?.profile?.displayName || user?.email?.split('@')[0] || 'there';
 
+  const queryClient = useQueryClient();
+
+  const dismissAlertMutation = useMutation({
+    mutationFn: async (alertId: string) => {
+      return api.patch(`/api/v1/alerts/${alertId}/status`, { status: 'DISMISSED' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: alertKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      toast.success('Alert dismissed', { duration: 2000, ...toastPresets.success });
+    },
+    onError: () => {
+      toast.error('Failed to dismiss alert', toastPresets.error);
+    },
+  });
+
+  const handleDismissAlert = useCallback((alertId: string) => {
+    dismissAlertMutation.mutate(alertId);
+  }, [dismissAlertMutation]);
+
+  const handleRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  }, [queryClient]);
+
   // Fetch dashboard stats
   const { stats, isLoading: isStatsLoading, hasError: hasStatsError } = useDashboardStats();
 
@@ -223,11 +281,12 @@ export function Dashboard() {
   const scoreChange = getScoreChange(stats.protectionScore);
 
   return (
+    <PullToRefreshContainer onRefresh={handleRefresh}>
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Welcome - responsive typography */}
       <div>
         <h1 className="text-xl sm:text-2xl font-serif font-bold text-foreground">
-          Welcome back, {displayName}
+          {getGreeting()}, {displayName}
         </h1>
         <p className="mt-1 text-sm sm:text-base text-foreground-muted">
           Here's an overview of your digital safety status.
@@ -300,7 +359,15 @@ export function Dashboard() {
             onClick={() => navigate('/images')}
             className="rounded-xl border border-border/40 p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
           >
-            <Image className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            <div className="relative">
+              <Image className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              {stats.protectedImages === 0 && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
+                </span>
+              )}
+            </div>
             <p className="mt-2 font-medium text-sm sm:text-base text-foreground">Upload Photos</p>
             <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-foreground-muted line-clamp-1">Add images to protect</p>
           </button>
@@ -308,7 +375,14 @@ export function Dashboard() {
             onClick={() => navigate('/alerts')}
             className="rounded-xl border border-border/40 p-3 sm:p-4 text-left transition-colors hover:border-primary hover:bg-primary-subtle active:bg-primary-muted touch-manipulation min-h-touch"
           >
-            <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            <div className="relative">
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              {stats.activeAlerts > 0 && (
+                <span className="absolute -top-1.5 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                  {stats.activeAlerts > 99 ? '99+' : stats.activeAlerts}
+                </span>
+              )}
+            </div>
             <p className="mt-2 font-medium text-sm sm:text-base text-foreground">View Alerts</p>
             <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-foreground-muted line-clamp-1">
               {stats.activeAlerts > 0
@@ -362,12 +436,14 @@ export function Dashboard() {
                 key={alert.id}
                 alert={alert}
                 onClick={() => navigate('/alerts')}
+                onDismiss={handleDismissAlert}
               />
             ))
           )}
         </div>
       </div>
     </div>
+    </PullToRefreshContainer>
   );
 }
 

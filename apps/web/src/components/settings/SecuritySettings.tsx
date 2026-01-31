@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../../lib/toastStyles';
 import { Lock, Shield, Smartphone, CheckCircle, Loader2 } from 'lucide-react';
 
 import { Button } from '../ui/Button';
@@ -57,13 +58,13 @@ export function SecuritySettings() {
 
       toast.success('Password updated successfully', {
         duration: 3000,
-        style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+        ...toastPresets.success,
       });
       reset();
       setIsChangingPassword(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update password';
-      toast.error(message);
+      toast.error(message, toastPresets.error);
     } finally {
       setIsSubmitting(false);
     }

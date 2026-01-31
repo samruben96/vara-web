@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
+  ArrowLeft,
   X,
   Shield,
   AlertTriangle,
@@ -376,6 +377,14 @@ export function AlertDetailPanel({
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Alerts
+              </button>
+
               <div className="flex items-center gap-2 text-sm text-foreground-subtle">
                 <Clock className="h-4 w-4" />
                 <span>Detected {formatDate(alert.createdAt)}</span>

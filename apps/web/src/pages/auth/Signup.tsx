@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../../lib/toastStyles';
 import { signupSchema, type SignupInput } from '@vara/shared';
 import { Button, Input } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
@@ -54,7 +55,7 @@ export function Signup() {
         );
         toast.success('Welcome to Vara!', {
           duration: 2500,
-          className: 'bg-success-subtle text-success-foreground-subtle border border-success-muted',
+          ...toastPresets.success,
         });
         navigate('/onboarding', { replace: true });
       } else if (authData.user && !authData.session) {

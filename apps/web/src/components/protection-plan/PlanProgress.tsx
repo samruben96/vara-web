@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { Shield, TrendingUp } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
@@ -125,9 +126,17 @@ export function PlanProgress({ score, stats, isLoading }: PlanProgressProps) {
               </span>
             </div>
             <div className="h-2 bg-primary-muted rounded-full overflow-hidden">
-              <div
-                className={cn('h-full rounded-full transition-all duration-500', getProgressColor(score))}
-                style={{ width: `${completionPercentage}%` }}
+              <motion.div
+                className={cn('h-full rounded-full', getProgressColor(score))}
+                initial={{ width: 0 }}
+                animate={{
+                  width: `${completionPercentage}%`,
+                  opacity: [1, 0.7, 1],
+                }}
+                transition={{
+                  width: { duration: 0.5, ease: 'easeOut' },
+                  opacity: { duration: 0.6, delay: 0.3 },
+                }}
               />
             </div>
           </div>

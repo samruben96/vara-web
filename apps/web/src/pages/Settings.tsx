@@ -161,7 +161,7 @@ export function Settings() {
         {/* Mobile Tab Navigation */}
         <div className="lg:hidden">
           <div
-            className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide"
+            className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"
             role="tablist"
             aria-label="Settings tabs"
           >

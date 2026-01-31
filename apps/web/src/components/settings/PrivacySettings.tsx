@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../../lib/toastStyles';
 import {
   Eye,
   Database,
@@ -46,7 +47,7 @@ export function PrivacySettings() {
       setIsExporting(false);
       toast.success('Data export feature coming soon!', {
         duration: 3000,
-        style: { background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' },
+        ...toastPresets.info,
         icon: '(info)',
       });
     }, 1000);

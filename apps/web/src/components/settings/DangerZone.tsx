@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../../lib/toastStyles';
 import { AlertTriangle, Trash2, X, Loader2 } from 'lucide-react';
 
 import { Button } from '../ui/Button';
@@ -145,13 +146,14 @@ export function DangerZone() {
     onSuccess: () => {
       toast.success('Your account has been deleted', {
         duration: 5000,
+        ...toastPresets.success,
       });
       logout();
       // Redirect to landing page
       window.location.href = '/';
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete account');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete account', toastPresets.error);
       setIsModalOpen(false);
     },
   });

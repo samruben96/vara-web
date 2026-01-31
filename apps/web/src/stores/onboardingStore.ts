@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { OnboardingQuestion, RiskLevel, ProtectionPlan } from '@vara/shared';
 
 export interface OnboardingResponses {
@@ -46,86 +47,97 @@ const initialState = {
   isSubmitting: false,
 };
 
-export const useOnboardingStore = create<OnboardingState>((set, get) => ({
-  ...initialState,
+export const useOnboardingStore = create<OnboardingState>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
 
-  setQuestions: (questions) => set({ questions }),
+      setQuestions: (questions) => set({ questions }),
 
-  setResponse: (questionId, value) =>
-    set((state) => ({
-      responses: {
-        ...state.responses,
-        [questionId]: value,
+      setResponse: (questionId, value) =>
+        set((state) => ({
+          responses: {
+            ...state.responses,
+            [questionId]: value,
+          },
+        })),
+
+      nextQuestion: () =>
+        set((state) => ({
+          currentQuestionIndex: Math.min(
+            state.currentQuestionIndex + 1,
+            state.questions.length - 1
+          ),
+        })),
+
+      previousQuestion: () =>
+        set((state) => ({
+          currentQuestionIndex: Math.max(state.currentQuestionIndex - 1, 0),
+        })),
+
+      goToQuestion: (index) =>
+        set((state) => ({
+          currentQuestionIndex: Math.max(
+            0,
+            Math.min(index, state.questions.length - 1)
+          ),
+        })),
+
+      setLoading: (loading) => set({ isLoading: loading }),
+
+      setSubmitting: (submitting) => set({ isSubmitting: submitting }),
+
+      setResults: (riskLevel, protectionPlan) =>
+        set({ riskLevel, protectionPlan }),
+
+      reset: () => set(initialState),
+
+      getCurrentQuestion: () => {
+        const { questions, currentQuestionIndex } = get();
+        return questions[currentQuestionIndex] || null;
       },
-    })),
 
-  nextQuestion: () =>
-    set((state) => ({
-      currentQuestionIndex: Math.min(
-        state.currentQuestionIndex + 1,
-        state.questions.length - 1
-      ),
-    })),
+      isFirstQuestion: () => {
+        const { currentQuestionIndex } = get();
+        return currentQuestionIndex === 0;
+      },
 
-  previousQuestion: () =>
-    set((state) => ({
-      currentQuestionIndex: Math.max(state.currentQuestionIndex - 1, 0),
-    })),
+      isLastQuestion: () => {
+        const { questions, currentQuestionIndex } = get();
+        return currentQuestionIndex === questions.length - 1;
+      },
 
-  goToQuestion: (index) =>
-    set((state) => ({
-      currentQuestionIndex: Math.max(
-        0,
-        Math.min(index, state.questions.length - 1)
-      ),
-    })),
+      getProgress: () => {
+        const { questions, currentQuestionIndex } = get();
+        const total = questions.length;
+        const current = currentQuestionIndex + 1;
+        const percentage = total > 0 ? (current / total) * 100 : 0;
+        return { current, total, percentage };
+      },
 
-  setLoading: (loading) => set({ isLoading: loading }),
+      canProceed: () => {
+        const { questions, currentQuestionIndex, responses } = get();
+        const currentQuestion = questions[currentQuestionIndex];
+        if (!currentQuestion) return false;
 
-  setSubmitting: (submitting) => set({ isSubmitting: submitting }),
+        const response = responses[currentQuestion.id];
+        if (!response) return false;
 
-  setResults: (riskLevel, protectionPlan) =>
-    set({ riskLevel, protectionPlan }),
+        // For multiple choice, ensure at least one option is selected
+        if (Array.isArray(response)) {
+          return response.length > 0;
+        }
 
-  reset: () => set(initialState),
-
-  getCurrentQuestion: () => {
-    const { questions, currentQuestionIndex } = get();
-    return questions[currentQuestionIndex] || null;
-  },
-
-  isFirstQuestion: () => {
-    const { currentQuestionIndex } = get();
-    return currentQuestionIndex === 0;
-  },
-
-  isLastQuestion: () => {
-    const { questions, currentQuestionIndex } = get();
-    return currentQuestionIndex === questions.length - 1;
-  },
-
-  getProgress: () => {
-    const { questions, currentQuestionIndex } = get();
-    const total = questions.length;
-    const current = currentQuestionIndex + 1;
-    const percentage = total > 0 ? (current / total) * 100 : 0;
-    return { current, total, percentage };
-  },
-
-  canProceed: () => {
-    const { questions, currentQuestionIndex, responses } = get();
-    const currentQuestion = questions[currentQuestionIndex];
-    if (!currentQuestion) return false;
-
-    const response = responses[currentQuestion.id];
-    if (!response) return false;
-
-    // For multiple choice, ensure at least one option is selected
-    if (Array.isArray(response)) {
-      return response.length > 0;
+        // For single choice and scale, ensure a value is selected
+        return response.length > 0;
+      },
+    }),
+    {
+      name: 'vara-onboarding',
+      partialize: (state) => ({
+        responses: state.responses,
+        currentQuestionIndex: state.currentQuestionIndex,
+      }),
     }
-
-    // For single choice and scale, ensure a value is selected
-    return response.length > 0;
-  },
-}));
+  )
+);

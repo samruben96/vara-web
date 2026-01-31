@@ -1,5 +1,6 @@
 import { Shield, Clock, Image, AlertTriangle } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { Skeleton } from '../ui';
 import { ProtectionRing } from '../ui/ProtectionRing';
 
 interface ProtectionStatusHeroProps {
@@ -97,19 +98,19 @@ function HeroSkeleton() {
     <div className="bg-background-subtle rounded-2xl border border-border/40 p-6 sm:p-8 animate-pulse">
       <div className="flex flex-col items-center text-center">
         {/* Score circle skeleton */}
-        <div className="h-36 w-36 sm:h-44 sm:w-44 rounded-full bg-primary-muted" />
+        <Skeleton variant="circle" className="h-36 w-36 sm:h-44 sm:w-44" />
 
         {/* Status label skeleton */}
-        <div className="mt-4 h-6 w-24 rounded-full bg-primary-muted" />
+        <Skeleton variant="rect" className="mt-4 h-6 w-24 rounded-full" />
 
         {/* Message skeleton */}
-        <div className="mt-3 h-4 w-64 rounded bg-primary-muted" />
+        <Skeleton variant="line" className="mt-3 w-64" />
 
         {/* Stats skeleton */}
         <div className="mt-6 flex gap-6">
-          <div className="h-12 w-24 rounded-lg bg-primary-muted" />
-          <div className="h-12 w-24 rounded-lg bg-primary-muted" />
-          <div className="h-12 w-24 rounded-lg bg-primary-muted" />
+          <Skeleton variant="rect" width={96} height={48} className="rounded-lg" />
+          <Skeleton variant="rect" width={96} height={48} className="rounded-lg" />
+          <Skeleton variant="rect" width={96} height={48} className="rounded-lg" />
         </div>
       </div>
     </div>

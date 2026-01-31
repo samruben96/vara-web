@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../../lib/toastStyles';
 import { Bell, Mail, AlertTriangle, Image, User, Shield, Save } from 'lucide-react';
 
 import { Button } from '../ui/Button';
@@ -126,7 +127,7 @@ export function NotificationSettings() {
       setIsSaving(false);
       toast.success('Notification preferences saved', {
         duration: 3000,
-        style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+        ...toastPresets.success,
       });
     }, 500);
   };

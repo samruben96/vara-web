@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../../lib/toastStyles';
 import { User, Camera, Loader2 } from 'lucide-react';
 
 import { Button } from '../ui/Button';
@@ -63,11 +64,11 @@ export function ProfileSettings() {
       setIsEditing(false);
       toast.success('Profile updated successfully', {
         duration: 3000,
-        style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+        ...toastPresets.success,
       });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile', toastPresets.error);
     },
   });
 

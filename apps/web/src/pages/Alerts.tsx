@@ -12,18 +12,22 @@ import {
   XCircle,
   ExternalLink,
   ChevronRight,
-  Loader2,
   Inbox,
   Trash2,
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../lib/toastStyles';
 import { cn } from '../lib/cn';
+import { Skeleton } from '../components/ui';
 import { Button } from '../components/ui/Button';
 import { AlertDetailPanel } from '../components/AlertDetailPanel';
 import { useAlerts, alertKeys } from '../hooks/useAlerts';
 import { api } from '../lib/api';
+import { useHaptics } from '../hooks/mobile/useHaptics';
+import { SwipeAction } from '../components/mobile/SwipeAction';
+import { PullToRefreshContainer } from '../components/mobile/PullToRefreshContainer';
 import type { Alert, AlertType, AlertSeverity, AlertStatus } from '@vara/shared';
 
 type AlertFilter = 'all' | 'NEW' | 'VIEWED' | 'ACTIONED' | 'DISMISSED';
@@ -95,6 +99,38 @@ function formatDate(date: Date | string): string {
   if (diffDays < 7) return `${diffDays}d ago`;
 
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/** Skeleton placeholder that mirrors the AlertCard layout for loading states */
+function AlertCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border/40 p-4" aria-hidden="true">
+      <div className="flex items-start gap-3">
+        {/* Icon circle placeholder */}
+        <Skeleton variant="circle" width={40} height={40} />
+
+        {/* Text content */}
+        <div className="flex-1 min-w-0">
+          {/* Status badge + type label row */}
+          <div className="flex items-center gap-2">
+            <Skeleton variant="rect" className="h-5 w-14 rounded-full" />
+            <Skeleton variant="rect" width={96} height={16} />
+            <Skeleton variant="rect" width={48} height={16} />
+          </div>
+
+          {/* Title */}
+          <Skeleton variant="rect" className="mt-2 h-5 w-3/4" />
+
+          {/* Description lines */}
+          <Skeleton variant="line" className="mt-2 w-full" />
+          <Skeleton variant="line" className="mt-1.5 w-2/3" />
+        </div>
+
+        {/* Chevron placeholder */}
+        <Skeleton variant="rect" width={20} height={20} />
+      </div>
+    </div>
+  );
 }
 
 interface AlertCardProps {
@@ -323,8 +359,10 @@ function AlertCard({ alert, onDismiss, onMarkViewed, onViewDetails, isUpdating }
 export function Alerts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const filter = (searchParams.get('filter') as AlertFilter) || 'all';
   const queryClient = useQueryClient();
+  const { triggerHaptic } = useHaptics();
 
   const { data, isLoading, error } = useAlerts({
     page: 1,
@@ -340,7 +378,7 @@ export function Alerts() {
       queryClient.invalidateQueries({ queryKey: alertKeys.all });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to update alert');
+      toast.error(error instanceof Error ? error.message : 'Failed to update alert', toastPresets.error);
     },
   });
 
@@ -352,27 +390,60 @@ export function Alerts() {
       queryClient.invalidateQueries({ queryKey: alertKeys.all });
       toast.success('All alerts cleared', {
         duration: 2000,
-        style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+        ...toastPresets.success,
       });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to clear alerts');
+      toast.error(error instanceof Error ? error.message : 'Failed to clear alerts', toastPresets.error);
     },
   });
 
   const handleClearAll = () => {
-    if (window.confirm('Are you sure you want to delete all alerts? This cannot be undone.')) {
-      clearAllMutation.mutate();
-    }
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearAll = () => {
+    triggerHaptic('medium');
+    clearAllMutation.mutate();
+    setShowClearConfirm(false);
   };
 
   const handleDismiss = useCallback((id: string) => {
-    updateStatusMutation.mutate({ id, status: 'DISMISSED' });
-    toast.success('Alert archived', {
-      duration: 2000,
-      style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
-    });
-  }, [updateStatusMutation]);
+    triggerHaptic('light');
+
+    updateStatusMutation.mutate(
+      { id, status: 'DISMISSED' },
+      {
+        onSuccess: () => {
+          toast((t) => (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">Alert archived</span>
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  updateStatusMutation.mutate(
+                    { id, status: 'VIEWED' },
+                    {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: alertKeys.all });
+                        toast.success('Alert restored', { duration: 2000, ...toastPresets.success });
+                      },
+                    }
+                  );
+                }}
+                className="rounded-md bg-foreground/10 px-2 py-1 text-xs font-medium text-foreground hover:bg-foreground/20 transition-colors"
+              >
+                Undo
+              </button>
+            </div>
+          ), {
+            duration: 5000,
+            ...toastPresets.success,
+          });
+        },
+      }
+    );
+  }, [updateStatusMutation, triggerHaptic, queryClient]);
 
   const handleMarkViewed = useCallback((id: string) => {
     updateStatusMutation.mutate({ id, status: 'VIEWED' });
@@ -382,7 +453,7 @@ export function Alerts() {
     updateStatusMutation.mutate({ id, status: 'ACTIONED' });
     toast.success('Alert marked as handled', {
       duration: 2000,
-      style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+      ...toastPresets.success,
     });
   }, [updateStatusMutation]);
 
@@ -393,6 +464,10 @@ export function Alerts() {
   const handleCloseDetails = useCallback(() => {
     setSelectedAlertId(null);
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: alertKeys.all });
+  }, [queryClient]);
 
   const alerts = data?.data || [];
   const hasAlerts = alerts.length > 0;
@@ -409,9 +484,11 @@ export function Alerts() {
   ];
 
   return (
+    <PullToRefreshContainer onRefresh={handleRefresh}>
+    <>
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-serif font-bold text-foreground">Alerts</h1>
           <p className="mt-1 text-foreground-muted">
@@ -436,7 +513,7 @@ export function Alerts() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Filter alerts by status">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2" role="tablist" aria-label="Filter alerts by status">
         {filterOptions.map((option) => (
           <button
             key={option.value}
@@ -445,7 +522,7 @@ export function Alerts() {
             aria-controls="alerts-list"
             onClick={() => setSearchParams(option.value === 'all' ? {} : { filter: option.value })}
             className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+              'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
               filter === option.value
                 ? 'bg-primary-subtle text-primary'
                 : 'bg-muted text-foreground-muted hover:bg-muted-hover'
@@ -453,7 +530,7 @@ export function Alerts() {
           >
             {option.label}
             {option.count !== undefined && option.count > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
+              <span className="flex-shrink-0 ml-1.5 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
                 {option.count}
               </span>
             )}
@@ -463,8 +540,10 @@ export function Alerts() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-4" aria-busy="true" aria-label="Loading alerts">
+          {[0, 1, 2].map((i) => (
+            <AlertCardSkeleton key={i} />
+          ))}
         </div>
       )}
 
@@ -508,14 +587,23 @@ export function Alerts() {
       {!isLoading && !error && hasAlerts && (
         <div id="alerts-list" role="tabpanel" className="space-y-4">
           {alerts.map((alert) => (
-            <AlertCard
+            <SwipeAction
               key={alert.id}
-              alert={alert}
-              onDismiss={handleDismiss}
-              onMarkViewed={handleMarkViewed}
-              onViewDetails={handleViewDetails}
-              isUpdating={updateStatusMutation.isPending}
-            />
+              onSwipeLeft={() => handleDismiss(alert.id)}
+              onSwipeRight={() => handleMarkViewed(alert.id)}
+              leftLabel="Archive"
+              rightLabel="Viewed"
+              leftBgClass="bg-warning"
+              rightBgClass="bg-success-subtle"
+            >
+              <AlertCard
+                alert={alert}
+                onDismiss={handleDismiss}
+                onMarkViewed={handleMarkViewed}
+                onViewDetails={handleViewDetails}
+                isUpdating={updateStatusMutation.isPending}
+              />
+            </SwipeAction>
           ))}
         </div>
       )}
@@ -547,6 +635,37 @@ export function Alerts() {
         )}
       </AnimatePresence>
     </div>
+
+    {/* Clear All Confirmation Modal */}
+    {showClearConfirm && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/50">
+        <div className="w-full max-w-sm rounded-2xl bg-card border border-border p-6 shadow-xl">
+          <h3 className="text-lg font-serif font-semibold text-foreground">Clear All Alerts</h3>
+          <p className="mt-2 text-sm text-foreground-muted">
+            Are you sure you want to delete all alerts? This action cannot be undone.
+          </p>
+          <div className="mt-4 flex gap-3 justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowClearConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={confirmClearAll}
+              isLoading={clearAllMutation.isPending}
+            >
+              Delete All
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
+    </PullToRefreshContainer>
   );
 }
 

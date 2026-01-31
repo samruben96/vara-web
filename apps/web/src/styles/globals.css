@@ -512,3 +512,14 @@
     z-index: 0;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   Disable skeleton and pulse animations for users who prefer reduced motion
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .skeleton-shimmer {
+    animation: none !important;
+  }
+}

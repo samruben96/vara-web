@@ -17,13 +17,27 @@ export function OnboardingProgress({
 }: OnboardingProgressProps) {
   const percentage = total > 0 ? (current / total) * 100 : 0;
 
+  const remainingQuestions = total - current;
+  const estimatedSeconds = remainingQuestions * 20;
+  const timeEstimate =
+    estimatedSeconds <= 0
+      ? null
+      : estimatedSeconds < 60
+        ? 'Less than a minute'
+        : `~${Math.ceil(estimatedSeconds / 60)} min left`;
+
   return (
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center justify-between text-sm">
         <span className="font-serif font-medium text-foreground">
           Step {current} of {total}
         </span>
-        <span className="text-foreground-muted">{Math.round(percentage)}% complete</span>
+        <span className="text-foreground-muted">
+          {Math.round(percentage)}% complete
+          {timeEstimate && (
+            <span className="text-foreground-subtle"> · {timeEstimate}</span>
+          )}
+        </span>
       </div>
 
       {/* Progress bar container */}

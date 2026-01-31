@@ -1,5 +1,6 @@
-import { useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import {
@@ -19,6 +20,7 @@ import {
  */
 export function Quiz() {
   const navigate = useNavigate();
+  const [direction, setDirection] = useState<1 | -1>(1);
 
   // Store state and actions
   const {
@@ -64,6 +66,7 @@ export function Quiz() {
 
   // Handle next button click
   const handleNext = useCallback(() => {
+    setDirection(1);
     if (isLastQuestion()) {
       // Submit the quiz
       submitOnboarding(responses, {
@@ -78,12 +81,35 @@ export function Quiz() {
 
   // Handle back button click
   const handleBack = useCallback(() => {
+    setDirection(-1);
     if (isFirstQuestion()) {
       navigate('/onboarding');
     } else {
       previousQuestion();
     }
   }, [isFirstQuestion, navigate, previousQuestion]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if (e.key === 'ArrowRight' && canProceed() && !isSubmitting) {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'ArrowLeft' && !isSubmitting) {
+        e.preventDefault();
+        handleBack();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canProceed, isSubmitting, handleNext, handleBack]);
 
   // Loading state
   if (isLoadingQuestions) {
@@ -129,14 +155,24 @@ export function Quiz() {
           total={progress.total}
         />
 
-        {/* Question card with transition */}
-        <div key={currentQuestion.id} className="min-h-[300px]">
-          <QuestionCard
-            question={currentQuestion}
-            value={currentValue}
-            onChange={handleResponseChange}
-          />
-        </div>
+        {/* Question card with slide animation */}
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={currentQuestion.id}
+            custom={direction}
+            initial={{ x: direction * 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: direction * -100, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="min-h-[300px]"
+          >
+            <QuestionCard
+              question={currentQuestion}
+              value={currentValue}
+              onChange={handleResponseChange}
+            />
+          </motion.div>
+        </AnimatePresence>
 
         {/* Navigation buttons */}
         <div className="flex items-center justify-between pt-4">

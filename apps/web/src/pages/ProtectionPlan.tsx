@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield,
   RefreshCw,
@@ -9,6 +10,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../lib/toastStyles';
 import type { ProtectionPlanItem, ProtectionPlanItemStatus } from '@vara/shared';
 import { cn } from '../lib/cn';
 import { Button } from '../components/ui/Button';
@@ -29,6 +31,8 @@ export function ProtectionPlan() {
   const { score, isLoading: scoreLoading } = useProtectionScore();
   const { stats, isLoading: statsLoading } = useProtectionPlanStats();
   const { updateItemStatus, regeneratePlan } = useProtectionPlanMutations();
+
+  const hasPlayedCelebration = useRef(false);
 
   const plan = data?.data;
   const items = useMemo(() => plan?.items ?? [], [plan?.items]);
@@ -75,15 +79,11 @@ export function ProtectionPlan() {
 
           toast.success(messages[status], {
             duration: 2000,
-            style: {
-              background: '#f0fdf4',
-              color: '#166534',
-              border: '1px solid #bbf7d0',
-            },
+            ...toastPresets.success,
           });
         },
         onError: (err) => {
-          toast.error(err instanceof Error ? err.message : 'Failed to update task');
+          toast.error(err instanceof Error ? err.message : 'Failed to update task', toastPresets.error);
         },
       }
     );
@@ -98,10 +98,11 @@ export function ProtectionPlan() {
         toast.success('Protection plan refreshed with new recommendations!', {
           duration: 3000,
           icon: <Sparkles className="h-5 w-5 text-primary" />,
+          ...toastPresets.success,
         });
       },
       onError: (err) => {
-        toast.error(err instanceof Error ? err.message : 'Failed to regenerate plan');
+        toast.error(err instanceof Error ? err.message : 'Failed to regenerate plan', toastPresets.error);
       },
     });
   };
@@ -219,30 +220,57 @@ export function ProtectionPlan() {
 
       {/* All Completed Celebration */}
       {allCompleted && (
-        <div className="rounded-2xl bg-gradient-to-r from-success-subtle to-mint-100 border border-success p-6 text-center">
-          <div className="flex justify-center mb-3">
+        <motion.div
+          initial={hasPlayedCelebration.current ? false : { scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          onAnimationComplete={() => { hasPlayedCelebration.current = true; }}
+          className="rounded-2xl bg-gradient-to-r from-success-subtle to-mint-100 border border-success p-6 text-center"
+        >
+          <motion.div
+            className="flex justify-center mb-3"
+            initial={hasPlayedCelebration.current ? false : { scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
+          >
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-subtle">
               <CheckCircle2 className="h-6 w-6 text-success" />
             </div>
-          </div>
-          <h2 className="text-lg font-serif font-semibold text-success-foreground-subtle">
+          </motion.div>
+          <motion.h2
+            className="text-lg font-serif font-semibold text-success-foreground-subtle"
+            initial={hasPlayedCelebration.current ? false : { y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+          >
             Amazing Work!
-          </h2>
-          <p className="mt-1 text-success-foreground-subtle max-w-md mx-auto">
+          </motion.h2>
+          <motion.p
+            className="mt-1 text-success-foreground-subtle max-w-md mx-auto"
+            initial={hasPlayedCelebration.current ? false : { y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
+          >
             You've completed all your protection tasks. Your digital safety is looking strong.
             Keep monitoring and we'll add new recommendations as needed.
-          </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="mt-4"
-            onClick={handleRegenerate}
-            disabled={regeneratePlan.isPending}
+          </motion.p>
+          <motion.div
+            initial={hasPlayedCelebration.current ? false : { y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.3 }}
           >
-            <Sparkles className="h-4 w-4 mr-1" />
-            Check for New Tasks
-          </Button>
-        </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-4"
+              onClick={handleRegenerate}
+              disabled={regeneratePlan.isPending}
+            >
+              <Sparkles className="h-4 w-4 mr-1" />
+              Check for New Tasks
+            </Button>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Category Sections */}
@@ -262,22 +290,40 @@ export function ProtectionPlan() {
                 <h2 className="text-lg font-serif font-semibold text-foreground">
                   {category}
                 </h2>
-                <span className="text-sm text-foreground-subtle">
-                  {completedInCategory} of {activeInCategory} completed
+                <span className="text-sm text-foreground-subtle" aria-live="polite">
+                  <AnimatePresence mode="popLayout">
+                    <motion.span
+                      key={completedInCategory}
+                      initial={{ y: -12, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 12, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="inline-block"
+                    >
+                      {completedInCategory}
+                    </motion.span>
+                  </AnimatePresence>
+                  {' '}of {activeInCategory} completed
                 </span>
               </div>
 
               {/* Category Progress Bar */}
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
+                <motion.div
                   className={cn(
-                    'h-full rounded-full transition-all duration-500',
+                    'h-full rounded-full',
                     completedInCategory === activeInCategory
                       ? 'bg-success'
                       : 'bg-primary'
                   )}
-                  style={{
+                  initial={{ width: 0 }}
+                  animate={{
                     width: `${activeInCategory > 0 ? (completedInCategory / activeInCategory) * 100 : 0}%`,
+                    opacity: [1, 0.7, 1],
+                  }}
+                  transition={{
+                    width: { duration: 0.5, ease: 'easeOut' },
+                    opacity: { duration: 0.6, delay: 0.3 },
                   }}
                 />
               </div>

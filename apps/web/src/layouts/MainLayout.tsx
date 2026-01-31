@@ -1,13 +1,29 @@
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation, useNavigationType } from 'react-router-dom';
 import { Bell, User, LogOut, Menu, X, HelpCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../stores/authStore';
 import { cn } from '../lib/cn';
 import { useIsMobile } from '../hooks/mobile';
 import { MobileBottomNav, OfflineIndicator } from '../components/mobile';
 import { useLockBodyScroll } from '../hooks/mobile/useLockBodyScroll';
+import { useScrollPosition } from '../hooks/mobile/useScrollPosition';
+import { useNavigationDirection } from '../hooks/mobile/useNavigationDirection';
 import { useActiveAlertCount } from '../hooks/useAlerts';
+
+/** Scrolls to top on PUSH navigations (new page), preserves position on POP (back button). */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const navigationType = useNavigationType();
+
+  useEffect(() => {
+    if (navigationType === 'PUSH') {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname, navigationType]);
+
+  return null;
+}
 
 export function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,9 +31,13 @@ export function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const navigationDirection = useNavigationDirection();
 
   // Lock body scroll when mobile menu is open
   useLockBodyScroll(mobileMenuOpen);
+
+  // Remember and restore scroll position on back/forward navigation
+  useScrollPosition();
 
   const handleLogout = () => {
     logout();
@@ -245,14 +265,41 @@ export function MainLayout() {
         id="main-content"
         tabIndex={-1}
         className={cn(
-          'container py-4 sm:py-6 lg:py-8',
+          'container py-4 sm:py-6 lg:py-8 overflow-x-hidden',
           // Add padding for bottom nav on mobile
           'pb-20 md:pb-6 lg:pb-8',
           // Remove focus outline since focus is managed programmatically
           'focus:outline-none'
         )}
       >
-        <Outlet />
+        <ScrollToTop />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={
+              isMobile
+                ? navigationDirection === 'forward'
+                  ? { x: 20, opacity: 0 }
+                  : navigationDirection === 'back'
+                    ? { x: -20, opacity: 0 }
+                    : { opacity: 0 }
+                : { opacity: 0 }
+            }
+            animate={{ x: 0, opacity: 1 }}
+            exit={
+              isMobile
+                ? navigationDirection === 'forward'
+                  ? { x: -20, opacity: 0 }
+                  : navigationDirection === 'back'
+                    ? { x: 20, opacity: 0 }
+                    : { opacity: 0 }
+                : { opacity: 0 }
+            }
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation - only on phone-sized screens */}

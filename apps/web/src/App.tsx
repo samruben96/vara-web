@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { useIsMobile } from './hooks/mobile';
 import { useAuthStore } from './stores/authStore';
 import { useAuthSession } from './hooks/useAuthSession';
 import { MainLayout } from './layouts/MainLayout';
@@ -27,6 +28,31 @@ const Alerts = lazy(() => import('./pages/Alerts'));
 const ProtectionPlan = lazy(() => import('./pages/ProtectionPlan'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Help = lazy(() => import('./pages/Help'));
+
+/**
+ * Responsive toaster wrapper.
+ * - Mobile: bottom-center with offset to clear the bottom nav bar
+ * - Desktop: top-right (default)
+ */
+function ResponsiveToaster() {
+  const isMobile = useIsMobile();
+
+  return (
+    <Toaster
+      position={isMobile ? 'bottom-center' : 'top-right'}
+      containerStyle={isMobile ? { bottom: 80 } : undefined}
+      toastOptions={{
+        duration: 4000,
+        style: {
+          borderRadius: '12px',
+          padding: '12px 16px',
+          fontSize: '14px',
+          maxWidth: '420px',
+        },
+      }}
+    />
+  );
+}
 
 // Loading fallback component with skeleton effect
 function PageLoadingFallback() {
@@ -64,18 +90,7 @@ export function App() {
 
   return (
     <>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            borderRadius: '12px',
-            padding: '12px 16px',
-            fontSize: '14px',
-            maxWidth: '420px',
-          },
-        }}
-      />
+      <ResponsiveToaster />
       <Routes>
       {/* Public routes */}
       <Route path="/" element={<Landing />} />

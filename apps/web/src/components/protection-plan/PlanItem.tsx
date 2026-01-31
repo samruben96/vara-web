@@ -8,8 +8,10 @@ import {
   ChevronUp,
   Loader2,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import type { ProtectionPlanItem, ProtectionPlanItemStatus } from '@vara/shared';
 import { cn } from '../../lib/cn';
+import { useHaptics } from '../../hooks/mobile/useHaptics';
 import { Button } from '../ui/Button';
 
 interface PlanItemProps {
@@ -61,6 +63,7 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
   const isCompleted = item.status === 'COMPLETED';
   const isSkipped = item.status === 'SKIPPED';
   const isDone = isCompleted || isSkipped;
+  const { triggerHaptic } = useHaptics();
 
   /**
    * Handle clicking the checkbox/status button.
@@ -84,6 +87,12 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
         return;
     }
 
+    if (newStatus === 'COMPLETED') {
+      triggerHaptic('success');
+    } else {
+      triggerHaptic('light');
+    }
+
     onStatusChange(item.id, newStatus);
   };
 
@@ -92,6 +101,7 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
    */
   const handleSkip = () => {
     if (isUpdating || isDone) return;
+    triggerHaptic('light');
     onStatusChange(item.id, 'SKIPPED');
   };
 
@@ -102,6 +112,9 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
     if (isUpdating) return;
     onStatusChange(item.id, 'PENDING');
   };
+
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
     <div
@@ -127,6 +140,22 @@ export function PlanItem({ item, onStatusChange, isUpdating }: PlanItemProps) {
         >
           {isUpdating ? (
             <Loader2 className="h-4 w-4 animate-spin text-foreground-subtle" />
+          ) : isCompleted && !prefersReducedMotion ? (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: [0, 1.2, 1] }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <motion.path
+                  d="M5 13l4 4L19 7"
+                  className="text-success"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                />
+              </svg>
+            </motion.div>
           ) : (
             <StatusIcon className={cn('h-4 w-4', config.color)} />
           )}

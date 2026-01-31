@@ -2,13 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Shield, Trash2, Search, Clock, CheckCircle, Archive, Loader2, Scan } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../lib/toastStyles';
 import { cn } from '../lib/cn';
+import { Skeleton } from '../components/ui';
 import { Button } from '../components/ui/Button';
 import { ImageUpload, EmptyImagesState } from '../components/ImageUpload';
 import { ScanStatus } from '../components/ScanStatus';
 import { useImages, useDeleteImage } from '../hooks/useImages';
 import { useActiveScan, useLastCompletedScan, useTriggerScan, useTriggerImageScan } from '../hooks/useScans';
 import { ApiRequestError } from '../lib/api';
+import { useHaptics } from '../hooks/mobile/useHaptics';
+import { PullToRefreshContainer } from '../components/mobile/PullToRefreshContainer';
 import type { ProtectedImage } from '@vara/shared';
 
 type ImageFilter = 'all' | 'scanned' | 'not_scanned' | 'archived';
@@ -38,6 +42,7 @@ export function ProtectedImages() {
   const triggerImageScan = useTriggerImageScan();
   const { data: activeScanData } = useActiveScan();
   const { refetch: refetchLastCompleted } = useLastCompletedScan();
+  const { triggerHaptic } = useHaptics();
 
   const images = data?.data || [];
   const hasImages = images.length > 0;
@@ -69,11 +74,7 @@ export function ProtectedImages() {
           setScanningImageId(null);
           toast('Scan could not be completed. Please try again later.', {
             duration: 5000,
-            style: {
-              background: '#fef2f2',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-            },
+            ...toastPresets.error,
           });
           return;
         }
@@ -83,6 +84,7 @@ export function ProtectedImages() {
         const imagesScanned = scanResult?.imagesScanned ?? images.length;
 
         setRecentlyCompleted(true);
+        triggerHaptic('success');
         setCompletedResult({ matchesFound, imagesScanned });
         setScanningImageId(null);
 
@@ -96,82 +98,60 @@ export function ProtectedImages() {
             {
               duration: 5000,
               icon: '\u26A0\uFE0F',
-              style: {
-                background: '#fefce8',
-                color: '#854d0e',
-                border: '1px solid #fde68a',
-              },
+              ...toastPresets.warning,
             }
           );
         } else {
           toast.success('Scan complete \u2014 your images are protected.', {
             duration: 5000,
-            style: {
-              background: '#f0fdf4',
-              color: '#166534',
-              border: '1px solid #bbf7d0',
-            },
+            ...toastPresets.success,
           });
         }
       });
     }
 
     setPreviousScanStatus(scanStatus);
-  }, [activeScan?.status, previousScanStatus, images.length, refetch, refetchLastCompleted]);
+  }, [activeScan?.status, previousScanStatus, images.length, refetch, refetchLastCompleted, triggerHaptic]);
 
   // Handle scan all images
   const handleScanAll = useCallback(async () => {
+    triggerHaptic('medium');
     try {
       await triggerScan.mutateAsync({ type: 'IMAGE_SCAN' });
       toast.success('Scan started', {
         duration: 3000,
         icon: null,
-        style: {
-          background: '#f0fdf4',
-          color: '#166534',
-          border: '1px solid #bbf7d0',
-        },
+        ...toastPresets.success,
       });
     } catch (error) {
       // Handle 409 "scan already in progress" with helpful guidance
       if (error instanceof ApiRequestError && error.status === 409) {
         toast.error('A scan is already in progress. Check the status above.', {
           duration: 5000,
-          style: {
-            background: '#fef2f2',
-            color: '#991b1b',
-            border: '1px solid #fecaca',
-          },
+          ...toastPresets.error,
         });
       } else {
         toast.error(
           error instanceof Error ? error.message : 'Unable to start scan. Please try again.',
           {
             duration: 4000,
-            style: {
-              background: '#fef2f2',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-            },
+            ...toastPresets.error,
           }
         );
       }
     }
-  }, [triggerScan]);
+  }, [triggerScan, triggerHaptic]);
 
   // Handle scan single image
   const handleScanImage = useCallback(async (imageId: string) => {
+    triggerHaptic('light');
     setScanningImageId(imageId);
     try {
       await triggerImageScan.mutateAsync(imageId);
       toast.success('Image scan started', {
         duration: 3000,
         icon: null,
-        style: {
-          background: '#f0fdf4',
-          color: '#166534',
-          border: '1px solid #bbf7d0',
-        },
+        ...toastPresets.success,
       });
     } catch (error) {
       setScanningImageId(null);
@@ -179,33 +159,29 @@ export function ProtectedImages() {
       if (error instanceof ApiRequestError && error.status === 409) {
         toast.error('A scan is already in progress. Check the status above.', {
           duration: 5000,
-          style: {
-            background: '#fef2f2',
-            color: '#991b1b',
-            border: '1px solid #fecaca',
-          },
+          ...toastPresets.error,
         });
       } else {
         toast.error(
           error instanceof Error ? error.message : 'Unable to start scan. Please try again.',
           {
             duration: 4000,
-            style: {
-              background: '#fef2f2',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-            },
+            ...toastPresets.error,
           }
         );
       }
     }
-  }, [triggerImageScan]);
+  }, [triggerImageScan, triggerHaptic]);
 
   // Dismiss scan status
   const handleDismissScanStatus = useCallback(() => {
     setRecentlyCompleted(false);
     setCompletedResult(null);
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const handleDelete = async (imageId: string) => {
     try {
@@ -242,6 +218,7 @@ export function ProtectedImages() {
   };
 
   return (
+    <PullToRefreshContainer onRefresh={handleRefresh}>
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Page Header - mobile optimized */}
       <div className="flex flex-col gap-3 sm:gap-4">
@@ -281,7 +258,7 @@ export function ProtectedImages() {
       />
 
       {/* Upload Section */}
-      <div className="card">
+      <div id="upload-section" className="card">
         <h2 className="text-base sm:text-lg font-serif font-semibold text-foreground">
           Upload New Images
         </h2>
@@ -326,8 +303,10 @@ export function ProtectedImages() {
       {/* Images Gallery */}
       <div className="card">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12 sm:py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="grid gap-3 grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ImageCardSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="py-12 sm:py-16 text-center">
@@ -369,6 +348,25 @@ export function ProtectedImages() {
           isDeleting={deleteImage.isPending}
         />
       )}
+    </div>
+    </PullToRefreshContainer>
+  );
+}
+
+function ImageCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border/40 bg-card">
+      {/* Image placeholder */}
+      <div className="relative">
+        <Skeleton variant="image" className="rounded-none" />
+        {/* Badge placeholder */}
+        <Skeleton variant="rect" className="absolute left-1.5 top-1.5 sm:left-2 sm:top-2 h-4 sm:h-5 w-12 sm:w-16 rounded-full" />
+      </div>
+      {/* Info placeholder */}
+      <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+        <Skeleton variant="line" className="h-3 sm:h-3.5 w-3/4" />
+        <Skeleton variant="line" className="h-2.5 sm:h-3 w-1/2" />
+      </div>
     </div>
   );
 }
@@ -431,6 +429,7 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
         className: 'bg-muted text-muted-foreground',
         icon: <Archive className="h-3 w-3" />,
         label: 'Archived',
+        shortLabel: 'Arc',
       };
     }
     if (isScanned) {
@@ -438,12 +437,14 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
         className: 'bg-success-subtle text-success-foreground-subtle',
         icon: <Shield className="h-3 w-3" />,
         label: 'Protected',
+        shortLabel: 'Safe',
       };
     }
     return {
       className: 'bg-warning-subtle text-warning-foreground-subtle',
       icon: <Clock className="h-3 w-3" />,
       label: 'Pending',
+      shortLabel: 'New',
     };
   };
 
@@ -484,6 +485,7 @@ function ImageCard({ image, onDelete, onScan, isScanning, isScanDisabled, format
           )}
         >
           {badge.icon}
+          <span className="xs:hidden">{badge.shortLabel}</span>
           <span className="hidden xs:inline">{badge.label}</span>
         </div>
 

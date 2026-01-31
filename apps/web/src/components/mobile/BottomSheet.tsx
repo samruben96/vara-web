@@ -17,6 +17,12 @@ interface BottomSheetProps {
   showHeader?: boolean;
   /** Modal mode - disable interactions outside the sheet */
   modal?: boolean;
+  /** Whether the sheet can be dismissed by swiping down (default: true) */
+  dismissible?: boolean;
+  /** Threshold to close as fraction of sheet height (0-1, default: 0.25) */
+  closeThreshold?: number;
+  /** Timeout in ms before scroll is locked (default: 200) */
+  scrollLockTimeout?: number;
 }
 
 export function BottomSheet({
@@ -29,6 +35,9 @@ export function BottomSheet({
   defaultSnapPoint,
   showHeader = false,
   modal = true,
+  dismissible = true,
+  closeThreshold = 0.25,
+  scrollLockTimeout = 200,
 }: BottomSheetProps) {
   return (
     <Drawer.Root
@@ -37,6 +46,9 @@ export function BottomSheet({
       snapPoints={snapPoints}
       activeSnapPoint={defaultSnapPoint !== undefined ? snapPoints?.[defaultSnapPoint] : undefined}
       modal={modal}
+      dismissible={dismissible}
+      closeThreshold={closeThreshold}
+      scrollLockTimeout={scrollLockTimeout}
     >
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-black/40" />
@@ -50,8 +62,8 @@ export function BottomSheet({
           aria-describedby={description ? 'sheet-description' : undefined}
         >
           {/* Drag Handle */}
-          <div className="flex justify-center pt-4 pb-2">
-            <div className="h-1.5 w-12 rounded-full bg-border" />
+          <div className="flex justify-center py-3">
+            <div className="h-2 w-14 rounded-full bg-border" />
           </div>
 
           {/* Optional Header */}

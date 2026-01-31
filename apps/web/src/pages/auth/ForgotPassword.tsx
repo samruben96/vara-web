@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
+import { toastPresets } from '../../lib/toastStyles';
 import { ArrowLeft } from 'lucide-react';
 import { forgotPasswordSchema, type ForgotPasswordInput } from '@vara/shared';
 import { Button, Input } from '../../components/ui';
@@ -35,7 +36,7 @@ export function ForgotPassword() {
 
       toast.success('Check your email for reset instructions', {
         duration: 3000,
-        className: 'bg-success-subtle text-success-foreground-subtle border border-success-muted',
+        ...toastPresets.success,
       });
       setSuccess(true);
     } catch {
