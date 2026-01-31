@@ -52,7 +52,29 @@ app.addContentTypeParser('application/json', { parseAs: 'string' }, (_req, body,
 async function start() {
   // Register plugins
   await app.register(cors, {
-    origin: env.WEB_URL,
+    origin: (origin, cb) => {
+      // Allow requests with no origin (mobile apps, curl, server-to-server)
+      if (!origin) return cb(null, true);
+
+      const allowed = [
+        env.WEB_URL,
+        // Vercel preview deployments for this project
+      ];
+
+      if (
+        allowed.includes(origin) ||
+        origin.endsWith('.vercel.app') && origin.includes('samruben96')
+      ) {
+        return cb(null, true);
+      }
+
+      // In development, allow localhost
+      if (env.NODE_ENV !== 'production' && origin.startsWith('http://localhost')) {
+        return cb(null, true);
+      }
+
+      cb(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
   });
 
